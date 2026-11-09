@@ -1,8 +1,8 @@
 {
-  "name": "business-tools-site",
+  "name": "all-ads-manager",
   "version": "1.0.0",
   "private": true,
-  "description": "BUSINESS TOOLS site with Netlify support email function",
+  "description": "ALL ADS MANAGER site with Netlify support email function",
   "dependencies": {
     "nodemailer": "^6.9.16"
   }
