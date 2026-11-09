@@ -19,7 +19,14 @@ export async function handler(event) {
     const tx = verified.data;
     if (verifyResponse.ok && verified.status && tx?.status === 'success') {
       const credit = await fetch(`${supabase}/rest/v1/rpc/bt_paystack_credit_deposit`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_reference: reference, p_transaction_id: String(tx.id), p_channel: String(tx.channel || ''), p_paid_at: tx.paid_at || tx.paidAt || new Date().toISOString(), p_amount_kobo: Number(tx.amount), p_currency: String(tx.currency || '') }) });
-      if (!credit.ok) return json(500, { error: 'Payment is confirmed but wallet update is pending. Please refresh shortly.' });
+      if (!credit.ok) {
+  const creditError = await credit.text();
+  console.error('WALLET CREDIT FAILED:', credit.status, creditError);
+  return json(500, {
+    error: 'Payment confirmed, but wallet credit failed.',
+    reference
+  });
+}
       return json(200, { status: 'success', message: 'Payment confirmed and your balance has been updated.' });
     }
     return json(200, { status: deposits[0].status, message: 'Payment is not confirmed yet. If you have just paid, wait a moment and refresh.' });
