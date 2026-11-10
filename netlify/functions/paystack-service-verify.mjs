@@ -4,10 +4,12 @@ const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/
 async function savePaidOrder(customerId,reference,row,tx){
  const existing=await sb(`business_tools_customer_data?select=records&customer_id=eq.${encodeURIComponent(customerId)}&limit=1`);
  const records=Array.isArray(existing?.[0]?.records)?existing[0].records:[];
- if(records.some(x=>x.servicePaymentReference===reference))return;
+ const existingIndex=records.findIndex(x=>x.servicePaymentReference===reference);
  const customer=await sb(`customers?select=name&id=eq.${encodeURIComponent(customerId)}&limit=1`);
  const paidAt=tx.paid_at||tx.paidAt||new Date().toISOString();
- records.push({id:`SVC-${reference}`,customerId,customerName:customer?.[0]?.name||'Customer',service:row.service,details:row.details||'',price:Number(row.amount_kobo)/100,time:paidAt,paymentStatus:'Paid',processingStatus:'Awaiting fulfilment',servicePaymentReference:reference});
+ const paidRecord={id:`SVC-${reference}`,customerId,customerName:customer?.[0]?.name||'Customer',service:row.service,details:row.details||'',price:Number(row.amount_kobo)/100,time:paidAt,paymentStatus:'Paid',processingStatus:'Awaiting fulfilment',servicePaymentReference:reference};
+ if(existingIndex>=0)records[existingIndex]={...records[existingIndex],...paidRecord};
+ else records.push(paidRecord);
  if(existing.length)await sb(`business_tools_customer_data?customer_id=eq.${encodeURIComponent(customerId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({records})});
  else await sb('business_tools_customer_data',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{customer_id:customerId,records}])});
 }
