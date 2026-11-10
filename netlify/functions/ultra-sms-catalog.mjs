@@ -51,6 +51,8 @@ export async function handler(event) {
       countries,
       prices: Array.isArray(pricesData.prices) ? pricesData.prices : [],
       currency: pricesData.currency || balance.currency || 'USD',
+      fxNgnPerUsd: Number(process.env.ULTRA_SMS_USD_NGN_RATE) || null,
+      markupPercent: 3,
       selectedServiceName: selected?.name || service
     });
   } catch (error) {
