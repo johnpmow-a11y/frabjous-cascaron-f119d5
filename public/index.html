@@ -156,7 +156,47 @@ async function adminDeleteCustomer(id){if(!confirm('Delete this customer account
 async function saveBank(){let bank={'Bank / Service':document.getElementById('bankName').value.trim(),'Account Name':document.getElementById('bankAccountName').value.trim(),'Account Number':document.getElementById('bankNumber').value.trim(),updatedAt:new Date().toISOString()};if(!['Bank / Service','Account Name','Account Number'].some(k=>String(bank[k]||'').trim()))return toast('Enter at least one field.');try{await rpc('bt_admin_save_settings',{p_token:sessionStorage.getItem('btAdminToken'),p_bank:bank,p_prices:store.prices||{}});await admin()}catch(e){toast(e.message||'Could not publish bank information.')}}
 async function clearBank(){try{await rpc('bt_admin_save_settings',{p_token:sessionStorage.getItem('btAdminToken'),p_bank:null,p_prices:store.prices||{}});await admin()}catch(e){toast(e.message||'Could not clear bank information.')}}
 async function publishLocalNote(id){let text=document.getElementById('adminNote').value.trim();if(!id||!text)return toast('Write a customer message first.');try{await rpc('bt_admin_publish_note',{p_token:sessionStorage.getItem('btAdminToken'),p_customer_id:id,p_note:text});await admin();openCustomerMessage(id)}catch(e){toast(e.message||'Could not publish the customer message.')}}
-async function checkAdmin(){let p=document.getElementById('apass').value;try{const r=await rpc('admin_login',{p_password:p});if(!r?.token)throw new Error('The database did not return an administrator session.');sessionStorage.removeItem('btCustomer');sessionStorage.removeItem('btToken');sessionStorage.setItem('btAdminToken',r.token);await admin()}catch(e){toast(e.message||'Administrator login failed.')}}
+async function checkAdmin(){
+  const input = document.getElementById('apass');
+  const button = document.getElementById('adminLoginButton');
+  const status = document.getElementById('adminLoginStatus');
+
+  if(!input || !input.value.trim()){
+    if(status) status.textContent = 'Please enter your admin password.';
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'Checking...';
+  if(status) status.textContent = '';
+
+  try {
+    const r = await rpc('admin_login', {
+      p_password: input.value
+    });
+
+    if(!r?.token){
+      throw new Error('The database did not return an administrator session.');
+    }
+
+    sessionStorage.removeItem('btCustomer');
+    sessionStorage.removeItem('btToken');
+    sessionStorage.setItem('btAdminToken', r.token);
+
+    await admin();
+
+  } catch(e) {
+    if(status){
+      status.textContent = e.message || 'Administrator login failed.';
+    }
+  } finally {
+    const currentButton = document.getElementById('adminLoginButton');
+    if(currentButton){
+      currentButton.disabled = false;
+      currentButton.textContent = 'Log In';
+    }
+  }
+}
 function adminLogout(){sessionStorage.removeItem('btAdminToken');entry()}
 async function restoreSession(){const customerId=sessionStorage.getItem('btCustomer'),customerToken=sessionStorage.getItem('btToken'),adminToken=sessionStorage.getItem('btAdminToken');if(customerId&&customerToken){try{await loadCustomerCloud();profile();return}catch(e){sessionStorage.removeItem('btCustomer');sessionStorage.removeItem('btToken');}}if(adminToken){await admin();return;}entry()}
 restoreSession();
