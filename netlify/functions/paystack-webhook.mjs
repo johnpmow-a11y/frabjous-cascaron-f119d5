@@ -6,6 +6,7 @@ export async function handler(event) {
   const supabase = process.env.SUPABASE_URL;
   const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret || !supabase || !service) return reply(503, 'not configured');
+  if (!secret.startsWith('sk_live_')) return reply(503, 'live Paystack key required');
   const raw = event.body || '';
   const signature = event.headers['x-paystack-signature'] || event.headers['X-Paystack-Signature'];
   const expected = crypto.createHmac('sha512', secret).update(raw).digest('hex');
