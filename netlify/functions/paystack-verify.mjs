@@ -3,6 +3,7 @@ export async function handler(event) {
   if (event.httpMethod !== 'GET') return json(405, { error: 'Method not allowed' });
   const secret = process.env.PAYSTACK_SECRET_KEY, supabase = process.env.SUPABASE_URL, service = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret || !supabase || !service) return json(503, { error: 'Payment service is not configured yet.' });
+  if (!secret.startsWith('sk_live_')) return json(503, { error: 'Live Paystack verification is required. Test keys are disabled.' });
   const reference = event.queryStringParameters?.reference || '';
   const token = event.queryStringParameters?.token || '';
   if (!reference || !/^[0-9a-f-]{36}$/i.test(token)) return json(400, { error: 'Missing payment reference or login session.' });
