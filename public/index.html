@@ -119,6 +119,10 @@ async function startServiceCheckout(){
   const result=await response.json();
   if(!response.ok||!result.authorization_url)throw new Error(result.error||'Could not start service payment.');
   sessionStorage.setItem('btPendingServiceReference',result.reference);
+  try{
+   const orderRecord={service:d.service,details:d.details,price:d.price,status:'Awaiting payment verification',paymentStatus:'Pending',processingStatus:'Awaiting Paystack payment',pictures:d.pictures||[],servicePaymentReference:result.reference};
+   await recordAdmin(orderRecord);
+  }catch(saveError){toast('Payment is ready. Your order details will be attached after verification.');}
   location.href=result.authorization_url;
  }catch(e){
   toast(e.message||'Could not start service payment.');
