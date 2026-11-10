@@ -12,6 +12,7 @@ export async function handler(event) {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
   const { secret, supabase, service } = env();
   if (!secret || !supabase || !service) return json(503, { error: 'Payment service is not configured yet.' });
+  if (!secret.startsWith('sk_live_')) return json(503, { error: 'Live Paystack payments are required. Configure the LIVE secret key; test keys are disabled.' });
   try {
     const body = JSON.parse(event.body || '{}');
     const token = String(body.token || '');
