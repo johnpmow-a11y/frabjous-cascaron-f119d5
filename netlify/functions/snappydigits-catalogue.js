@@ -1,3 +1,4 @@
+/* All Ads Manager supplier catalogue endpoint. Redeploy marker: 2026-11-12. */
 // Read-only SnappyDigits catalogue check.
 // The API key is read only from Netlify's server-side environment variables.
 exports.handler = async function (event) {
