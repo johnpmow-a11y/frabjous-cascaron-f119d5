@@ -206,7 +206,7 @@ async function loadReadyAccountOrders(refresh=false){
  }catch(error){box.innerHTML=`<div class="payment-note">${esc(error.message||'Could not load your account orders.')}</div>`;}
 }
 function back(){profile()}function giftArt(region,amount){return `<div class="gift-art ${region==='UK'?'uk':'us'}"><div class="art-top"><span class="art-flag">${region==='UK'?'🇬🇧':'🇺🇸'}</span><span>${region}</span></div><div class="apple"></div><div class="art-title">Gift Card</div><div class="art-amount">${esc(amount)}</div><div class="art-bottom">SAMPLE PREVIEW</div></div>`}
-function catalog(region){if(!guard())return;let vals=region==='UK'?UK_VALUES:USA_VALUES,s=region==='UK'?'£':'
+function catalog(region){if(!guard())return;}
 function categoryOptions(){return categories.map(x=>`<option>${x}</option>`).join('')}
 function countryOptions(){return countries.map(x=>`<option>${x}</option>`).join('')}
 const allCountryCodes='AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ');
