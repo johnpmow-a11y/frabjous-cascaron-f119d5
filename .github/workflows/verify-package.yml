@@ -47,6 +47,7 @@ jobs:
               f.write('\n'.join(parser.parts))
           PY
           node --check /tmp/all-ads-manager-inline.js
+          node --check public/funding-overrides.js
       - name: Package complete deployable project
         run: |
           mkdir -p dist
