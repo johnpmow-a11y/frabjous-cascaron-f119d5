@@ -1,116 +1,55 @@
-BUSINESS TOOLS — FULL AUDIT BUILD
+ALL ADS MANAGER — PROJECT NOTES
 
-WHAT WAS CHECKED
-- Customer registration remains name + four-digit code.
-- Admin login remains the existing admin password.
-- Existing Supabase project URL and publishable key are retained.
-- Existing email function, package.json, and netlify.toml are preserved byte-for-byte from the prior email-ready package.
-- Customer requests are stored in Admin History; Customer History contains administrator messages only.
-- Customer can delete their own administrator messages. Admin can delete individual records, a customer's history, or a customer account.
-- Admin can open a separate private message box for each customer.
-- Admin can publish/clear bank information; customer requests wait 15 seconds before showing published information or unavailable status.
-- After the second unsuccessful bank-information attempt, the existing support email is sent using the preserved Netlify function, then the site waits another 15 seconds and checks bank information again.
-- Customer service form no longer shows the wording “Add Funds / Submit Request”; Facebook Page uses “Create Page” and other service forms use “Submit Request”.
-- Existing service prices, gift-card totals, and ADS card visual were preserved. The ADS PIN remains fictional-only and is never stored or transmitted. The FB area remains a test-profile form and does not collect passwords or 2FA codes; real passwords, 2FA codes, or bank PINs are not collected.
-- Admin dashboard includes per-customer website lock/unlock and subscription-request controls after the included SQL migration is applied.
+Brand and customer experience
+- Product name: All Ads Manager. Customer-facing service labels use ADS, not “demo”.
+- Customer accounts remain username/name plus a four-digit code. Customer accounts do not require an email address.
+- The existing Supabase customer/admin session model is retained; customer sessions expire according to the existing database policy.
+- Existing customer history, administrator messages, support inbox, gift delivery, consignment jobs, Rediprofiles account orders, and service modules are retained.
+- The legacy browser storage key businessTools_demo_v1 is intentionally retained internally so existing browser-side data is not lost. It is not a customer-facing label.
 
-SUBSCRIPTION PLANS
-- 1 week: NGN 3,800
-- 2 weeks: NGN 7,600
-- 3 weeks: NGN 11,400
-- 4 weeks: NGN 15,200
-A locked customer can select a plan and confirm. After 15 seconds, the site displays the admin-published bank information or “Bank Not Available”. The request appears in Admin Dashboard. The admin must verify payment and unlock that specific customer. Unlocking lasts for the selected number of weeks.
+Wallet and Paystack
+- Add Funds accepts NGN 100 through NGN 3,000,000.
+- Add Funds displays one 15-second preparation state before calling the existing server-side Paystack initializer.
+- Card details are entered only on Paystack. Do not collect or store card numbers, CVV, PIN, OTP, or 2FA codes in this application.
+- The Paystack webhook and wallet-credit logic remain server-side. Do not replace existing Paystack keys or webhook settings during these UI changes.
+- Do not describe live settlement as verified unless it has been tested against the live Paystack dashboard and the deployed Netlify site.
 
-IMPORTANT: DATABASE STEP REQUIRED
-The lock/subscription feature needs the SQL migration in:
-supabase/migrations/20261106_align_subscription_rpc_responses.sql
-The lock tables and base RPCs have already been installed in this project during this chat. Before deploying this recovered website build, run supabase/migrations/20261106_align_subscription_rpc_responses.sql once in the SAME Supabase project. It aligns the subscription request and admin access RPC response shapes with this website. Do not rerun the earlier base migration.
+Withdrawals
+- Customers can submit a withdrawal request with an amount and bank details.
+- The amount is reserved from the customer's wallet when the request is accepted.
+- An administrator must manually send the bank transfer and then mark the request Paid. This application does not initiate automatic bank transfers.
+- If the administrator rejects a pending request, the reserved amount is automatically refunded to the customer's wallet.
+- Apply supabase/migrations/20261113_wallet_withdrawals.sql once in the existing Supabase project before using withdrawals.
 
-EMAIL PRESERVATION
-The Netlify function file netlify/functions/send-email.mjs is byte-for-byte identical to the previous email-ready package. package.json and netlify.toml are also preserved. Keep the existing Netlify environment variables GMAIL_USER and GMAIL_APP_PASSWORD unchanged. Deploy the COMPLETE project folder, not only public/index.html, so Netlify publishes the existing email function.
+Customer security
+- The username-only password/code reset function has been removed because a username alone does not prove account ownership.
+- Apply supabase/migrations/20261113_secure_customer_code_recovery.sql once in the existing Supabase project. Customers needing a forgotten four-digit code must contact the administrator for identity verification and reset assistance.
+- Do not restore a public username-only code reset.
 
-DEPLOY
-Deploy the complete folder contents: public/index.html, package.json, netlify.toml, netlify/functions/send-email.mjs. Keep the supabase folder with the migration for reference. Use the existing Netlify site and retain its existing environment variables.
+UltraSMS WhatsApp verification
+- The API key stays server-side in Netlify as ULTRA_SMS_API_KEY.
+- The current official API catalogue returns supplier prices as USD cents (price_cents) and stock counts. The catalogue converts these to NGN using ULTRA_SMS_USD_NGN_RATE and applies the agreed 3% markup.
+- Set ULTRA_SMS_USD_NGN_RATE to the current NGN-per-USD conversion rate in Netlify. If it is missing or invalid, customer purchase buttons remain disabled.
+- The order endpoint rechecks the supplier price and stock before reserving wallet funds. Supplier price changes require refreshing the catalogue.
+- UltraSMS numbers are temporary verification activations, not permanent numbers or monthly rentals. Use them only for accounts the customer is authorized to verify.
+- Facebook, TikTok and Zangi remain separate branded services and are not replaced by the UltraSMS catalogue.
 
-VERIFICATION LIMITS
-- JavaScript syntax and package structure are checked locally.
-- The intended Supabase project is not authorized to the connected Supabase tool, so the migration was not applied remotely. Apply the included SQL once in the existing project before deploying this build.
-- Live email delivery and two-device behavior cannot be verified from this workspace because private Netlify settings and the live site are not accessible here. The email implementation itself was preserved byte-for-byte.
+Email
+- The existing Gmail/Nodemailer transport, support inbox, and GMAIL_USER / GMAIL_APP_PASSWORD environment variable names are unchanged.
+- Only the visible sender name, subject and message branding were changed to All Ads Manager. Do not replace the working email configuration.
 
+Netflix and ready-made accounts
+- Netflix Login remains the existing manually priced service. It is not automatically connected to Rediprofiles Netflix stock.
+- Ready-made account catalogue and order flow remain connected to Rediprofiles. Actual profile photos and account metadata can only be shown when supplied by the provider.
+- Do not claim an item is in stock unless the current supplier catalogue confirms it.
 
-RECOVERED WEBSITE BUILD
-This package was recovered from the BUSINESS TOOLS files already uploaded in the earlier conversation. The customer login now calls the existing login_customer RPC and handles its locked response token. Subscription prices match the agreed NGN 3,800 / 7,600 / 11,400 / 15,200 plans. The periodic customer-session check also recognizes SUBSCRIPTION_REQUIRED.
+Deployment
+- Deploy the complete project folder to the existing Netlify site, including public/, netlify/functions/, package.json, netlify.toml, and supabase/migrations/.
+- Keep the existing Netlify environment variables and secrets. Never put Supabase service-role keys, Paystack secret keys, Gmail app passwords or UltraSMS API keys in public browser code.
+- Required server settings used by the current integrations include the existing Supabase URL/service-role key, Paystack secret, Gmail settings, ULTRA_SMS_API_KEY, and ULTRA_SMS_USD_NGN_RATE. Preserve any additional variables already configured for other services.
+- After adding or changing Netlify environment variables, redeploy the site.
 
-PAYSTACK WALLET DEPOSITS — NEW, NOT YET LIVE
-- Customer dashboard includes Add Funds and Payment History.
-- Customer can choose Bank Transfer or ATM / Card Payment and enter an amount from ₦2,100 to ₦100,000.
-- The checkout is initialized server-side and redirects to Paystack-hosted checkout. Card details are entered at Paystack, never on ADS Manager.
-- Paystack webhook verifies its HMAC signature and re-verifies the transaction with Paystack before crediting the wallet.
-- Wallet credits are idempotent by unique payment reference. The customer sees their own balance/history; admin sees customer wallet balances only.
-- No card PAN, CVV, ATM PIN, OTP or 2FA value is stored by ADS Manager.
-
-REQUIRED BEFORE TESTING PAYMENTS
-1. Run supabase/migrations/20261106_paystack_wallet.sql in the existing Supabase project ftwhcqrtmfxdzokmudvu. Do not run it in a different project.
-2. In Netlify Site configuration > Environment variables, set PAYSTACK_SECRET_KEY to the Paystack TEST secret key, SUPABASE_URL to https://ftwhcqrtmfxdzokmudvu.supabase.co, and SUPABASE_SERVICE_ROLE_KEY to the service-role key for that SAME Supabase project. Keep the service-role key private; never put it in public/index.html.
-3. In Paystack test dashboard, set the webhook URL to https://YOUR-NETLIFY-SITE/.netlify/functions/paystack-webhook and enable charge.success. Use test mode while testing.
-4. Deploy the complete project folder. Test both methods with Paystack test credentials. Real customer payments require live-mode approval and live credentials.
-
-IMPORTANT: This workspace cannot configure your Netlify account, add private environment variables, apply SQL to the remote Supabase project, or verify real payment settlement. Do not treat the payment integration as live until those steps and end-to-end tests are completed. The existing send-email.mjs, package.json and netlify.toml have been preserved unchanged.
-
-LOCKED-ACCOUNT LOGIN ALIGNMENT
-------------------------------
-This package includes:
-  supabase/migrations/20261106_lock_login_alignment.sql
-
-Run this migration in the existing Supabase SQL Editor AFTER the original
-business_tools_customer_lock_subscriptions.sql migration and the existing
-subscription response alignment migration. It aligns the website's login call
-with bt_customer_login and uses the restricted subscription_token for locked
-customers. It also saves the subscription amount using the existing plan prices.
-
-PAYMENT LIMITS
---------------
-Customer Add Funds accepts NGN 100 through NGN 3,000,000. The browser and
-Paystack server function both validate this range. The wallet SQL stores the
-corresponding amounts in kobo.
-
-TEST STATUS
------------
-JavaScript syntax checks passed for the inline website script and the three
-Paystack Netlify functions. ZIP integrity check passed. The existing
-netlify/functions/send-email.mjs file was preserved unchanged.
-Live Paystack settlement, webhook delivery, live Supabase RPC execution,
-service fulfilment, and end-to-end customer/admin testing have NOT been
-verified from this package build. Do not treat sample/preview service forms as
-live fulfilled services or charge customers for a service until its fulfilment
-and server-side wallet order debit are implemented and tested.
-
-ULTRA SMS LIVE CATALOGUE — NEW CONNECTION
------------------------------------------
-The latest package now includes a server-side Netlify function:
-  netlify/functions/ultra-sms-catalog.mjs
-
-It uses the private Netlify environment variable ULTRA_SMS_API_KEY and calls
-Ultra SMS from the server only. The API key is never sent to the browser.
-The customer dashboard now includes “Virtual Verification Numbers”. It loads:
-- The supplier's current service list (for example WhatsApp, Telegram, Google,
-  if those services are returned for this account).
-- The supplier's current supported countries.
-- Current prices and available stock by server for the selected service/country.
-- The Ultra SMS account balance.
-
-After adding ULTRA_SMS_API_KEY in Netlify, redeploy the complete package so the
-new function is published. The catalogue is read-only in this build: it does
-NOT yet place customer orders, debit the ADS Manager wallet, or deliver OTPs.
-Do not collect payment for a verification number until the order flow, customer
-wallet debit, refund handling, and order ownership have been implemented and
-tested. Ultra SMS numbers are temporary activations (normally up to 20 minutes),
-not permanent number purchases or monthly rentals. A phone number is assigned
-only after an order succeeds; the catalogue shows live stock counts, not a list
-of individual phone numbers in advance.
-
-Ultra SMS service names are verification services, not account sales. If the
-provider returns a Google service, that is a Google verification SMS option;
-it does not provide Gmail accounts or Gmail inboxes.
-
-Official API docs: https://ultrasmsin.com/reseller/docs
+Verification limits
+- Repository source changes do not automatically apply SQL to Supabase or deploy to Netlify.
+- Apply the two new SQL migrations above in the existing Supabase project ftwhcqrtmfxdzokmudvu before using withdrawal and code-recovery changes.
+- The live Netlify deployment, live Paystack settlement, Gmail delivery, supplier stock, and cross-device customer behavior must be checked on the actual deployed services. A local/source review is not proof of live operation.
