@@ -68,10 +68,7 @@ export async function handler(event) {
             : [])
       : [];
 
-    const markup = Number(process.env.REDIPROFILES_MARKUP_NGN || 0);
-    if (!Number.isFinite(markup) || markup < 0 || markup > 3000000) {
-      return json(503, { ok: false, error: "The account marketplace markup setting is invalid." });
-    }
+    // Customer price = supplier price + 50% + ₦800.
     const pricedServices = services.map(item => {
       const supplierValue = item.price_ngn ?? (String(item.currency || "").toUpperCase() === "NGN" ? item.price : null);
       const supplierPrice = Number(supplierValue);
@@ -79,7 +76,7 @@ export async function handler(event) {
       return {
         ...item,
         supplier_price_ngn: supplierPrice,
-        customer_price_ngn: Math.round((supplierPrice + markup) * 100) / 100
+        customer_price_ngn: Math.round(supplierPrice * 1.5 + 800)
       };
     });
 
@@ -88,7 +85,7 @@ export async function handler(event) {
       services: pricedServices,
       categories,
       currency: "NGN",
-      markup_ngn: markup,
+      pricing_rule: "supplier price + 50% + ₦800",
       count: pricedServices.length
     });
   } catch (error) {
