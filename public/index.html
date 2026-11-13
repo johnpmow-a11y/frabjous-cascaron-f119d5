@@ -165,7 +165,6 @@ async function buyReadyAccount(button,serviceId,price){
   if(!response.ok||!data.ok)throw new Error(data.error||'Account purchase failed.');
   toast(data.order?.status==='completed'?'Account purchased successfully.':'Order received. Check My Account Orders for delivery details.');
   await loadReadyAccountOrders();
-  await profile();
  }catch(error){
   toast(error.message||'Could not complete the account purchase.');
   if(button){button.disabled=false;button.textContent='Buy account'}
