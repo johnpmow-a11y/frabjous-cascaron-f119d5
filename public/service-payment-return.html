@@ -13,6 +13,7 @@ function showTimer(availableAt){
  }
  tick();
 }
+function showMediaTimer(minutes,service){const end=Date.now()+minutes*60000;function tick(){const left=Math.max(0,end-Date.now());if(left<=0){count.textContent='';title.textContent='Processing time complete';message.textContent='Go back to All Ads Manager and open History to see the administrator confirmation and completed result for '+service+'.';document.getElementById('back').textContent='Go back to All Ads Manager History';return;}const mins=Math.floor(left/60000),secs=Math.floor((left%60000)/1000);count.textContent=String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');message.textContent='Your payment is verified. Your '+service+' order is with the administrator. Please allow '+minutes+' minutes; you can leave this page and check History later.';setTimeout(tick,1000);}tick();}
 async function verify(){
  if(!reference||!token){title.textContent='Sign in required';message.textContent='Return to All Ads Manager, sign in, and open History to check your service payment.';return;}
  try{
@@ -20,7 +21,7 @@ async function verify(){
   if(d.status==='paid'){
    title.textContent='Payment verified';
    if(d.service==='Gift Card'){message.textContent='Your gift-card order has been sent to the administrator. Please wait; the gift-card code will appear in your History when it is delivered.';return;}
-   if(d.service==='Fund Facebook Ads'&&d.processing_available_at){showTimer(d.processing_available_at);return;}
+   if(d.service==='Fund Facebook Ads'&&d.processing_available_at){showTimer(d.processing_available_at);return;}if(d.service==='Adjust Clothes'||d.service==='Picture to Video Editing'){showMediaTimer(Number(d.processing_minutes)||(d.service==='Picture to Video Editing'?20:15),d.service);return;}
    if(d.service==='International Gift Delivery'){message.innerHTML='Payment verified. Your tracking code is <b>'+String(d.tracking_code||'being registered')+'</b>. <a href="/tracking.html?code='+encodeURIComponent(d.tracking_code||'')+'">Track your delivery</a>.';return;}
    message.textContent=d.service==='TikTok Account Funding'?'Please wait five minutes. After five minutes, go LIVE on your TikTok account for over 20 minutes. Your coin amount depends on how much you paid. Thank you for purchasing with All Ads Manager. Coin fulfilment is subject to supplier/manual confirmation.':d.service==='Create Your Consignment Box Video'?'Payment verified. Your Consignment Box Video is processing. The estimated processing time is five hours. Please check your History after five hours. If it is not ready, it will continue to show Processing.':(d.message||'Your payment is verified. The service request is awaiting fulfilment.');
    return;
