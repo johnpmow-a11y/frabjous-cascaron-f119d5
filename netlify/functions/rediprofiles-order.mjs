@@ -141,12 +141,9 @@ export async function handler(event) {
 
     const supplierPrice = servicePriceNgn(item);
     if (supplierPrice === null) return json(502, { ok: false, error: 'The supplier did not provide a valid naira price. No money has been deducted.' });
-    const markup = Number(process.env.REDIPROFILES_MARKUP_NGN || 0);
-    if (!Number.isFinite(markup) || markup < 0 || markup > 3000000) {
-      return json(503, { ok: false, error: 'The account marketplace markup setting is invalid.' });
-    }
+    // Customer price = supplier price + 50% + ₦800.
     const supplierKobo = Math.round(supplierPrice * 100);
-    const customerKobo = supplierKobo + Math.round(markup * 100);
+    const customerKobo = Math.round((supplierPrice * 1.5 + 800) * 100);
     if (!Number.isSafeInteger(supplierKobo) || !Number.isSafeInteger(customerKobo) || customerKobo <= 0) {
       return json(502, { ok: false, error: 'The supplier price is invalid.' });
     }
