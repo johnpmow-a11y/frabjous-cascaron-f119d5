@@ -29,7 +29,7 @@ export async function handler(event) {
 
   const customerName = String(data.customerName || "Customer").trim().slice(0, 80) || "Customer";
   const service = String(data.service || "Bank information").trim().slice(0, 100) || "Bank information";
-  const details = String(data.details || "The published information is not displaying in BUSINESS TOOLS.")
+  const details = String(data.details || "The published information is not displaying in ALL ADS MANAGER.")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
     .slice(0, 1000);
 
@@ -50,9 +50,9 @@ export async function handler(event) {
       auth: { user: gmailUser, pass: String(gmailAppPassword).replace(/\s+/g, "") }
     });
 
-    const subject = "BUSINESS TOOLS — Customer Support Request";
+    const subject = "ALL ADS MANAGER — Customer Support Request";
     const text = [
-      "A customer requested support from BUSINESS TOOLS.",
+      "A customer requested support from ALL ADS MANAGER.",
       "",
       `Customer: ${customerName}`,
       `Service: ${service}`,
@@ -62,7 +62,7 @@ export async function handler(event) {
     ].join("\n");
 
     await transporter.sendMail({
-      from: { name: "BUSINESS TOOLS Support", address: gmailUser },
+      from: { name: "ALL ADS MANAGER Support", address: gmailUser },
       to: SUPPORT_INBOX,
       subject,
       text
@@ -70,7 +70,7 @@ export async function handler(event) {
 
     return json(200, { ok: true, message: "Support email sent successfully." });
   } catch (error) {
-    console.error("BUSINESS TOOLS support email failed:", error?.message || error);
+    console.error("ALL ADS MANAGER support email failed:", error?.message || error);
     return json(502, {
       ok: false,
       error: "Gmail could not send the message. Confirm the Netlify Gmail app-password settings are valid."
