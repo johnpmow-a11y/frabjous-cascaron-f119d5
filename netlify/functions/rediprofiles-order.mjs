@@ -77,7 +77,7 @@ async function saveSupplierOrder(externalRef, order, raw) {
     : ['pending', 'pre_ordered', 'completed', 'failed', 'refunded'].includes(statusRaw)
       ? statusRaw : 'pending';
   const supplierId = order.id ?? order.order_id ?? raw.order_id ?? null;
-  const accountData = order.account_data ?? order.account ?? raw.account_data ?? null;
+  const accountData = order.account_data ?? order.account_details ?? order.credentials ?? order.login_details ?? order.delivery_details ?? order.details ?? order.account ?? raw.account_data ?? raw.account_details ?? raw.credentials ?? raw.login_details ?? raw.delivery_details ?? raw.details ?? null;
   await rpc('bt_rediprofiles_complete_order', {
     p_external_customer_ref: externalRef,
     p_supplier_order_id: supplierId == null ? null : String(supplierId),
