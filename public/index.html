@@ -110,29 +110,49 @@ function serviceButtons(){return `<button class="btn" onclick="readyAccountsPage
 
 async function readyAccountsPage(){
  if(!guard())return;
- shell(`<button class="btn secondary back" onclick="profile()">← Back</button><h2 class="section-title">Ready-Made Accounts</h2><p class="muted" style="text-align:center">Live supplier catalogue. Prices are shown in the supplier's listed currency. An account's actual profile photo appears only when the supplier provides one.</p><div id="readyAccountStatus" class="payment-note">Loading live account catalogue…</div><div id="readyAccountCards" class="cards" style="margin-top:18px"></div>`);
+ shell(`<button class="btn secondary back" onclick="profile()">← Back</button><h2 class="section-title">Ready-Made Accounts</h2><p class="muted" style="text-align:center">Live Rediprofiles catalogue. Prices are displayed in naira. Photos and follower counts appear only when the supplier includes those details.</p><div id="readyAccountStatus" class="payment-note">Loading live Rediprofiles catalogue…</div><div id="readyAccountFilters" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0"><input id="readyAccountSearch" placeholder="Search accounts…" oninput="filterReadyAccounts()"><select id="readyAccountCategory" onchange="filterReadyAccounts()"><option value="">All categories</option></select></div><div id="readyAccountCards" class="cards"></div>`);
  try{
-  const response=await fetch('/.netlify/functions/snappydigits-catalogue',{headers:{Accept:'application/json'},cache:'no-store'});
+  const response=await fetch('/.netlify/functions/rediprofiles-catalogue',{headers:{Accept:'application/json'},cache:'no-store'});
   const data=await response.json();
-  if(!response.ok||!data.ok)throw new Error(data.error||'Supplier catalogue is unavailable.');
-  const rows=Array.isArray(data.accountServices)?data.accountServices:[];
+  if(!response.ok||!data.ok)throw new Error(data.error||'Rediprofiles catalogue is unavailable.');
+  window.rediprofilesServices=Array.isArray(data.services)?data.services:[];
+  window.rediprofilesCategories=Array.isArray(data.categories)?data.categories:[];
+  const category=document.getElementById('readyAccountCategory');
+  if(category)category.innerHTML='<option value="">All categories</option>'+window.rediprofilesCategories.map(c=>`<option value="${esc(c.id)}">${esc(c.name)} (${Number(c.services_in_stock||0)} in stock)</option>`).join('');
   const status=document.getElementById('readyAccountStatus');
-  const cards=document.getElementById('readyAccountCards');
-  if(status)status.textContent=`Live supplier catalogue loaded: ${rows.length} account products. Stock and prices may change.`;
-  if(!cards)return;
-  if(!rows.length){cards.innerHTML='<div class="empty">The supplier returned no account products right now.</div>';return;}
-  cards.innerHTML=rows.map(item=>{
-   const name=String(item.name||'Account product');
-   const desc=String(item.description||'').slice(0,500);
-   const image=item.profileImageUrl||item.profile_image_url||item.accountImageUrl||item.account_image_url||'';
-   const price=item.price==null?'Price unavailable':String(item.price)+' USD';
-   const stock=Number(item.stock||0);
-   const photo=image&&/^https:\/\//i.test(image)?`<img src="${esc(image)}" alt="Supplier-provided account profile photo" style="width:100%;height:170px;object-fit:cover;border-radius:12px" loading="lazy" referrerpolicy="no-referrer">`:'<div class="gift-art" style="height:170px;background:#e5e7eb;color:#374151;box-shadow:none"><div style="font-size:42px">👤</div><div class="art-title">No individual profile photo supplied</div></div>';
-   return `<article class="card">${photo}<h3>${esc(name)}</h3><p class="muted">${esc(desc)}</p><div class="price">${esc(price)}</div><p class="muted">Available stock: <b>${Number.isFinite(stock)?stock.toLocaleString():'Check supplier'}</b></p><span class="muted">Purchasing is not enabled yet.</span></article>`;
-  }).join('');
- }catch(error){const status=document.getElementById('readyAccountStatus');if(status)status.textContent=error.message||'Could not load supplier catalogue.';}
+  if(status)status.textContent=`Live catalogue loaded: ${window.rediprofilesServices.length} services. Prices and stock may change.`;
+  filterReadyAccounts();
+ }catch(error){
+  const status=document.getElementById('readyAccountStatus');
+  if(status)status.textContent=error.message||'Could not load Rediprofiles catalogue.';
+ }
 }
-
+function filterReadyAccounts(){
+ const all=Array.isArray(window.rediprofilesServices)?window.rediprofilesServices:[];
+ const query=String(document.getElementById('readyAccountSearch')?.value||'').trim().toLowerCase();
+ const category=String(document.getElementById('readyAccountCategory')?.value||'');
+ const rows=all.filter(item=>{
+  const text=[item.name,item.category_name,item.description,item.country].join(' ').toLowerCase();
+  const categoryMatch=!category||String(item.category_id??item.category??'')===category;
+  return categoryMatch&&(!query||text.includes(query));
+ });
+ const cards=document.getElementById('readyAccountCards');
+ if(!cards)return;
+ if(!rows.length){cards.innerHTML='<div class="empty">No matching accounts are available right now.</div>';return;}
+ cards.innerHTML=rows.map(item=>{
+  const name=String(item.name||'Account product');
+  const description=String(item.description||'').slice(0,400);
+  const image=item.profile_image_url||item.profileImageUrl||item.account_image_url||item.accountImageUrl||item.image_url||item.image||'';
+  const price=item.price_ngn??(String(item.currency||'').toUpperCase()==='NGN'?item.price:null);
+  const stock=Number(item.quantity_in_stock??item.stock??0);
+  const followers=item.followers_count??item.follower_count??item.followers??null;
+  const categoryName=item.category_name||'Social / Email Account';
+  const photo=image&&/^https:\/\//i.test(String(image))
+   ?`<img src="${esc(image)}" alt="Supplier-provided account profile photo" style="width:100%;height:170px;object-fit:cover;border-radius:12px" loading="lazy" referrerpolicy="no-referrer">`
+   :'<div class="gift-art" style="height:170px;background:#e5e7eb;color:#374151;box-shadow:none"><div style="font-size:42px">👤</div><div class="art-title">Supplier photo not provided</div></div>';
+  return `<article class="card">${photo}<p class="eyebrow">${esc(categoryName)}</p><h3>${esc(name)}</h3>${description?`<p class="muted">${esc(description)}</p>`:''}<div class="price">${price==null?'Price unavailable':money(price)}</div><p class="muted">Available stock: <b>${Number.isFinite(stock)?stock.toLocaleString():'Check supplier'}</b></p>${followers==null?'':`<p class="muted">Followers: <b>${esc(followers)}</b></p>`}<span class="muted">Purchasing will be enabled after wallet and supplier-order checks.</span></article>`;
+ }).join('');
+}
 function back(){profile()}function giftArt(region,amount){return `<div class="gift-art ${region==='UK'?'uk':'us'}"><div class="art-top"><span class="art-flag">${region==='UK'?'🇬🇧':'🇺🇸'}</span><span>${region}</span></div><div class="apple"></div><div class="art-title">Gift Card</div><div class="art-amount">${esc(amount)}</div><div class="art-bottom">SAMPLE PREVIEW</div></div>`}
 function catalog(region){if(!guard())return;let vals=region==='UK'?UK_VALUES:USA_VALUES,s=region==='UK'?'£':'$';shell(`<button class="btn secondary back" onclick="profile()">← Back</button><h2 class="section-title">${region==='UK'?'🇬🇧':'🇺🇸'} ${region} Apple Gift Card</h2><p class="muted" style="text-align:center">Catalogue preview. Payment is processed separately; fulfilment is subject to service availability.</p><div class="cards">${vals.map(v=>`<article class="card">${giftArt(region,s+v)}<h3>${region} Apple Card</h3><div class="price">${s}${v}<span class="ngn">${money(v*(region==='UK'?UK_RATE:USA_RATE))} illustrative value</span></div><button class="btn" onclick="giftSubmit('${region}',${v})">Select</button></article>`).join('')}</div>`)}
 function giftSubmit(region,value){let s=region==='UK'?'£':'$',price=value*(region==='UK'?UK_RATE:USA_RATE);bankFlow({service:'Gift Card',details:`${region} Apple Gift Card ${s}${value}`,price,status:'Gift card request submitted'});}
