@@ -1,0 +1,59 @@
+name: Build and verify All Ads Manager
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  verify-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check Netlify function JavaScript syntax
+        run: |
+          find netlify/functions -type f \( -name '*.mjs' -o -name '*.js' \) -print0 | while IFS= read -r -d '' file; do
+            node --check "$file"
+          done
+      - name: Check browser application JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.inline = False
+                  self.parts = []
+                  self.current = []
+              def handle_starttag(self, tag, attrs):
+                  if tag == 'script':
+                      self.inline = not any(k.lower() == 'src' for k, _ in attrs)
+                      self.current = []
+              def handle_data(self, data):
+                  if self.inline:
+                      self.current.append(data)
+              def handle_endtag(self, tag):
+                  if tag == 'script' and self.inline:
+                      self.parts.append(''.join(self.current))
+                      self.inline = False
+          parser = Scripts()
+          with open('public/index.html', encoding='utf-8') as f:
+              parser.feed(f.read())
+          with open('/tmp/all-ads-manager-inline.js', 'w', encoding='utf-8') as f:
+              f.write('\n'.join(parser.parts))
+          PY
+          node --check /tmp/all-ads-manager-inline.js
+      - name: Package complete deployable project
+        run: |
+          mkdir -p dist
+          zip -qr dist/All-Ads-Manager-Complete.zip . -x '.git/*' 'node_modules/*' 'dist/*'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: All-Ads-Manager-Complete
+          path: dist/All-Ads-Manager-Complete.zip
+          if-no-files-found: error
+          retention-days: 14
