@@ -73,8 +73,9 @@ async function reconcile(externalRef, apiKey) {
 
 async function saveSupplierOrder(externalRef, order, raw) {
   const statusRaw = String(order.status || raw.status || 'processing').toLowerCase();
-  const status = ['pending', 'pre_ordered', 'completed', 'failed', 'refunded'].includes(statusRaw)
-    ? statusRaw : 'processing';
+  const status = statusRaw === 'processing' ? 'pending'
+    : ['pending', 'pre_ordered', 'completed', 'failed', 'refunded'].includes(statusRaw)
+      ? statusRaw : 'pending';
   const supplierId = order.id ?? order.order_id ?? raw.order_id ?? null;
   const accountData = order.account_data ?? order.account ?? raw.account_data ?? null;
   await rpc('bt_rediprofiles_complete_order', {
@@ -166,7 +167,7 @@ export async function handler(event) {
         method: 'POST',
         headers: { 'Idempotency-Key': externalRef },
         body: JSON.stringify({
-          service_id: /^\\d+$/.test(serviceId) ? Number(serviceId) : serviceId,
+          service_id: /^\d+$/.test(serviceId) ? Number(serviceId) : serviceId,
           quantity: 1,
           external_customer_ref: externalRef
         })
