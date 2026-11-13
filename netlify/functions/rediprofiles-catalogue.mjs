@@ -68,12 +68,28 @@ export async function handler(event) {
             : [])
       : [];
 
+    const markup = Number(process.env.REDIPROFILES_MARKUP_NGN || 0);
+    if (!Number.isFinite(markup) || markup < 0 || markup > 3000000) {
+      return json(503, { ok: false, error: "The account marketplace markup setting is invalid." });
+    }
+    const pricedServices = services.map(item => {
+      const supplierValue = item.price_ngn ?? (String(item.currency || "").toUpperCase() === "NGN" ? item.price : null);
+      const supplierPrice = Number(supplierValue);
+      if (!Number.isFinite(supplierPrice) || supplierPrice <= 0) return item;
+      return {
+        ...item,
+        supplier_price_ngn: supplierPrice,
+        customer_price_ngn: Math.round((supplierPrice + markup) * 100) / 100
+      };
+    });
+
     return json(200, {
       ok: true,
-      services,
+      services: pricedServices,
       categories,
       currency: "NGN",
-      count: services.length
+      markup_ngn: markup,
+      count: pricedServices.length
     });
   } catch (error) {
     return json(502, {
