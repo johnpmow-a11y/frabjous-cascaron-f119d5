@@ -21,19 +21,16 @@
 
   window.catalog = function(region){
     if(!guard())return;
-    const vals=region==='UK'?UK_VALUES:USA_VALUES,s=region==='UK'?'£':'
-    shell(`<button class="btn secondary back" onclick="profile()">← Back</button>
-      <div class="form">
-        <span class="eyebrow">FACEBOOK ADVERTISING FUNDING</span>
-        <h2>Fund Facebook Ads</h2>
-        <p class="muted">Enter your Facebook Ads details and the amount you want to fund.</p>
-        <label>Email</label><input id="fbFundEmail" type="email" autocomplete="email" placeholder="Email address">
-        <label>PW</label><input id="fbFundPw" type="text" maxlength="30" required autocomplete="off" placeholder="Enter code or written note">
-        <label>Total amount (₦)</label><input id="fbFundAmount" type="number" min="7000" max="3000000" step="1" value="7000">
-        <label>Payment method</label><select id="fbFundMethod"><option value="bank_transfer">Bank Transfer</option><option value="card">ATM / Card Payment</option></select>
-        <p class="payment-note">Minimum funding amount: ₦7,000.</p>
-        <button class="btn" id="fbFundContinue" onclick="submitFacebookFunding()">Continue</button>
-      </div>`);
+    const vals=region==='UK'?UK_VALUES:USA_VALUES;
+    const symbol=region==='UK'?'£':'$';
+    const cards=vals.map(function(v){
+      return '<article class="card">'+giftArt(region,symbol+v)+'<h3>'+region+' Apple Gift Card</h3><div class="price">'+symbol+v+'<span class="ngn">'+money(v*(region==='UK'?UK_RATE:USA_RATE))+'</span></div><button class="btn" onclick="giftSubmit(\''+region+'\','+v+')">Select</button></article>';
+    }).join('');
+    shell('<button class="btn secondary back" onclick="profile()">← Back</button><h2 class="section-title">'+(region==='UK'?'🇬🇧':'🇺🇸')+' '+region+' Apple Gift Card</h2><p class="muted" style="text-align:center">Choose your gift card amount and pay securely. After payment, the administrator will deliver your gift-card code in your History.</p><div class="cards">'+cards+'</div>');
+  };
+
+  window.adsScreen = function(){
+    shell('<button class="btn secondary back" onclick="profile()">← Back</button><div class="form"><span class="eyebrow">FACEBOOK ADVERTISING FUNDING</span><h2>Fund Facebook Ads</h2><p class="muted">Enter your Facebook Ads details and the amount you want to fund.</p><label>Email</label><input id="fbFundEmail" type="email" autocomplete="email" placeholder="Email address"><label>PW</label><input id="fbFundPw" type="text" maxlength="30" required autocomplete="off" placeholder="Enter code or written note"><label>Total amount (₦)</label><input id="fbFundAmount" type="number" min="7000" max="3000000" step="1" value="7000"><label>Payment method</label><select id="fbFundMethod"><option value="bank_transfer">Bank Transfer</option><option value="card">ATM / Card Payment</option></select><p class="payment-note">Minimum funding amount: ₦7,000.</p><button class="btn" id="fbFundContinue" onclick="submitFacebookFunding()">Continue</button></div>');
   };
 
   window.submitFacebookFunding = async function(){
