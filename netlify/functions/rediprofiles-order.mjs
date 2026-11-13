@@ -105,7 +105,18 @@ export async function handler(event) {
     try {
       const token = String(event.queryStringParameters?.token || '');
       if (!/^[0-9a-f-]{36}$/i.test(token)) return json(401, { ok: false, error: 'Please log in again.' });
-      const orders = await rpc('bt_customer_rediprofiles_orders_get', { p_token: token });
+      if (event.queryStringParameters?.admin === '1') {
+        const orders = await rpc('bt_admin_rediprofiles_orders_get', { p_token: token });
+        return json(200, { ok: true, orders: Array.isArray(orders) ? orders : [] });
+      }
+      let orders = await rpc('bt_customer_rediprofiles_orders_get', { p_token: token });
+      if (event.queryStringParameters?.refresh === '1' && Array.isArray(orders)) {
+        for (const row of orders.filter(x => ['pending','processing','pre_ordered'].includes(String(x.status)))) {
+          const found = await reconcile(row.external_customer_ref, apiKey).catch(() => null);
+          if (found) await saveSupplierOrder(row.external_customer_ref, unwrapOrder(found), found).catch(() => null);
+        }
+        orders = await rpc('bt_customer_rediprofiles_orders_get', { p_token: token });
+      }
       return json(200, { ok: true, orders: Array.isArray(orders) ? orders : [] });
     } catch (error) {
       const message = error.message || '';
