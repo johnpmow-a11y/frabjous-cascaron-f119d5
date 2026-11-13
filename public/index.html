@@ -178,7 +178,7 @@ async function loadReadyAccountOrders(refresh=false){
  if(!box)return;
  box.innerHTML='<div class="payment-note">Loading your account orders…</div>';
  try{
-  const response=await fetch(`/.netlify/functions/rediprofiles-order?token=${encodeURIComponent(sessionStorage.getItem('btToken')||'')}`,{headers:{Accept:'application/json'},cache:'no-store'});
+  const response=await fetch(`/.netlify/functions/rediprofiles-order?token=${encodeURIComponent(sessionStorage.getItem('btToken')||'')}${refresh?'&refresh=1':''}`,{headers:{Accept:'application/json'},cache:'no-store'});
   const data=await response.json();
   if(!response.ok||!data.ok)throw new Error(data.error||'Could not load your account orders.');
   readyAccountOrderRows=Array.isArray(data.orders)?data.orders:[];
