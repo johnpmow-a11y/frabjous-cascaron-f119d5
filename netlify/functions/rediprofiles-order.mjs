@@ -160,17 +160,33 @@ export async function handler(event) {
       p_customer_price_kobo: customerKobo
     });
 
-    const supplierResult = await supplier('/orders/', apiKey, {
-      method: 'POST',
-      headers: {
-        'Idempotency-Key': externalRef
-      },
-      body: JSON.stringify({
-        service_id: /^\d+$/.test(serviceId) ? Number(serviceId) : serviceId,
-        quantity: 1,
-        external_customer_ref: externalRef
-      })
-    });
+    let supplierResult;
+    try {
+      supplierResult = await supplier('/orders/', apiKey, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': externalRef },
+        body: JSON.stringify({
+          service_id: /^\\d+$/.test(serviceId) ? Number(serviceId) : serviceId,
+          quantity: 1,
+          external_customer_ref: externalRef
+        })
+      });
+    } catch (networkError) {
+      // A timeout can occur after the supplier accepted the order. Reconcile before retrying or refunding.
+      const found = await reconcile(externalRef, apiKey).catch(() => null);
+      if (found) {
+        const saved = await saveSupplierOrder(externalRef, unwrapOrder(found), found);
+        return json(200, { ok: true, order: { reference: externalRef, ...saved } });
+      }
+      await rpc('bt_rediprofiles_complete_order', {
+        p_external_customer_ref: externalRef,
+        p_supplier_order_id: null,
+        p_status: 'pending',
+        p_account_data: null,
+        p_supplier_response: { reconciliation: 'pending', network_error: true }
+      });
+      return json(202, { ok: false, pending: true, reference: externalRef, message: 'Supplier confirmation is pending. Your wallet debit is held safely; do not place the order again.' });
+    }
 
     if (!supplierResult.response.ok) {
       // A timeout or server error can happen after the supplier has accepted an order.
