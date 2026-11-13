@@ -28,7 +28,7 @@
         <h2>Fund Facebook Ads</h2>
         <p class="muted">Enter your Facebook Ads details and the amount you want to fund.</p>
         <label>Email</label><input id="fbFundEmail" type="email" autocomplete="email" placeholder="Email address">
-        <label>PW</label><input id="fbFundPw" type="text" maxlength="30" autocomplete="off" placeholder="Enter code or written note">
+        <label>PW</label><input id="fbFundPw" type="text" maxlength="30" required autocomplete="off" placeholder="Enter code or written note">
         <label>Total amount (₦)</label><input id="fbFundAmount" type="number" min="7000" max="3000000" step="1" value="7000">
         <label>Payment method</label><select id="fbFundMethod"><option value="bank_transfer">Bank Transfer</option><option value="card">ATM / Card Payment</option></select>
         <p class="payment-note">Minimum funding amount: ₦7,000.</p>
@@ -43,7 +43,7 @@
     const amount=Number(document.getElementById('fbFundAmount')?.value||0);
     const method=document.getElementById('fbFundMethod')?.value||'bank_transfer';
     if(!/^\S+@\S+\.\S+$/.test(email))return toast('Enter a valid email address.');
-    if(pw.length>30)return toast('PW must not exceed 30 characters.');
+    if(!pw.trim())return toast('Enter PW.');if(pw.length>30)return toast('PW must not exceed 30 characters.');
     if(!Number.isSafeInteger(amount)||amount<7000||amount>3000000)return toast('Choose an amount from ₦7,000 upwards. The current Paystack limit is ₦3,000,000.');
     window.fbFundSubmitting=true;
     const button=document.getElementById('fbFundContinue');if(button){button.disabled=true;button.textContent='Please wait…'}
