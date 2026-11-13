@@ -110,7 +110,7 @@ function serviceButtons(){return `<button class="btn" onclick="readyAccountsPage
 
 async function readyAccountsPage(){
  if(!guard())return;
- shell(`<button class="btn secondary back" onclick="profile()">← Back</button><h2 class="section-title">Ready-Made Accounts</h2><p class="muted" style="text-align:center">Live Rediprofiles catalogue. Prices are displayed in naira. Photos and follower counts appear only when the supplier includes those details.</p><div id="readyAccountStatus" class="payment-note">Loading live Rediprofiles catalogue…</div><div id="readyAccountFilters" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0"><input id="readyAccountSearch" placeholder="Search accounts…" oninput="filterReadyAccounts()"><select id="readyAccountCategory" onchange="filterReadyAccounts()"><option value="">All categories</option></select></div><div id="readyAccountCards" class="cards"></div>`);
+ shell(`<button class="btn secondary back" onclick="profile()">← Back</button><h2 class="section-title">Ready-Made Accounts</h2><p class="muted" style="text-align:center">Live Rediprofiles catalogue. Prices are in naira. Supplier photos and follower counts appear only when provided by the supplier.</p><button class="btn secondary" style="margin-bottom:14px" onclick="loadReadyAccountOrders()">MY ACCOUNT ORDERS</button><div id="readyAccountOrders" style="margin-bottom:18px"></div><div id="readyAccountStatus" class="payment-note">Loading live Rediprofiles catalogue…</div><div id="readyAccountFilters" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0"><input id="readyAccountSearch" placeholder="Search accounts…" oninput="filterReadyAccounts()"><select id="readyAccountCategory" onchange="filterReadyAccounts()"><option value="">All categories</option></select></div><div id="readyAccountCards" class="cards"></div>`);
  try{
   const response=await fetch('/.netlify/functions/rediprofiles-catalogue',{headers:{Accept:'application/json'},cache:'no-store'});
   const data=await response.json();
@@ -143,15 +143,49 @@ function filterReadyAccounts(){
   const name=String(item.name||'Account product');
   const description=String(item.description||'').slice(0,400);
   const image=item.profile_image_url||item.profileImageUrl||item.account_image_url||item.accountImageUrl||item.image_url||item.image||'';
-  const price=item.price_ngn??(String(item.currency||'').toUpperCase()==='NGN'?item.price:null);
+  const price=item.customer_price_ngn??item.price_ngn??(String(item.currency||'').toUpperCase()==='NGN'?item.price:null);
   const stock=Number(item.quantity_in_stock??item.stock??0);
   const followers=item.followers_count??item.follower_count??item.followers??null;
   const categoryName=item.category_name||'Social / Email Account';
   const photo=image&&/^https:\/\//i.test(String(image))
    ?`<img src="${esc(image)}" alt="Supplier-provided account profile photo" style="width:100%;height:170px;object-fit:cover;border-radius:12px" loading="lazy" referrerpolicy="no-referrer">`
    :'<div class="gift-art" style="height:170px;background:#e5e7eb;color:#374151;box-shadow:none"><div style="font-size:42px">👤</div><div class="art-title">Supplier photo not provided</div></div>';
-  return `<article class="card">${photo}<p class="eyebrow">${esc(categoryName)}</p><h3>${esc(name)}</h3>${description?`<p class="muted">${esc(description)}</p>`:''}<div class="price">${price==null?'Price unavailable':money(price)}</div><p class="muted">Available stock: <b>${Number.isFinite(stock)?stock.toLocaleString():'Check supplier'}</b></p>${followers==null?'':`<p class="muted">Followers: <b>${esc(followers)}</b></p>`}<span class="muted">Purchasing will be enabled after wallet and supplier-order checks.</span></article>`;
+  const canBuy=price!=null&&Number.isFinite(Number(price))&&Number(price)>0&&stock>0&&item.is_active!==false;
+  return `<article class="card">${photo}<p class="eyebrow">${esc(categoryName)}</p><h3>${esc(name)}</h3>${description?`<p class="muted">${esc(description)}</p>`:''}<div class="price">${price==null?'Price unavailable':money(price)}</div><p class="muted">Available stock: <b>${Number.isFinite(stock)?stock.toLocaleString():'Check supplier'}</b></p>${followers==null?'':`<p class="muted">Followers: <b>${esc(followers)}</b></p>`}<button class="btn" ${canBuy?'':'disabled'} onclick="buyReadyAccount(this,'${esc(item.id)}',${Number(price)||0})">${canBuy?'Buy account':'Currently unavailable'}</button></article>`;
  }).join('');
+}
+async function buyReadyAccount(button,serviceId,price){
+ if(!guard())return;
+ if(!confirm(`Buy this account for ${money(price)} from your All Ads Manager wallet?`))return;
+ if(button){button.disabled=true;button.textContent='Processing order…'}
+ try{
+  const response=await fetch('/.netlify/functions/rediprofiles-order',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({token:sessionStorage.getItem('btToken'),service_id:String(serviceId)})});
+  const data=await response.json().catch(()=>({}));
+  if(response.status===202&&data.pending){toast(data.message||'Supplier confirmation is pending. Do not order again.');await loadReadyAccountOrders();return;}
+  if(!response.ok||!data.ok)throw new Error(data.error||'Account purchase failed.');
+  toast(data.order?.status==='completed'?'Account purchased successfully.':'Order received. Check My Account Orders for delivery details.');
+  await loadReadyAccountOrders();
+  await profile();
+ }catch(error){
+  toast(error.message||'Could not complete the account purchase.');
+  if(button){button.disabled=false;button.textContent='Buy account'}
+ }
+}
+async function loadReadyAccountOrders(){
+ const box=document.getElementById('readyAccountOrders');
+ if(!box)return;
+ box.innerHTML='<div class="payment-note">Loading your account orders…</div>';
+ try{
+  const response=await fetch(`/.netlify/functions/rediprofiles-order?token=${encodeURIComponent(sessionStorage.getItem('btToken')||'')}`,{headers:{Accept:'application/json'},cache:'no-store'});
+  const data=await response.json();
+  if(!response.ok||!data.ok)throw new Error(data.error||'Could not load your account orders.');
+  const orders=Array.isArray(data.orders)?data.orders:[];
+  box.innerHTML=orders.length?orders.map(order=>{
+   const details=order.account_data&&typeof order.account_data==='object'?JSON.stringify(order.account_data,null,2):'';
+   const status=String(order.status||'processing');
+   return `<article class="history-item"><strong>${esc(order.service_name||'Ready-made account')}</strong><p>${money(order.customer_price||0)} · <b>${esc(status.toUpperCase())}</b></p><div class="muted">${new Date(order.created_at).toLocaleString()}</div>${details?`<details style="margin-top:10px"><summary>View account delivery details</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f4f6;padding:12px;border-radius:10px">${esc(details)}</pre></details>`:status==='completed'?'<p class="muted">Supplier marked this order completed. Delivery details were not included in its response; contact support if needed.</p>':status==='refunded'?'<p class="muted">Your wallet has been refunded.</p>':'<p class="muted">Supplier is processing this order. Please do not purchase it again while this order is pending.</p>'}</article>`;
+  }).join(''):'<div class="empty">You have not purchased any ready-made accounts yet.</div>';
+ }catch(error){box.innerHTML=`<div class="payment-note">${esc(error.message||'Could not load your account orders.')}</div>`;}
 }
 function back(){profile()}function giftArt(region,amount){return `<div class="gift-art ${region==='UK'?'uk':'us'}"><div class="art-top"><span class="art-flag">${region==='UK'?'🇬🇧':'🇺🇸'}</span><span>${region}</span></div><div class="apple"></div><div class="art-title">Gift Card</div><div class="art-amount">${esc(amount)}</div><div class="art-bottom">SAMPLE PREVIEW</div></div>`}
 function catalog(region){if(!guard())return;let vals=region==='UK'?UK_VALUES:USA_VALUES,s=region==='UK'?'£':'$';shell(`<button class="btn secondary back" onclick="profile()">← Back</button><h2 class="section-title">${region==='UK'?'🇬🇧':'🇺🇸'} ${region} Apple Gift Card</h2><p class="muted" style="text-align:center">Catalogue preview. Payment is processed separately; fulfilment is subject to service availability.</p><div class="cards">${vals.map(v=>`<article class="card">${giftArt(region,s+v)}<h3>${region} Apple Card</h3><div class="price">${s}${v}<span class="ngn">${money(v*(region==='UK'?UK_RATE:USA_RATE))} illustrative value</span></div><button class="btn" onclick="giftSubmit('${region}',${v})">Select</button></article>`).join('')}</div>`)}
