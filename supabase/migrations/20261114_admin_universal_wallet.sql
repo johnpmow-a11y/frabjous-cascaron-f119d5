@@ -182,6 +182,9 @@ begin
   end if;
   select * into v_purchase from public.admin_supplier_purchases where reference=p_reference for update;
   if v_purchase.id is null then raise exception 'ADMIN_PURCHASE_NOT_FOUND'; end if;
+  if v_purchase.status='refunded' then
+    return jsonb_build_object('success',true,'status','refunded','already_refunded',true);
+  end if;
   if p_status in ('failed','refunded') then
     if not exists(select 1 from public.admin_wallet_transactions where reference='refund-'||p_reference) then
       update public.admin_wallet_balances set balance_kobo=balance_kobo+v_purchase.supplier_cost_kobo,
