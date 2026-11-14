@@ -154,11 +154,18 @@ begin
      or p_service_name is null or p_supplier_cost_kobo<=0 then
     raise exception 'INVALID_ADMIN_PURCHASE';
   end if;
+  -- Serialize all reservations before checking the idempotency reference.
+  -- This prevents concurrent requests from spending the same wallet balance.
+  select balance_kobo into v_balance from public.admin_wallet_balances where id=1 for update;
   select * into v_purchase from public.admin_supplier_purchases where reference=p_reference;
   if v_purchase.id is not null then
+    if v_purchase.provider<>p_provider
+       or v_purchase.service_name<>p_service_name
+       or v_purchase.supplier_cost_kobo<>p_supplier_cost_kobo then
+      raise exception 'ADMIN_PURCHASE_REFERENCE_CONFLICT';
+    end if;
     return jsonb_build_object('purchase_id',v_purchase.id,'status',v_purchase.status,'already_reserved',true);
   end if;
-  select balance_kobo into v_balance from public.admin_wallet_balances where id=1 for update;
   if coalesce(v_balance,0)<p_supplier_cost_kobo then raise exception 'INSUFFICIENT_ADMIN_WALLET_BALANCE'; end if;
   update public.admin_wallet_balances set balance_kobo=balance_kobo-p_supplier_cost_kobo,updated_at=now() where id=1;
   insert into public.admin_supplier_purchases(reference,provider,service_name,supplier_cost_kobo,status)
