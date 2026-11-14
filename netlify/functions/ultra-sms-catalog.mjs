@@ -58,8 +58,10 @@ export async function handler(event) {
         const pricingReady = Number.isFinite(fx) && fx > 0 && Number.isSafeInteger(supplierCents) && supplierCents > 0;
         // price_cents is USD cents; multiplying by NGN/USD yields kobo.
         const markup = Number(process.env.ULTRA_SMS_MARKUP_PERCENT ?? 3);
+        const fixedMarkupNgn = service === 'wa' && country === 'US' ? 2500 : service === 'wa' && country === 'GB' ? 2480 : null;
+        const baseNgn = Math.round(supplierCents * fx) / 100;
         const customerPriceNgn = pricingReady && Number.isFinite(markup) && markup >= 0 && markup <= 500
-          ? Math.round(Math.round(supplierCents * fx) * (1 + markup / 100)) / 100
+          ? Number((baseNgn + (fixedMarkupNgn ?? baseNgn * markup / 100)).toFixed(2))
           : null;
         return { ...row, customer_price_ngn: customerPriceNgn, pricingReady };
       }),
