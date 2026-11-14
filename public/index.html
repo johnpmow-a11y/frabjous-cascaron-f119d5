@@ -70,7 +70,6 @@ async function adminUpdateWithdrawal(id,status){
  if(!confirm('Are you sure you want to '+action+'?'))return;
  try{await rpc('bt_admin_withdrawal_update',{p_token:sessionStorage.getItem('btAdminToken'),p_withdrawal_id:id,p_status:status});await admin()}catch(e){toast(e.message||'Could not update withdrawal request.')}
 }
-async 
 let shadowOtpPollTimer=null;
 function shadowOtpEmailPage(){
  if(!guard())return;
@@ -110,7 +109,7 @@ async function reorderShadowOtpEmail(id){
 }
 function watchShadowOtpOrder(id){if(shadowOtpPollTimer)clearInterval(shadowOtpPollTimer);shadowOtpPollTimer=setInterval(()=>refreshShadowOtpOrder(id),6000);}
 
-function ultraSmsPage(){
+async function ultraSmsPage(){
  if(!guard())return;
  shell(`<button class="btn secondary back" onclick="profile()">← Back</button><section class="profile-card"><span class="eyebrow">LIVE SUPPLIER CATALOGUE</span><h2>Virtual Verification Numbers</h2><p class="muted">Choose a service and country to see current supplier stock and your API price.</p><div class="sms-warning"><b>Important:</b> These are temporary SMS verification activations, not permanent phone-number ownership or monthly rentals. A number is assigned only after a successful order and normally expires after 20 minutes. Use verification only for accounts you are authorized to verify.</div><div class="sms-toolbar"><div><label for="smsService">Service</label><select id="smsService" onchange="refreshUltraSmsCatalog()"><option value="wa">WhatsApp</option></select></div><div><label for="smsCountry">Country</label><select id="smsCountry" onchange="refreshUltraSmsCatalog()"><option value="NG">Nigeria</option></select></div></div><button class="btn" id="smsRefresh" onclick="refreshUltraSmsCatalog()">Refresh live stock</button><button class="btn secondary" style="margin-top:8px" onclick="loadUltraSmsMyOrders()">My Number Orders</button><div id="smsMyOrders" style="margin-top:14px"></div><div id="smsBalance" class="payment-note" style="margin-top:14px">Checking supplier connection…</div><div id="smsStock" class="sms-stock"></div><p id="smsUpdated" class="muted" style="margin-top:14px"></p></section>`);
  await refreshUltraSmsCatalog(true);
