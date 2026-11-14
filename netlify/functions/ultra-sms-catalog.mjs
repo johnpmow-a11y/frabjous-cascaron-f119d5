@@ -36,33 +36,37 @@ export async function handler(event) {
     return json(400, { error: 'Choose a valid service and two-letter country code.' });
   }
   try {
-    const [balance, servicesData, countriesData, pricesData] = await Promise.all([
+    const [balance, servicesData, countriesData, serversData, pricesData] = await Promise.all([
       upstream('/balance', key),
       upstream('/services', key),
       upstream('/countries', key),
+      upstream('/servers', key),
       upstream(`/prices?service=${encodeURIComponent(service)}&country=${encodeURIComponent(country)}`, key)
     ]);
     const services = Array.isArray(servicesData.services) ? servicesData.services : [];
     const countries = Array.isArray(countriesData.countries) ? countriesData.countries : [];
+    const servers = Array.isArray(serversData.servers) ? serversData.servers : [];
     const selected = services.find(x => x.code === service);
     return json(200, {
       balance: { balance: balance.balance, currency: balance.currency || 'USD' },
       services,
       countries,
+      servers,
       prices: (Array.isArray(pricesData.prices) ? pricesData.prices : []).map(row => {
         const fx = Number(process.env.ULTRA_SMS_USD_NGN_RATE);
         const supplierCents = Number(row.price_cents);
         const pricingReady = Number.isFinite(fx) && fx > 0 && Number.isSafeInteger(supplierCents) && supplierCents > 0;
         // price_cents is USD cents; multiplying by NGN/USD yields kobo.
-        const customerPriceNgn = pricingReady
-          ? Math.round(Math.round(supplierCents * fx) * 1.03) / 100
+        const markup = Number(process.env.ULTRA_SMS_MARKUP_PERCENT ?? 3);
+        const customerPriceNgn = pricingReady && Number.isFinite(markup) && markup >= 0 && markup <= 500
+          ? Math.round(Math.round(supplierCents * fx) * (1 + markup / 100)) / 100
           : null;
         return { ...row, customer_price_ngn: customerPriceNgn, pricingReady };
       }),
       pricingReady: Number.isFinite(Number(process.env.ULTRA_SMS_USD_NGN_RATE)) && Number(process.env.ULTRA_SMS_USD_NGN_RATE) > 0,
       currency: pricesData.currency || balance.currency || 'USD',
       fxNgnPerUsd: Number(process.env.ULTRA_SMS_USD_NGN_RATE) || null,
-      markupPercent: 3,
+      markupPercent: Number(process.env.ULTRA_SMS_MARKUP_PERCENT ?? 3),
       selectedServiceName: selected?.name || service
     });
   } catch (error) {
