@@ -116,6 +116,32 @@ begin
 end;
 $function$;
 
+-- Webhook variant: Paystack's signed server-to-server event has no browser admin token.
+create or replace function public.bt_admin_wallet_credit_deposit_webhook(
+  p_reference text,p_transaction_id text,p_channel text,
+  p_paid_at timestamptz,p_amount_kobo bigint,p_currency text
+) returns jsonb language plpgsql security definer set search_path = ''
+as $function$
+declare d public.admin_wallet_deposits;
+begin
+  select * into d from public.admin_wallet_deposits where reference=p_reference for update;
+  if d.id is null then raise exception 'ADMIN_DEPOSIT_NOT_FOUND'; end if;
+  if d.amount_kobo<>p_amount_kobo or d.currency<>upper(p_currency) then
+    raise exception 'ADMIN_DEPOSIT_AMOUNT_MISMATCH';
+  end if;
+  if d.status='success' then return jsonb_build_object('success',true,'already_credited',true); end if;
+  if d.status<>'pending' then raise exception 'ADMIN_DEPOSIT_NOT_PENDING'; end if;
+  update public.admin_wallet_deposits set status='success',
+    paystack_transaction_id=p_transaction_id,paystack_channel=p_channel,
+    paid_at=coalesce(p_paid_at,now()) where id=d.id;
+  update public.admin_wallet_balances set balance_kobo=balance_kobo+d.amount_kobo,
+    updated_at=now() where id=1;
+  insert into public.admin_wallet_transactions(reference,amount_kobo,transaction_type,description)
+    values(d.reference,d.amount_kobo,'deposit','Paystack administrator wallet funding');
+  return jsonb_build_object('success',true,'already_credited',false);
+end;
+$function$;
+
 create or replace function public.bt_admin_wallet_reserve_purchase(
   p_token uuid,p_reference text,p_provider text,p_service_name text,p_supplier_cost_kobo bigint
 ) returns jsonb language plpgsql security definer set search_path = ''
@@ -178,6 +204,8 @@ revoke all on function public.bt_admin_wallet_reserve_purchase(uuid,text,text,te
 revoke all on function public.bt_admin_wallet_update_purchase(uuid,text,text,text,jsonb) from public,anon,authenticated;
 grant execute on function public.bt_admin_personal_wallet_get(uuid) to service_role;
 grant execute on function public.bt_admin_wallet_credit_deposit(uuid,text,text,text,timestamptz,bigint,text) to service_role;
+revoke all on function public.bt_admin_wallet_credit_deposit_webhook(text,text,text,timestamptz,bigint,text) from public,anon,authenticated;
+grant execute on function public.bt_admin_wallet_credit_deposit_webhook(text,text,text,timestamptz,bigint,text) to service_role;
 grant execute on function public.bt_admin_wallet_reserve_purchase(uuid,text,text,text,bigint) to service_role;
 grant execute on function public.bt_admin_wallet_update_purchase(uuid,text,text,text,jsonb) to service_role;
 
