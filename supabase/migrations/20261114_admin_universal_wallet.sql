@@ -61,7 +61,7 @@ revoke all on public.admin_wallet_balances, public.admin_wallet_deposits,
 grant all on public.admin_wallet_balances, public.admin_wallet_deposits,
   public.admin_wallet_transactions, public.admin_supplier_purchases to service_role;
 
-create or replace function public.bt_admin_wallet_get(p_token uuid)
+create or replace function public.bt_admin_personal_wallet_get(p_token uuid)
 returns jsonb language plpgsql security definer set search_path = ''
 as $function$
 declare v_balance bigint;
@@ -172,11 +172,11 @@ begin
 end;
 $function$;
 
-revoke all on function public.bt_admin_wallet_get(uuid) from public,anon,authenticated;
+revoke all on function public.bt_admin_personal_wallet_get(uuid) from public,anon,authenticated;
 revoke all on function public.bt_admin_wallet_credit_deposit(uuid,text,text,text,timestamptz,bigint,text) from public,anon,authenticated;
 revoke all on function public.bt_admin_wallet_reserve_purchase(uuid,text,text,text,bigint) from public,anon,authenticated;
 revoke all on function public.bt_admin_wallet_update_purchase(uuid,text,text,text,jsonb) from public,anon,authenticated;
-grant execute on function public.bt_admin_wallet_get(uuid) to service_role;
+grant execute on function public.bt_admin_personal_wallet_get(uuid) to service_role;
 grant execute on function public.bt_admin_wallet_credit_deposit(uuid,text,text,text,timestamptz,bigint,text) to service_role;
 grant execute on function public.bt_admin_wallet_reserve_purchase(uuid,text,text,text,bigint) to service_role;
 grant execute on function public.bt_admin_wallet_update_purchase(uuid,text,text,text,jsonb) to service_role;
