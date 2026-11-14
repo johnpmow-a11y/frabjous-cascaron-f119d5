@@ -83,7 +83,7 @@ begin
     'purchases',coalesce((select jsonb_agg(jsonb_build_object(
       'reference',reference,'provider',provider,'service_name',service_name,
       'supplier_order_id',supplier_order_id,'supplier_cost',supplier_cost_kobo::numeric/100,
-      'status',status,'created_at',created_at,'updated_at',updated_at
+      'status',status,'supplier_response',supplier_response,'created_at',created_at,'updated_at',updated_at
     ) order by created_at desc) from public.admin_supplier_purchases),'[]'::jsonb)
   );
 end;
