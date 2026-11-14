@@ -182,13 +182,14 @@ begin
   end if;
   select * into v_purchase from public.admin_supplier_purchases where reference=p_reference for update;
   if v_purchase.id is null then raise exception 'ADMIN_PURCHASE_NOT_FOUND'; end if;
-  if p_status in ('failed','refunded') and v_purchase.status<>'refunded' then
-    update public.admin_wallet_balances set balance_kobo=balance_kobo+v_purchase.supplier_cost_kobo,
-      updated_at=now() where id=1;
-    insert into public.admin_wallet_transactions(reference,amount_kobo,transaction_type,description,provider,service_name)
-      values('refund-'||p_reference,v_purchase.supplier_cost_kobo,'refund',
-        'Refund: admin supplier purchase '||v_purchase.service_name,v_purchase.provider,v_purchase.service_name)
-      on conflict(reference) do nothing;
+  if p_status in ('failed','refunded') then
+    if not exists(select 1 from public.admin_wallet_transactions where reference='refund-'||p_reference) then
+      update public.admin_wallet_balances set balance_kobo=balance_kobo+v_purchase.supplier_cost_kobo,
+        updated_at=now() where id=1;
+      insert into public.admin_wallet_transactions(reference,amount_kobo,transaction_type,description,provider,service_name)
+        values('refund-'||p_reference,v_purchase.supplier_cost_kobo,'refund',
+          'Refund: admin supplier purchase '||v_purchase.service_name,v_purchase.provider,v_purchase.service_name);
+    end if;
     p_status:='refunded';
   end if;
   update public.admin_supplier_purchases set supplier_order_id=coalesce(p_supplier_order_id,supplier_order_id),
