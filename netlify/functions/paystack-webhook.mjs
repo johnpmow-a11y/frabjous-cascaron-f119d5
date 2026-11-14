@@ -20,11 +20,16 @@ export async function handler(event) {
     const verified = await verifyResponse.json();
     const tx = verified.data;
     if (!verifyResponse.ok || !verified.status || tx?.status !== 'success') return reply(400, 'transaction not successful');
-    const rpc = await fetch(`${supabase}/rest/v1/rpc/bt_paystack_credit_deposit`, {
-      method: 'POST', headers: { apikey: service, Authorization: `Bearer ${service}`, 'Content-Type': 'application/json' },
+    const headers = { apikey: service, Authorization: `Bearer ${service}`, 'Content-Type': 'application/json' };
+    const adminDeposit = await fetch(`${supabase}/rest/v1/admin_wallet_deposits?select=reference&reference=eq.${encodeURIComponent(reference)}&limit=1`, { headers });
+    const adminRows = await adminDeposit.json().catch(() => []);
+    const isAdminDeposit = adminDeposit.ok && Array.isArray(adminRows) && adminRows.length > 0;
+    const rpcName = isAdminDeposit ? 'bt_admin_wallet_credit_deposit_webhook' : 'bt_paystack_credit_deposit';
+    const rpc = await fetch(`${supabase}/rest/v1/rpc/${rpcName}`, {
+      method: 'POST', headers,
       body: JSON.stringify({ p_reference: reference, p_transaction_id: String(tx.id), p_channel: String(tx.channel || ''), p_paid_at: tx.paid_at || tx.paidAt || new Date().toISOString(), p_amount_kobo: Number(tx.amount), p_currency: String(tx.currency || '') })
     });
-    if (!rpc.ok) return reply(500, 'wallet credit failed');
-    return reply(200, 'credited');
+    if (!rpc.ok) return reply(500, isAdminDeposit ? 'admin wallet credit failed' : 'customer wallet credit failed');
+    return reply(200, isAdminDeposit ? 'admin wallet credited' : 'customer wallet credited');
   } catch (error) { return reply(500, 'webhook processing error'); }
 }
