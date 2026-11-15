@@ -263,16 +263,18 @@ function filterReadyAccounts(){
  cards.innerHTML=rows.map(item=>{
   const name=String(item.name||'Account product');
   const description=String(item.description||'').slice(0,400);
-  const image=item.profile_image_url||item.profileImageUrl||item.account_image_url||item.accountImageUrl||item.image_url||item.image||'';
+  const image=item.profile_image_url||item.profileImageUrl||item.profile_picture_url||item.profile_photo_url||item.account_image_url||item.accountImageUrl||item.image_url||item.photo_url||item.thumbnail_url||item.avatar_url||item.image||'';
   const price=item.customer_price_ngn??item.price_ngn??(String(item.currency||'').toUpperCase()==='NGN'?item.price:null);
   const stock=Number(item.quantity_in_stock??item.stock??0);
   const followers=item.followers_count??item.follower_count??item.followers??null;
   const categoryName=item.category_name||'Social / Email Account';
-  const photo=image&&/^https:\/\//i.test(String(image))
-   ?`<img src="${esc(image)}" alt="Supplier-provided account profile photo" style="width:100%;height:170px;object-fit:cover;border-radius:12px" loading="lazy" referrerpolicy="no-referrer">`
-   :'';
-  const canBuy=price!=null&&Number.isFinite(Number(price))&&Number(price)>0&&stock>0&&item.is_active!==false;
-  return `<article class="card">${photo}<p class="eyebrow">${esc(categoryName)}</p><h3>${esc(name)}</h3><div class="price">${price==null?'Price unavailable':money(price)}</div><p class="muted">Available: <b>${Number.isFinite(stock)?stock.toLocaleString():'Check availability'}</b></p>${followers==null?'':`<p class="muted">Followers: <b>${esc(followers)}</b></p>`}<button class="btn" ${canBuy?'':'disabled'} onclick="buyReadyAccount(this,'${esc(item.id)}',${Number(price)||0})">${canBuy?'Buy account':'Currently unavailable'}</button></article>`;
+  const isInstagram=(name+' '+categoryName+' '+description).toLowerCase().includes('instagram');
+  const hasPhoto=!!image&&/^https:\/\//i.test(String(image));
+  const photo=hasPhoto
+   ?`<img src="${esc(image)}" alt="Actual supplier-provided account profile photo" style="width:100%;height:170px;object-fit:cover;border-radius:12px" loading="lazy" referrerpolicy="no-referrer">`
+   :isInstagram?'<div class="empty" style="height:170px;display:grid;place-items:center">Instagram profile photo not supplied. Purchase unavailable until a photo is provided.</div>':'';
+  const canBuy=price!=null&&Number.isFinite(Number(price))&&Number(price)>0&&stock>0&&item.is_active!==false&&(!isInstagram||hasPhoto);
+  return `<article class="card">${photo}<p class="eyebrow">${esc(categoryName)}</p><h3>${esc(name)}</h3><div class="price">${price==null?'Price unavailable':money(price)}</div><p class="muted">Available: <b>${Number.isFinite(stock)?stock.toLocaleString():'Check availability'}</b></p>${followers==null?'':`<p class="muted">Followers: <b>${esc(followers)}</b></p>`}<button class="btn" ${canBuy?'':'disabled'} onclick="buyReadyAccount(this,'${esc(item.id)}',${Number(price)||0})">${canBuy?'Buy account':isInstagram&&!hasPhoto?'Profile photo required':'Currently unavailable'}</button></article>`;
  }).join('');
 }
 async function buyReadyAccount(button,serviceId,price){
