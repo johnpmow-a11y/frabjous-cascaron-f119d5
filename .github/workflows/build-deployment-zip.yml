@@ -22,7 +22,7 @@ jobs:
 
       - name: Build deployment archive
         run: |
-          zip -r All-Ads-Manager-Deployment.zip . \
+          zip -r /tmp/All-Ads-Manager-Deployment.zip . \
             -x '.git/*' \
                '.github/*' \
                'node_modules/*' \
@@ -36,6 +36,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: All-Ads-Manager-Deployment
-          path: All-Ads-Manager-Deployment.zip
+          path: /tmp/All-Ads-Manager-Deployment.zip
           if-no-files-found: error
           retention-days: 14
