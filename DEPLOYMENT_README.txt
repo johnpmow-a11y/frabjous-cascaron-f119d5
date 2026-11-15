@@ -26,6 +26,8 @@ Preserve any additional variables already configured for other services. Never p
 
 REQUIRED DATABASE MIGRATIONS FOR THIS UPDATE
 Apply these files in order, once each, in the existing Supabase project ftwhcqrtmfxdzokmudvu:
+0. supabase/migrations/20261113_secure_customer_code_recovery.sql
+   Removes the old unsafe username-only password-reset function.
 1. supabase/migrations/20261115_customer_contact_emails.sql
    Creates the registered customer email store used for account recovery.
 2. supabase/migrations/20261115_fix_customer_email_validation.sql
