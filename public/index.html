@@ -70,7 +70,7 @@ async function submitWithdrawal(){
  const accountName=document.getElementById('withdrawAccountName')?.value.trim()||'';
  const accountNumber=document.getElementById('withdrawAccountNumber')?.value.trim()||'';
  if(!Number.isInteger(amount)||amount<100||amount>3000000)return toast('Enter an amount between ₦100 and ₦3,000,000.');
- if(bank.length<2||accountName.length<2||!/^\\d{8,20}$/.test(accountNumber))return toast('Enter valid bank details and an 8–20 digit account number.');
+ if(bank.length<2||accountName.length<2||!/^[0-9]{8,20}$/.test(accountNumber))return toast('Enter valid bank details and an 8–20 digit account number.');
  try{
   await rpc('bt_customer_withdrawal_request',{p_token:sessionStorage.getItem('btToken'),p_amount_kobo:amount*100,p_bank_name:bank,p_account_name:accountName,p_account_number:accountNumber});
   toast('Withdrawal request submitted. Your funds are reserved while the administrator reviews it.');
