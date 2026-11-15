@@ -234,7 +234,7 @@ function serviceButtons(){return `<button class="btn" onclick="readyAccountsPage
 
 async function readyAccountsPage(){
  if(!guard())return;
- shell(`<button class="btn secondary back" onclick="profile()">← Back</button><h2 class="section-title">Social Media Accounts</h2><p class="muted" style="text-align:center">Available social media accounts. Profile photos and follower counts are shown when available.</p><button class="btn secondary" style="margin-bottom:14px" onclick="loadReadyAccountOrders(true)">MY ACCOUNT ORDERS · REFRESH</button><div id="readyAccountOrderTools" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 10px"><input id="readyOrderSearch" placeholder="Search order reference or account" oninput="filterReadyAccountOrders()"><select id="readyOrderStatus" onchange="filterReadyAccountOrders()"><option value="">All order statuses</option><option value="processing">Processing</option><option value="pending">Pending</option><option value="completed">Completed</option><option value="failed">Failed</option><option value="refunded">Refunded</option></select></div><div id="readyAccountOrders" style="margin-bottom:18px"></div><div id="readyAccountStatus" class="payment-note">Loading available social media accounts…</div><div id="readyAccountFilters" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0"><input id="readyAccountSearch" placeholder="Search account or country (e.g. USA, UK)…" oninput="filterReadyAccounts()" autocomplete="off"><select id="readyAccountCategory" onchange="filterReadyAccounts()"><option value="">All categories</option></select></div><div id="readyAccountCards" class="cards"></div>`);
+ shell(`<button class="btn secondary back" onclick="profile()">← Back</button><h2 class="section-title">Social Media Accounts</h2><p class="muted" style="text-align:center">Available social media accounts. Profile photos and follower counts are shown when available.</p><button class="btn secondary" style="margin-bottom:14px" onclick="loadReadyAccountOrders(true)">MY ACCOUNT ORDERS · REFRESH</button><div id="readyAccountOrderTools" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 10px"><input id="readyOrderSearch" placeholder="Search order reference or account" oninput="filterReadyAccountOrders()"><select id="readyOrderStatus" onchange="filterReadyAccountOrders()"><option value="">All order statuses</option><option value="processing">Processing</option><option value="pending">Pending</option><option value="completed">Completed</option><option value="failed">Failed</option><option value="refunded">Refunded</option></select></div><div id="readyAccountOrders" style="margin-bottom:18px"></div><div id="readyAccountStatus" class="payment-note">Loading available social media accounts…</div><div id="readyAccountFilters" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0"><input id="readyAccountSearch" placeholder="Search account name…" oninput="filterReadyAccounts()" autocomplete="off"><div><input id="readyAccountCountrySearch" type="search" placeholder="Search country, e.g. USA or UK…" oninput="filterReadyAccountCountries()" autocomplete="off"><select id="readyAccountCountry" aria-label="Choose country" onchange="filterReadyAccounts()" style="margin-top:7px"><option value="">All countries (scroll to browse)</option></select></div><select id="readyAccountCategory" onchange="filterReadyAccounts()"><option value="">All categories</option></select></div><div id="readyAccountCards" class="cards"></div>`);
  try{
   const response=await fetch('/.netlify/functions/rediprofiles-catalogue',{headers:{Accept:'application/json'},cache:'no-store'});
   const data=await response.json();
@@ -243,6 +243,7 @@ async function readyAccountsPage(){
   window.rediprofilesCategories=Array.isArray(data.categories)?data.categories:[];
   const category=document.getElementById('readyAccountCategory');
   if(category)category.innerHTML='<option value="">All categories</option>'+window.rediprofilesCategories.map(c=>`<option value="${esc(c.id)}">${esc(c.name)} (${Number(c.services_in_stock||0)} in stock)</option>`).join('');
+  renderReadyAccountCountries();
   const status=document.getElementById('readyAccountStatus');
   if(status)status.textContent=`Live catalogue loaded: ${window.rediprofilesServices.length} services. Prices and stock may change.`;
   filterReadyAccounts();
@@ -251,9 +252,30 @@ async function readyAccountsPage(){
   if(status)status.textContent=error.message||'Could not load Rediprofiles catalogue.';
  }
 }
+function renderReadyAccountCountries(){
+ const all=Array.isArray(window.rediprofilesServices)?window.rediprofilesServices:[];
+ const select=document.getElementById('readyAccountCountry');if(!select)return;
+ const current=select.value||'';
+ const names=new Map();
+ all.forEach(item=>{const code=String(item.country_code||'').trim().toUpperCase(),name=String(item.country_name||item.country||'').trim();if(name||code){const key=code||name.toLowerCase();if(!names.has(key))names.set(key,{code,name:name||code});}});
+ const query=String(document.getElementById('readyAccountCountrySearch')?.value||'').trim().toLowerCase();
+ const aliases={usa:['usa','us','united states','america'],uk:['uk','gb','great britain','united kingdom','britain']};
+ const terms=[query,...(aliases[query]||[])];
+ const rows=[...names.values()].filter(x=>!query||terms.some(t=>(x.name+' '+x.code).toLowerCase().includes(t)));
+ select.innerHTML='<option value="">All countries (scroll to browse)</option>'+rows.map(x=>'<option value="'+esc(x.code||x.name)+'">'+esc(x.name||x.code)+'</option>').join('')||'<option value="">No matching country</option>';
+ if([...select.options].some(o=>o.value===current))select.value=current;
+}
+function filterReadyAccountCountries(){
+ const select=document.getElementById('readyAccountCountry'),before=select?.value||'';
+ renderReadyAccountCountries();
+ const next=document.getElementById('readyAccountCountry');
+ if(next&&before&&[...next.options].some(o=>o.value===before))next.value=before;
+ filterReadyAccounts();
+}
 function filterReadyAccounts(){
  const all=Array.isArray(window.rediprofilesServices)?window.rediprofilesServices:[];
  const query=String(document.getElementById('readyAccountSearch')?.value||'').trim().toLowerCase();
+ const selectedCountry=String(document.getElementById('readyAccountCountry')?.value||'').trim().toLowerCase();
  const category=String(document.getElementById('readyAccountCategory')?.value||'');
  const rows=all.filter(item=>{
   const countryText=String(item.country||item.country_name||item.country_code||'').toLowerCase();
@@ -261,8 +283,9 @@ function filterReadyAccounts(){
   const searchTerms=[query,...(aliases[query]||[])];
   const text=[item.name,item.category_name,item.description,item.country,item.country_name,item.country_code].join(' ').toLowerCase();
   const categoryMatch=!category||String(item.category_id??item.category??'')===category;
-  const countryMatch=searchTerms.some(term=>term&&countryText.includes(term))||searchTerms.some(term=>term&&text.includes(term));
-  return categoryMatch&&(!query||countryMatch);
+  const countryMatch=!selectedCountry||String(item.country_code||item.country||item.country_name||'').toLowerCase()===selectedCountry||countryText.includes(selectedCountry);
+  const accountMatch=!query||searchTerms.some(term=>term&&text.includes(term));
+  return categoryMatch&&countryMatch&&accountMatch;
  });
  const cards=document.getElementById('readyAccountCards');
  if(!cards)return;
