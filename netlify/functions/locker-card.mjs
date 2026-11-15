@@ -26,7 +26,7 @@ export async function handler(event){try{
  if(action==='visibility'){
   const customerId=String(b.customer_id||''),revealed=b.revealed===true;if(!/^[0-9a-f-]{36}$/i.test(customerId))return json(400,{error:'Invalid customer.'});
   const rows=await db(`ads_locker_cards?customer_id=eq.${encodeURIComponent(customerId)}&select=id`);if(!rows.length)return json(404,{error:'This customer has no Locker Card saved yet.'});
-  if(revealed){const payments=await db(`service_payments?select=paid_at,created_at&customer_id=eq.${encodeURIComponent(customerId)}&service=eq.${encodeURIComponent('TikTok Funding')}&status=eq.paid&order=paid_at.desc&limit=1`);if(!payments.length)return json(403,{error:'This customer must complete TikTok Funding payment before the card can be revealed.'});const paidAt=new Date(payments[0].paid_at||payments[0].created_at).getTime();if(!Number.isFinite(paidAt)||Date.now()<paidAt+5*60*1000)return json(403,{error:'The five-minute TikTok Funding processing period has not finished yet.'});}
+
   await db(`ads_locker_cards?customer_id=eq.${encodeURIComponent(customerId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({is_revealed:revealed,updated_at:new Date().toISOString()})});return json(200,{ok:true,message:revealed?'Card details revealed for this customer.':'Card details hidden for this customer.'});
  }
  return json(400,{error:'Invalid Locker Card action.'});
