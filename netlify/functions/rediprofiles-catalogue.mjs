@@ -68,7 +68,7 @@ export async function handler(event) {
             : [])
       : [];
 
-    // Customer price = supplier price + 50% + ₦800.
+    // Customer price = supplier price + fixed ₦2,500 service markup.
     const pricedServices = services.map(item => {
       const supplierValue = item.price_ngn ?? (String(item.currency || "").toUpperCase() === "NGN" ? item.price : null);
       const supplierPrice = Number(supplierValue);
@@ -76,7 +76,7 @@ export async function handler(event) {
       return {
         ...item,
         supplier_price_ngn: supplierPrice,
-        customer_price_ngn: Math.round(supplierPrice * 1.5 + 800)
+        customer_price_ngn: Math.round(supplierPrice + 2500)
       };
     });
 
@@ -85,7 +85,7 @@ export async function handler(event) {
       services: pricedServices,
       categories,
       currency: "NGN",
-      pricing_rule: "supplier price + 50% + ₦800",
+      pricing_rule: "supplier price + ₦2,500",
       count: pricedServices.length
     });
   } catch (error) {
