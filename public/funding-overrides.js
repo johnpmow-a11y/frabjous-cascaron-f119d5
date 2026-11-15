@@ -158,7 +158,7 @@
         const match=idLine.match(/BT-[^\s·]+/);
         const id=match?.[0];
         const customerName=card.closest('.admin-group')?.querySelector('summary strong')?.textContent||'';
-        const customerId=Object.values(store.customers||{}).find(c=>c.name===customerName)?.id;
+        const customerId=(store.records||[]).find(x=>String(x.id)===String(id))?.customerId;
         if(!id||!customerId)return;
         const b=document.createElement('button');
         b.className='btn tt-admin-reveal';b.style.marginTop='10px';b.textContent='Display Dollar Card to this customer';
