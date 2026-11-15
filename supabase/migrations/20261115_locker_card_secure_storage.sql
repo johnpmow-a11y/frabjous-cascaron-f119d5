@@ -15,3 +15,4 @@ create table if not exists public.ads_locker_cards (
 );
 alter table public.ads_locker_cards enable row level security;
 revoke all on public.ads_locker_cards from anon, authenticated;
+grant all on public.ads_locker_cards to service_role;
