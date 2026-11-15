@@ -50,7 +50,15 @@ export async function handler(event){
           const code=String(randomInt(100000,1000000));
           const expires=new Date(Date.now()+10*60*1000).toISOString();
           await db("customer_password_reset_requests?on_conflict=customer_id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify([{customer_id:customer.id,otp_hash:digest(code,key),expires_at:expires,attempts:0,created_at:new Date().toISOString()}])});
-          await sendCode(customer.email,code,customer.name);
+          try {
+            await sendCode(customer.email,code,customer.name);
+          } catch (mailError) {
+            // Do not leave a cooldown record behind when delivery fails.
+            await db("customer_password_reset_requests?customer_id=eq."+encodeURIComponent(customer.id),{
+              method:"DELETE",headers:{Prefer:"return=minimal"}
+            }).catch(cleanupError=>console.error("Password reset cleanup:",cleanupError?.message||cleanupError));
+            throw mailError;
+          }
         }
       }
       return json(200,{ok:true,message:"If this username has a registered email address, a reset code has been sent. Check your inbox and spam folder."});
