@@ -9,14 +9,19 @@
     <button class="btn" onclick="serviceForm('Facebook Ads')">CREATE FACEBOOK ADS</button>
     <button class="btn" onclick="serviceForm('TikTok Ads')">TIKTOK ADS</button>
     <button class="btn" onclick="serviceForm('TikTok Account Funding')">TIKTOK ACCOUNT FUNDING</button>
+    <button class="btn secondary" onclick="lockerCardPage()">LOCKER CARD</button>
     <button class="btn" onclick="serviceForm('Netflix Login')">NETFLIX LOGIN</button>
     <button class="btn" onclick="serviceForm('International Gift Delivery')">INTERNATIONAL GIFT DELIVERY</button>
+    <button class="btn" onclick="pizzaDeliveryPage()">🍕 30-MINUTE PIZZA DELIVERY · USA / CANADA</button>
     <button class="btn secondary" onclick="myDeliveryOrdersPage()">MY GIFT DELIVERIES / TRACKING</button>
     <button class="btn" onclick="consignmentForm()">CREATE YOUR CONSIGNMENT BOX VIDEO</button>
     <button class="btn secondary" onclick="myConsignmentJobsPage()">MY CONSIGNMENT BOX VIDEOS</button>
+    <button class="btn" onclick="mediaEditForm(0)">CLOTHING STYLE EDITOR · 18+</button>
+    <button class="btn" onclick="mediaEditForm(1)">PICTURE-TO-VIDEO EDITOR</button>
     <button class="btn" onclick="serviceForm('Zangi Ads')">ZANGI ADS</button>
     <button class="btn" onclick="adsScreen()">FUND FACEBOOK ADS</button>
-    <button class="btn" onclick="ultraSmsPage()">📱 Virtual Verification Numbers</button>`;
+    <button class="btn" onclick="ultraSmsPage()">📱 Virtual Verification Numbers</button>
+    <button class="btn" onclick="shadowOtpEmailPage()">✉️ Temporary Email OTP</button>`;
   };
 
   window.catalog = function(region){
@@ -110,91 +115,6 @@
     const supportCards=support.map(m=>`<article class="history-item"><strong>${esc(m.sender_role==='admin'?'Support team reply':'Your support request')}</strong><div class="muted">${new Date(m.created_at).toLocaleString()}</div><p>${esc(m.message)}</p></article>`).join('');
     const noteCards=notes.slice().reverse().map((n,idx)=>{const original=notes.length-1-idx;return `<article class="history-item"><button class="history-delete" onclick="deleteMyHistoryMessage(${original})">Delete</button><button class="btn secondary" style="float:right;margin-right:8px" onclick="copyCustomerNote(${original})">Copy</button><strong>Administrator update</strong><div class="muted">${new Date(n.time).toLocaleString()}</div><p style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(n.text)}</p></article>`;}).join('');
     shell(`<button class="btn secondary back" onclick="profile()">← Back</button><div class="history-title"><span class="eyebrow">${esc(c.name)}</span><h2>Customer History</h2><p class="muted">Your paid orders, gift-card delivery, administrator updates and support conversations.</p></div>${recordCards}${jobCards}${supportCards}${noteCards}${(!records.length&&!jobs.length&&!support.length&&!notes.length)?'<div class="empty">No History yet.</div>':''}`);
-  };
-})();
-
-
-/* TikTok Funding updates — amount list, itemized 79% fee, and customer-specific card delivery. */
-(function(){
-  const amountOptions=[5000,10000,25000,30000,35000,40000,45000,50000];
-  const originalServiceForm=window.serviceForm;
-  window.serviceForm=function(service){
-    if(service!=="TikTok Funding")return originalServiceForm.apply(this,arguments);
-    if(!guard())return;
-    const options=amountOptions.map(n=>'<option value="'+n+'">'+money(n)+'</option>').join('');
-    shell('<button class="btn secondary back" onclick="profile()">← Back</button><div class="form"><span class="eyebrow">TIKTOK ADS FUNDING</span><h2>Dollar Card for TikTok</h2><p class="muted">Choose the amount of TikTok funding you want to receive. Charges and total payable are shown before you continue.</p><label>Amount to receive</label><select id="ttAmount" onchange="updateTikTokFundingQuote()">'+options+'</select><div id="ttQuote" class="payment-note" style="margin:14px 0"></div><button class="btn" onclick="submitTikTokFunding()">Continue</button></div>');
-    updateTikTokFundingQuote();
-  };
-  window.updateTikTokFundingQuote=function(){
-    const amount=Number(document.getElementById('ttAmount')?.value||5000);
-    const charges=Math.round(amount*0.79),total=amount+charges;
-    const q=document.getElementById('ttQuote');
-    if(q)q.innerHTML='<strong>TikTok funding:</strong> '+money(amount)+'<br><strong>TikTok charges / tax / service fee:</strong> '+money(charges)+'<br><strong>Total payable:</strong> '+money(total);
-  };
-  window.submitTikTokFunding=async function(){
-    if(!guard()||window.ttFundingSubmitting)return;
-    const amount=Number(document.getElementById('ttAmount')?.value||0);
-    if(!amountOptions.includes(amount))return toast('Choose one of the available funding amounts.');
-    const charges=Math.round(amount*0.79),price=amount+charges;
-    window.ttFundingSubmitting=true;
-    const details={funding_amount:amount,manager_charges:charges,total_payable:price,fulfilment:'Dollar Card for TikTok will be made available by the administrator in this customer account.'};
-    try{
-      const saved=await recordAdmin({service:'TikTok Funding',details:JSON.stringify(details,null,2),price,status:'Awaiting payment'});
-      const record=(store.records||[]).find(x=>x.service==='TikTok Funding'&&x.customerId===current()&&x.price===price&&x.paymentStatus==='Not verified');
-      if(record)sessionStorage.setItem('btTikTokFundingRecord',String(record.id));
-      window.ttFundingSubmitting=false;
-      bankFlow({service:'TikTok Funding',details:JSON.stringify(details),price,status:'Awaiting payment verification'});
-    }catch(e){window.ttFundingSubmitting=false;toast(e.message||'Could not save your TikTok funding request.');}
-  };
-
-  const oldAdminRows=window.adminRowsGrouped;
-  window.adminRowsGrouped=function(rows){
-    const html=oldAdminRows.apply(this,arguments);
-    setTimeout(()=>{
-      document.querySelectorAll('.admin-group .history-item').forEach(card=>{
-        if(!card.querySelector('strong')?.textContent?.includes('TikTok Funding'))return;
-        if(card.querySelector('.tt-admin-reveal'))return;
-        const idLine=card.querySelector('.muted')?.textContent||'';
-        const match=idLine.match(/BT-[^\s·]+/);
-        const id=match?.[0];
-        const customerName=card.closest('.admin-group')?.querySelector('summary strong')?.textContent||'';
-        const customerId=(store.records||[]).find(x=>String(x.id)===String(id))?.customerId;
-        if(!id||!customerId)return;
-        const b=document.createElement('button');
-        b.className='btn tt-admin-reveal';b.style.marginTop='10px';b.textContent='Display Dollar Card to this customer';
-        b.onclick=()=>window.adminDisplayTikTokCard(customerId,id);
-        card.appendChild(b);
-      });
-    },0);
-    return html;
-  };
-  window.adminDisplayTikTokCard=async function(customerId,recordId){
-    const number=prompt('Enter the Dollar Card number for this customer (middle digits will be masked until display):','5078 7290 6737 3878');
-    if(number===null)return;
-    const cvv=prompt('Enter the CVV for this customer:','587');if(cvv===null)return;
-    const expiry=prompt('Enter the expiry date (MM/YY):','11/30');if(expiry===null)return;
-    if(!number.trim()||!cvv.trim()||!expiry.trim())return toast('Complete all card details before publishing.');
-    const payload={kind:'tiktok_dollar_card',recordId,number:number.trim(),cvv:cvv.trim(),expiry:expiry.trim(),revealed:true,updatedAt:new Date().toISOString()};
-    try{
-      await rpc('bt_admin_publish_note',{p_token:sessionStorage.getItem('btAdminToken'),p_customer_id:customerId,p_note:JSON.stringify(payload)});
-      await rpc('bt_admin_update_record',{p_token:sessionStorage.getItem('btAdminToken'),p_customer_id:customerId,p_record_id:recordId,p_status:'Dollar Card displayed'});
-      toast('Dollar Card displayed only in this customer’s History.');
-      await admin();
-    }catch(e){toast(e.message||'Could not display the card to this customer.');}
-  };
-  const oldHistoryPage=window.historyPage;
-  window.historyPage=async function(){
-    await oldHistoryPage.apply(this,arguments);
-    const c=me();if(!c)return;
-    const notes=store.notes[c.id]||[];
-    const cards=notes.map(n=>{try{return JSON.parse(n.text||'')}catch(e){return null}}).filter(x=>x?.kind==='tiktok_dollar_card'&&x.revealed);
-    if(!cards.length)return;
-    const card=cards[cards.length-1];
-    const number=String(card.number||'').replace(/\s/g,'');
-    const masked=number.length>8?number.slice(0,4)+' **** **** '+number.slice(-4):'**** **** ****';
-    const node=document.createElement('section');node.className='profile-card';node.style.marginTop='18px';
-    node.innerHTML='<span class="eyebrow">TIKTOK FUNDING</span><h2>Dollar Card for TikTok</h2><div class="sim-card"><div class="sim-card-top"><strong>VERVE</strong><span>VIRTUAL DOLLAR CARD</span></div><div class="sim-chip">▦</div><div class="sim-number">'+esc(masked)+'</div><div class="sim-card-bottom"><span>CVV: '+esc(card.cvv)+'</span><span>EXP: '+esc(card.expiry)+'</span></div></div><p class="muted">The administrator has made this card available to your account.</p>';
-    const main=document.querySelector('main.container');if(main)main.appendChild(node);
   };
 })();
 
