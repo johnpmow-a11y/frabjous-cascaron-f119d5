@@ -38,11 +38,15 @@ Apply these files in order, once each, in the existing Supabase project ftwhcqrt
    Revokes all customer and admin RPC access to wallet withdrawal functions. Customers cannot withdraw wallet funds.
 5. supabase/migrations/20261115_delivery_custom_gift_message.sql
    Adds the optional personalized message field for gift delivery orders.
+6. supabase/migrations/20261115_admin_assisted_password_recovery.sql
+   Adds administrator-only four-digit customer code reset after admin-session validation.
+7. supabase/migrations/20261115_private_customer_media_messages.sql
+   Creates private customer-specific image/video message records.
 
 Do NOT apply supabase/migrations/20261113_wallet_withdrawals.sql. If it was applied previously, migration 4 above disables its withdrawal functions. Do not rerun historical migrations or reset the database.
 
 PASSWORD RECOVERY
-Customer login remains username plus four-digit code. The registered email is used only to receive the six-digit recovery code. The code expires after 10 minutes, is one-time, and is limited to five attempts. A resend is allowed after 60 seconds. The recovery handler uses the existing GMAIL_USER and GMAIL_APP_PASSWORD settings; these settings are not changed by this update. The live email provider and Supabase migration must be verified after deployment.
+Customer login remains username plus four-digit code. Email is NOT used for password recovery; it remains available for administrator announcements and customer History notifications only. The customer recovery screen directs the customer to contact the administrator. In Admin > Customers, use Reset 4-Digit Code only after independently verifying the account owner. The reset RPC requires a valid administrator session, hashes the new four-digit code, and invalidates the customer's existing sessions. The previous email-OTP recovery handler and historical migration may remain in the repository/database but are no longer called by the customer interface.
 
 WALLET
 Customers can add funds and view payment history. There is no customer withdrawal feature. Existing balances and wallet transaction history are preserved.
@@ -60,7 +64,7 @@ EMAIL
 Only the visible support-email branding was changed to All Ads Manager. The Gmail/Nodemailer transport and GMAIL_USER / GMAIL_APP_PASSWORD configuration are unchanged.
 
 SECURITY AND CUSTOMER ACCOUNTS
-Customer accounts remain name/username plus a four-digit code, without requiring customer email. Do not restore a public username-only code reset. Forgotten-code recovery must be handled by the administrator after verifying the account owner.
+Customer accounts remain name/username plus a four-digit code. Registered email is for administrator announcements and customer History notifications only. Forgotten-code recovery is administrator-assisted after identity verification; never enable public username-only password changes.
 
 
 APP INSTALLATION
