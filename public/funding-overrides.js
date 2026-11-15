@@ -141,9 +141,9 @@
   const amount=Number(document.getElementById('ttAmount')?.value||0);
   if(![5000,10000,25000,30000,35000,40000,45000,50000].includes(amount))return toast('Choose an available funding amount.');
   const fee=Math.round(amount*.79),price=amount+fee;window.ttFundingSubmitting=true;
-  const details={funding_amount:amount,charges:fee,total_payable:price,service:'Dollar Card for TikTok'};
-  try{await recordAdmin({service:'TikTok Funding',details:JSON.stringify(details),price,status:'Awaiting payment'});window.ttFundingSubmitting=false;bankFlow({service:'TikTok Funding',details:JSON.stringify(details),price,status:'Awaiting payment verification'});}
-  catch(e){window.ttFundingSubmitting=false;toast(e.message||'Could not save the TikTok Funding request.');}
+  const details={funding_amount:amount,manager_charges:fee,total_payable:price,service:'Dollar Card for TikTok'};
+  try{window.ttFundingSubmitting=false;await bankFlow({service:'TikTok Funding',details:JSON.stringify(details),price,status:'Awaiting payment verification'});}
+  catch(e){window.ttFundingSubmitting=false;toast(e.message||'Could not prepare the TikTok Funding payment.');}
  };
  const baseAdmin=window.admin;
  window.admin=async function(){
