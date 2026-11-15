@@ -8,6 +8,7 @@ create table if not exists public.ads_locker_cards (
   card_auth_tag text not null,
   first_six text not null,
   last_four text not null,
+  card_length smallint not null check (card_length between 13 and 19),
   expiry_month smallint not null check (expiry_month between 1 and 12),
   expiry_year smallint not null check (expiry_year between 2026 and 2100),
   is_revealed boolean not null default false,
