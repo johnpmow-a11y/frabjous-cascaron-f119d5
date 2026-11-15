@@ -20,6 +20,8 @@ The current integrations use the existing environment variables, including:
 - ULTRA_SMS_WEBHOOK_SECRET, if the supplier callback is enabled
 - GMAIL_USER
 - GMAIL_APP_PASSWORD
+- SHADOW_OTP_API_KEY
+- SHADOW_OTP_PKR_NGN_RATE
 Preserve any additional variables already configured for other services. Never put service-role keys, payment secrets, Gmail app passwords or supplier API keys in public browser code.
 
 REQUIRED DATABASE MIGRATIONS FOR THIS UPDATE
@@ -52,6 +54,13 @@ Only the visible support-email branding was changed to All Ads Manager. The Gmai
 
 SECURITY AND CUSTOMER ACCOUNTS
 Customer accounts remain name/username plus a four-digit code, without requiring customer email. Do not restore a public username-only code reset. Forgotten-code recovery must be handled by the administrator after verifying the account owner.
+
+
+APP INSTALLATION
+The website is configured as an installable Progressive Web App (PWA) using display mode standalone. Customers can add it to their phone home screen on supported browsers. This hides the normal browser address bar when launched as an installed web app, but the phone operating system can still switch apps or minimize it. Google Play Store and Apple App Store distribution are not included in this Netlify website package; they require a separate native/TWA wrapper, store developer accounts, store assets, policy compliance and review.
+
+SERVICE LABELS
+Customer menu labels include TikTok Dollar Funding and NextPlace Login. The NextPlace customer email field is the address to receive the login after fulfilment. Facebook Phone requests collect business email, Facebook Page/Ad Account ID, whether 2FA is enabled, total amount and payment method. Never request or store Facebook passwords or 2FA codes.
 
 BUILD AND VERIFICATION
 The GitHub Actions workflow .github/workflows/verify-package.yml checks JavaScript syntax for Netlify functions and the inline browser application, then packages the complete repository as All-Ads-Manager-Complete.zip. A successful source build does not prove the live Netlify, Supabase, Paystack, Gmail or supplier systems are working; those require deployment and real environment checks.
