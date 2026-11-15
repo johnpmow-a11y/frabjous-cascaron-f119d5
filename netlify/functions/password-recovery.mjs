@@ -47,13 +47,10 @@ export async function handler(event){
   const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!key)return json(500,{ok:false,error:"Password recovery is not configured."});
   try{
-    const customers=await db(`customers?select=id,name&name=ilike.${encodeURIComponent(username)}&limit=1`);
-    const customer=customers?.[0];
+    const customer=await db("rpc/bt_customer_password_reset_lookup",{method:"POST",body:JSON.stringify({p_name:username})});
     if(action==="request"){
-      if(customer){
-        const emails=await db(`customer_contact_emails?select=email&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`);
-        const email=emails?.[0]?.email;
-        if(email){
+      if(customer?.id&&customer?.email){
+        const email=customer.email;
           const previous=await db(`customer_password_reset_requests?select=created_at&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`);
           const last=previous?.[0]?.created_at?Date.parse(previous[0].created_at):0;
           if(!last||Date.now()-last>=60000){
