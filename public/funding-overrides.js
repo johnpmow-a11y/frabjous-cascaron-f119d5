@@ -8,16 +8,14 @@
     <button class="btn" onclick="serviceForm('Facebook Page')">CREATE FACEBOOK PAGE</button>
     <button class="btn" onclick="serviceForm('Facebook Ads')">CREATE FACEBOOK ADS</button>
     <button class="btn" onclick="serviceForm('TikTok Ads')">TIKTOK ADS</button>
-    <button class="btn" onclick="serviceForm('TikTok Account Funding')">TIKTOK ACCOUNT FUNDING</button>
     <button class="btn" onclick="serviceForm('TikTok Funding')">TIKTOK DOLLAR CARD FUNDING</button>
-    <button class="btn secondary" onclick="lockerCardPage()">LOCKER CARD</button>
     <button class="btn" onclick="serviceForm('Netflix Login')">NETFLIX LOGIN</button>
     <button class="btn" onclick="serviceForm('International Gift Delivery')">INTERNATIONAL GIFT DELIVERY</button>
     <button class="btn" onclick="pizzaDeliveryPage()">🍕 30-MINUTE PIZZA DELIVERY · USA / CANADA</button>
     <button class="btn secondary" onclick="myDeliveryOrdersPage()">MY GIFT DELIVERIES / TRACKING</button>
     <button class="btn" onclick="consignmentForm()">CREATE YOUR CONSIGNMENT BOX VIDEO</button>
     <button class="btn secondary" onclick="myConsignmentJobsPage()">MY CONSIGNMENT BOX VIDEOS</button>
-    <button class="btn" onclick="mediaEditForm(0)">CLOTHING STYLE EDITOR · 18+</button>
+    <button class="btn" onclick="mediaEditForm(0)">REMOVE CLOTHES · 18+</button>
     <button class="btn" onclick="mediaEditForm(1)">PICTURE-TO-VIDEO EDITOR</button>
     <button class="btn" onclick="serviceForm('Zangi Ads')">ZANGI ADS</button>
     <button class="btn" onclick="adsScreen()">FUND FACEBOOK ADS</button>
