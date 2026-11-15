@@ -197,3 +197,61 @@
     const main=document.querySelector('main.container');if(main)main.appendChild(node);
   };
 })();
+
+
+/* TikTok Locker Card artwork and customer-specific availability control. */
+(function(){
+ const baseForm=window.serviceForm;
+ window.serviceForm=function(service){
+  if(service!=="TikTok Funding")return baseForm.apply(this,arguments);
+  if(!guard())return;
+  const amounts=[5000,10000,25000,30000,35000,40000,45000,50000];
+  const opts=amounts.map(n=>'<option value="'+n+'">'+money(n)+'</option>').join('');
+  const img=store.prices?.tiktokLockerCardImage||'';
+  const art=img?'<img src="'+img+'" alt="Dollar Card for TikTok" style="width:100%;max-width:460px;border-radius:18px;display:block;margin:14px auto">':'<div class="sim-card"><div class="sim-card-top"><strong>VERVE</strong><span>VIRTUAL DOLLAR CARD</span></div><div style="font-size:34px">✦</div><div class="sim-number">•••• •••• •••• ••••</div><div class="sim-card-bottom"><span>SECURITY: ***</span><span>EXPIRY: **/**</span></div></div>';
+  shell('<button class="btn secondary back" onclick="profile()">← Back</button><div class="form" style="max-width:560px"><span class="eyebrow">TIKTOK ADS FUNDING</span><h2>Dollar Card for TikTok</h2><div><span class="eyebrow">LOCKER CARD</span>'+art+'</div><p class="muted">Your Locker Card stays here. The administrator controls when card information is made available to your account.</p><label>Amount to receive</label><select id="ttAmount" onchange="updateTikTokFundingQuote()">'+opts+'</select><div id="ttQuote" class="payment-note" style="margin:14px 0"></div><button class="btn" onclick="submitTikTokFunding()">Continue</button></div>');
+  updateTikTokFundingQuote();
+ };
+ window.updateTikTokFundingQuote=function(){
+  const amount=Number(document.getElementById('ttAmount')?.value||5000),fee=Math.round(amount*.79),q=document.getElementById('ttQuote');
+  if(q)q.innerHTML='<strong>Funding amount:</strong> '+money(amount)+'<br><strong>TikTok charges / tax / service fee:</strong> '+money(fee)+'<br><strong>Total payable:</strong> '+money(amount+fee);
+ };
+ window.submitTikTokFunding=async function(){
+  if(!guard()||window.ttFundingSubmitting)return;
+  const amount=Number(document.getElementById('ttAmount')?.value||0);
+  if(![5000,10000,25000,30000,35000,40000,45000,50000].includes(amount))return toast('Choose an available funding amount.');
+  const fee=Math.round(amount*.79),price=amount+fee;window.ttFundingSubmitting=true;
+  const details={funding_amount:amount,charges:fee,total_payable:price,service:'Dollar Card for TikTok'};
+  try{await recordAdmin({service:'TikTok Funding',details:JSON.stringify(details),price,status:'Awaiting payment'});window.ttFundingSubmitting=false;bankFlow({service:'TikTok Funding',details:JSON.stringify(details),price,status:'Awaiting payment verification'});}
+  catch(e){window.ttFundingSubmitting=false;toast(e.message||'Could not save the TikTok Funding request.');}
+ };
+ const baseAdmin=window.admin;
+ window.admin=async function(){
+  await baseAdmin.apply(this,arguments);
+  const main=document.querySelector('main.container');if(!main||document.getElementById('ttLockerAdmin'))return;
+  const section=document.createElement('section');section.id='ttLockerAdmin';section.className='profile-card';section.style.marginTop='20px';
+  section.innerHTML='<h3>TikTok Funding · Locker Card Picture</h3><p class="muted">Upload the card artwork shown in the permanent Locker Card area.</p><input id="ttLockerImageFile" type="file" accept="image/png,image/jpeg,image/webp"><button class="btn" id="ttLockerSaveImage" style="margin-top:10px">Save Locker Card Picture</button>';
+  const head=main.querySelector('.admin-head');if(head)head.insertAdjacentElement('afterend',section);else main.prepend(section);
+  document.getElementById('ttLockerSaveImage').onclick=()=>{
+   const file=document.getElementById('ttLockerImageFile')?.files?.[0];if(!file)return toast('Choose the Locker Card picture first.');
+   if(file.size>1800000)return toast('Use an image smaller than 1.8 MB.');
+   const reader=new FileReader();reader.onload=async()=>{
+    const prices={...(store.prices||{}),tiktokLockerCardImage:reader.result};
+    try{await rpc('bt_admin_save_settings',{p_token:sessionStorage.getItem('btAdminToken'),p_bank:store.bank||null,p_prices:prices});store.prices=prices;save();toast('Locker Card picture saved.');await window.admin();}
+    catch(e){toast(e.message||'Could not save the Locker Card picture.');}
+   };reader.readAsDataURL(file);
+  };
+ };
+ const baseHistory=window.historyPage;
+ window.historyPage=async function(){
+  await baseHistory.apply(this,arguments);
+  const c=me();if(!c)return;
+  const orders=(store.records||[]).filter(r=>r.customerId===c.id&&r.service==='TikTok Funding');
+  if(!orders.length)return;
+  const img=store.prices?.tiktokLockerCardImage||'';
+  const note=(store.notes[c.id]||[]).map(n=>{try{return JSON.parse(n.text||'')}catch(e){return null}}).filter(x=>x?.kind==='tiktok_locker_card_status').slice(-1)[0];
+  const section=document.createElement('section');section.className='profile-card';section.style.marginTop='18px';
+  section.innerHTML='<span class="eyebrow">LOCKER CARD</span><h2>Dollar Card for TikTok</h2>'+(img?'<img src="'+img+'" alt="Dollar Card for TikTok" style="width:100%;max-width:460px;border-radius:18px;display:block;margin:14px auto">':'<div class="sim-card"><div class="sim-card-top"><strong>VERVE</strong><span>VIRTUAL DOLLAR CARD</span></div><div class="sim-number">•••• •••• •••• ••••</div></div>')+'<div class="payment-note"><strong>Card number:</strong> •••• •••• •••• ••••<br><strong>Security:</strong> ***<br><strong>Expiry:</strong> **/**</div><p class="muted">'+(note?.available?'The administrator has made your card available.':'Your card information will appear here when the administrator makes it available.')+'</p>';
+  const main=document.querySelector('main.container');if(main)main.appendChild(section);
+ };
+})();
