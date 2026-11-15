@@ -7,7 +7,7 @@ function decrypt(row){const d=createDecipheriv('aes-256-gcm',key(),Buffer.from(r
 async function session(token,admin){if(!/^[0-9a-f-]{36}$/i.test(token))return null;const table=admin?'admin_sessions':'customer_sessions';const rows=await db(`${table}?select=${admin?'token':'customer_id'}&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);return rows[0]||null;}
 function mask(n){return n.length>10?n.slice(0,6)+'*'.repeat(n.length-10)+n.slice(-4):'*'.repeat(n.length);}
 function maskedExpiry(){return '**/****';}
-function validCard(n){if(!/^\\d{13,19}$/.test(n))return false;let sum=0,alt=false;for(let i=n.length-1;i>=0;i--){let x=Number(n[i]);if(alt){x*=2;if(x>9)x-=9;}sum+=x;alt=!alt;}return sum%10===0;}
+function validCard(n){if(!/^[0-9]{13,19}$/.test(n))return false;let sum=0,alt=false;for(let i=n.length-1;i>=0;i--){let x=Number(n[i]);if(alt){x*=2;if(x>9)x-=9;}sum+=x;alt=!alt;}return sum%10===0;}
 export async function handler(event){try{
  const q=event.queryStringParameters||{},b=event.httpMethod==='POST'?JSON.parse(event.body||'{}'):{},token=String(b.token||q.token||'');
  if(event.httpMethod==='GET'){
