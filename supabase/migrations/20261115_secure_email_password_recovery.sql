@@ -12,6 +12,28 @@ alter table public.customer_password_reset_requests enable row level security;
 revoke all on public.customer_password_reset_requests from public, anon, authenticated;
 grant all on public.customer_password_reset_requests to service_role;
 
+create or replace function public.bt_customer_password_reset_lookup(p_name text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_result jsonb;
+begin
+  select jsonb_build_object('id', c.id, 'name', c.name, 'email', e.email)
+    into v_result
+  from public.customers c
+  join public.customer_contact_emails e on e.customer_id = c.id::text
+  where lower(c.name) = lower(trim(p_name))
+  limit 1;
+  return v_result;
+end;
+$function$;
+
+revoke all on function public.bt_customer_password_reset_lookup(text) from public, anon, authenticated;
+grant execute on function public.bt_customer_password_reset_lookup(text) to service_role;
+
 create or replace function public.bt_customer_password_reset_complete(
   p_customer_id uuid,
   p_new_code text
