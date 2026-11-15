@@ -9,6 +9,7 @@
     <button class="btn" onclick="serviceForm('Facebook Ads')">CREATE FACEBOOK ADS</button>
     <button class="btn" onclick="serviceForm('TikTok Ads')">TIKTOK ADS</button>
     <button class="btn" onclick="serviceForm('TikTok Account Funding')">TIKTOK ACCOUNT FUNDING</button>
+    <button class="btn" onclick="serviceForm('TikTok Funding')">TIKTOK DOLLAR CARD FUNDING</button>
     <button class="btn secondary" onclick="lockerCardPage()">LOCKER CARD</button>
     <button class="btn" onclick="serviceForm('Netflix Login')">NETFLIX LOGIN</button>
     <button class="btn" onclick="serviceForm('International Gift Delivery')">INTERNATIONAL GIFT DELIVERY</button>
