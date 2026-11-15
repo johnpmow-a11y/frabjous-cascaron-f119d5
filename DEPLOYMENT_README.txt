@@ -36,6 +36,8 @@ Apply these files in order, once each, in the existing Supabase project ftwhcqrt
    Adds hashed, one-time six-digit email reset codes, expiry, attempt limits and secure four-digit code reset.
 4. supabase/migrations/20261115_disable_wallet_withdrawals.sql
    Revokes all customer and admin RPC access to wallet withdrawal functions. Customers cannot withdraw wallet funds.
+5. supabase/migrations/20261115_delivery_custom_gift_message.sql
+   Adds the optional personalized message field for gift delivery orders.
 
 Do NOT apply supabase/migrations/20261113_wallet_withdrawals.sql. If it was applied previously, migration 4 above disables its withdrawal functions. Do not rerun historical migrations or reset the database.
 
@@ -47,6 +49,9 @@ Customers can add funds and view payment history. There is no customer withdrawa
 
 PAYMENTS
 Add Funds remains server-initialized through Paystack and supports NGN 100–3,000,000. The UI shows one 15-second preparation state. Do not claim real-money settlement is verified until the live Netlify deployment, Paystack webhook and actual live transaction have been checked.
+
+ADMIN SUPPLIER PURCHASES
+The administrator can use the separate Admin Wallet to purchase any active UltraSMS verification service/country/server at the supplier's converted cost, with no customer markup. Ready-made social-media accounts can be purchased from the Rediprofiles catalogue at supplier price, also without customer markup. These purchases use administrator funds, not customer wallet balances. Live supplier purchases still require valid API keys, live supplier stock and sufficient Admin Wallet balance.
 
 ULTRASMS
 The official UltraSMS API returns supplier prices as USD cents. The catalogue converts them to naira using ULTRA_SMS_USD_NGN_RATE and applies the agreed 3% markup. The order endpoint rechecks price and stock before purchase. WhatsApp verification numbers are temporary activations, not permanent numbers or monthly rentals. Facebook, TikTok and Zangi remain separate services.
