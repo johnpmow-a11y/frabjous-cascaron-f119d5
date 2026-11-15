@@ -46,7 +46,10 @@ export async function handler(event){
       if(customer?.id&&customer?.email){
         const previous=await db("customer_password_reset_requests?select=created_at&customer_id=eq."+encodeURIComponent(customer.id)+"&limit=1");
         const last=previous?.[0]?.created_at?Date.parse(previous[0].created_at):0;
-        if(!last||Date.now()-last>=60000){
+        if(last&&Date.now()-last<60000){
+          return json(429,{ok:false,error:"A reset email was requested recently. Please wait 60 seconds before requesting another code."});
+        }
+        {
           const code=String(randomInt(100000,1000000));
           const expires=new Date(Date.now()+10*60*1000).toISOString();
           await db("customer_password_reset_requests?on_conflict=customer_id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify([{customer_id:customer.id,otp_hash:digest(code,key),expires_at:expires,attempts:0,created_at:new Date().toISOString()}])});
@@ -57,7 +60,7 @@ export async function handler(event){
             await db("customer_password_reset_requests?customer_id=eq."+encodeURIComponent(customer.id),{
               method:"DELETE",headers:{Prefer:"return=minimal"}
             }).catch(cleanupError=>console.error("Password reset cleanup:",cleanupError?.message||cleanupError));
-            throw mailError;
+            throw new Error('RESET_EMAIL_DELIVERY_FAILED');
           }
         }
       }
@@ -82,6 +85,7 @@ export async function handler(event){
     return json(400,{ok:false,error:"Unsupported password recovery action."});
   }catch(error){
     console.error("All Ads Manager password recovery:",error?.message||error);
-    return json(500,{ok:false,error:"We could not complete password recovery. Please try again later."});
+    if(error?.message==="RESET_EMAIL_DELIVERY_FAILED")return json(502,{ok:false,error:"The reset email could not be sent. The existing Gmail settings in Netlify need to be checked. No email sending settings were changed."});
+    return json(500,{ok:false,error:"Password recovery could not be completed. Check that the required recovery database migrations have been applied, then try again."});
   }
 }
