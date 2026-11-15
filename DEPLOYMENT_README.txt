@@ -22,17 +22,24 @@ The current integrations use the existing environment variables, including:
 - GMAIL_APP_PASSWORD
 Preserve any additional variables already configured for other services. Never put service-role keys, payment secrets, Gmail app passwords or supplier API keys in public browser code.
 
-NEW DATABASE MIGRATIONS IN THIS UPDATE
-Apply these two files once in the existing Supabase project ftwhcqrtmfxdzokmudvu:
-1. supabase/migrations/20261113_secure_customer_code_recovery.sql
-   Removes the unsafe public username-only four-digit code reset function. Knowing a username alone is not identity verification.
-2. supabase/migrations/20261113_wallet_withdrawals.sql
-   Adds wallet withdrawal requests, reserved wallet funds, administrator review, manual paid status and automatic wallet refund when a request is rejected.
+REQUIRED DATABASE MIGRATIONS FOR THIS UPDATE
+Apply these files in order, once each, in the existing Supabase project ftwhcqrtmfxdzokmudvu:
+1. supabase/migrations/20261115_customer_contact_emails.sql
+   Creates the registered customer email store used for account recovery.
+2. supabase/migrations/20261115_fix_customer_email_validation.sql
+   Corrects email-address validation so valid addresses can be saved.
+3. supabase/migrations/20261115_secure_email_password_recovery.sql
+   Adds hashed, one-time six-digit email reset codes, expiry, attempt limits and secure four-digit code reset.
+4. supabase/migrations/20261115_disable_wallet_withdrawals.sql
+   Revokes all customer and admin RPC access to wallet withdrawal functions. Customers cannot withdraw wallet funds.
 
-Do not bulk-run every historical migration again. The existing wallet, customer/admin sessions, Rediprofiles and other service migrations are already part of the project history. Only apply the two new migrations above unless a separate migration is specifically required.
+Do NOT apply supabase/migrations/20261113_wallet_withdrawals.sql. If it was applied previously, migration 4 above disables its withdrawal functions. Do not rerun historical migrations or reset the database.
 
-WITHDRAWAL PROCESS
-Customers submit an amount and bank details. The amount is reserved from their wallet while the request is pending. The administrator must make the bank transfer outside the application, then mark the request Paid. Rejecting a pending request automatically refunds the reserved amount. This build does not initiate automatic bank transfers.
+PASSWORD RECOVERY
+Customer login remains username plus four-digit code. The registered email is used only to receive the six-digit recovery code. The code expires after 10 minutes, is one-time, and is limited to five attempts. A resend is allowed after 60 seconds. The recovery handler uses the existing GMAIL_USER and GMAIL_APP_PASSWORD settings; these settings are not changed by this update. The live email provider and Supabase migration must be verified after deployment.
+
+WALLET
+Customers can add funds and view payment history. There is no customer withdrawal feature. Existing balances and wallet transaction history are preserved.
 
 PAYMENTS
 Add Funds remains server-initialized through Paystack and supports NGN 100–3,000,000. The UI shows one 15-second preparation state. Do not claim real-money settlement is verified until the live Netlify deployment, Paystack webhook and actual live transaction have been checked.
