@@ -25,28 +25,25 @@ The current integrations use the existing environment variables, including:
 Preserve any additional variables already configured for other services. Never put service-role keys, payment secrets, Gmail app passwords or supplier API keys in public browser code.
 
 REQUIRED DATABASE MIGRATIONS FOR THIS UPDATE
-Apply these files in order, once each, in the existing Supabase project ftwhcqrtmfxdzokmudvu:
+Apply the following in the existing Supabase project ftwhcqrtmfxdzokmudvu, only if not already applied:
 0. supabase/migrations/20261113_secure_customer_code_recovery.sql
-   Removes the old unsafe username-only password-reset function.
-1. supabase/migrations/20261115_customer_contact_emails.sql
-   Creates the registered customer email store used for account recovery.
-2. supabase/migrations/20261115_fix_customer_email_validation.sql
-   Corrects email-address validation so valid addresses can be saved.
-3. supabase/migrations/20261115_secure_email_password_recovery.sql
-   Adds hashed, one-time six-digit email reset codes, expiry, attempt limits and secure four-digit code reset.
-4. supabase/migrations/20261115_disable_wallet_withdrawals.sql
-   Revokes all customer and admin RPC access to wallet withdrawal functions. Customers cannot withdraw wallet funds.
-5. supabase/migrations/20261115_delivery_custom_gift_message.sql
-   Adds the optional personalized message field for gift delivery orders.
-6. supabase/migrations/20261115_admin_assisted_password_recovery.sql
-   Adds administrator-only four-digit customer code reset after admin-session validation.
-7. supabase/migrations/20261115_private_customer_media_messages.sql
+   Removes the unsafe username-only password-reset function.
+1. supabase/migrations/20261115_customer_only_email_password_recovery.sql
+   Creates/repairs registered customer email storage and secure six-digit email reset codes; expires codes after 10 minutes; limits attempts; resets the customer's four-digit code; and DROPS the administrator customer-code reset function.
+2. supabase/migrations/20261115_disable_wallet_withdrawals.sql
+   Revokes wallet withdrawal functions.
+3. supabase/migrations/20261115_delivery_custom_gift_message.sql
+   Adds the optional personalized gift message.
+4. supabase/migrations/20261115_private_customer_media_messages.sql
    Creates private customer-specific image/video message records.
+
+The consolidated customer-only recovery migration replaces the older separate customer-contact-email and secure-email-recovery migrations for this deployment. Do not run both sets unnecessarily. Do not rerun historical migrations or reset the database.
 
 Do NOT apply supabase/migrations/20261113_wallet_withdrawals.sql. If it was applied previously, migration 4 above disables its withdrawal functions. Do not rerun historical migrations or reset the database.
 
 PASSWORD RECOVERY
-Customer login remains username plus four-digit code. Email is NOT used for password recovery; it remains available for administrator announcements and customer History notifications only. The customer recovery screen directs the customer to contact the administrator. In Admin > Customers, use Reset 4-Digit Code only after independently verifying the account owner. The reset RPC requires a valid administrator session, hashes the new four-digit code, and invalidates the customer's existing sessions. The previous email-OTP recovery handler and historical migration may remain in the repository/database but are no longer called by the customer interface.
+Customer login remains username plus four-digit code. If a customer forgets the code, they enter their username and request a six-digit code sent to the email address saved on that customer's account. The code expires after 10 minutes and is limited to five attempts. The customer enters the emailed code and chooses a new four-digit code. The customer controls this process. The administrator has NO reset button or reset RPC. Existing Gmail sending environment variables GMAIL_USER and GMAIL_APP_PASSWORD are preserved and must be configured for the reset email to send.
+
 
 WALLET
 Customers can add funds and view payment history. There is no customer withdrawal feature. Existing balances and wallet transaction history are preserved.
@@ -64,8 +61,7 @@ EMAIL
 Only the visible support-email branding was changed to All Ads Manager. The Gmail/Nodemailer transport and GMAIL_USER / GMAIL_APP_PASSWORD configuration are unchanged.
 
 SECURITY AND CUSTOMER ACCOUNTS
-Customer accounts remain name/username plus a four-digit code. Registered email is for administrator announcements and customer History notifications only. Forgotten-code recovery is administrator-assisted after identity verification; never enable public username-only password changes.
-
+Customer accounts remain username plus four-digit code. Registered email is used for customer-controlled password recovery by six-digit email code, as well as the existing administrator announcements and customer History notifications. Administrators cannot change customer passwords or four-digit codes. Never enable username-only password changes.
 
 APP INSTALLATION
 The website is configured as an installable Progressive Web App (PWA) using display mode standalone. Customers can add it to their phone home screen on supported browsers. This hides the normal browser address bar when launched as an installed web app, but the phone operating system can still switch apps or minimize it. Google Play Store and Apple App Store distribution are not included in this Netlify website package; they require a separate native/TWA wrapper, store developer accounts, store assets, policy compliance and review.
