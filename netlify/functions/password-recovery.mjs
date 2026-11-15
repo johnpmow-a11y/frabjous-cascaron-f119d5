@@ -43,6 +43,8 @@ export async function handler(event){
   try{
     const customer=await db("rpc/bt_customer_password_reset_lookup",{method:"POST",body:JSON.stringify({p_name:username})});
     if(action==="request"){
+      if(!customer?.id)return json(404,{ok:false,error:"We could not find an account with that username. Check the spelling and try again."});
+      if(!customer?.email)return json(409,{ok:false,error:"There is no recovery email saved for this account. Please contact All Ads Manager support to update the registered email before resetting your code."});
       if(customer?.id&&customer?.email){
         const previous=await db("customer_password_reset_requests?select=created_at&customer_id=eq."+encodeURIComponent(customer.id)+"&limit=1");
         const last=previous?.[0]?.created_at?Date.parse(previous[0].created_at):0;
