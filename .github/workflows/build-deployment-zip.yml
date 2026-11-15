@@ -1,0 +1,41 @@
+name: Build All Ads Manager deployment ZIP
+
+on:
+  push:
+    branches:
+      - feature/shadow-otp-temporary-email
+    paths:
+      - '.github/workflows/build-deployment-zip.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/shadow-otp-temporary-email
+
+      - name: Build deployment archive
+        run: |
+          zip -r All-Ads-Manager-Deployment.zip . \
+            -x '.git/*' \
+               '.github/*' \
+               'node_modules/*' \
+               '.env' '.env.*' \
+               '**/.env' '**/.env.*' \
+               '**/node_modules/*' \
+               '**/.DS_Store' \
+               '**/Thumbs.db'
+
+      - name: Upload deployment ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: All-Ads-Manager-Deployment
+          path: All-Ads-Manager-Deployment.zip
+          if-no-files-found: error
+          retention-days: 14
