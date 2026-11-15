@@ -19,7 +19,7 @@ export async function handler(event){try{
  const action=String(b.action||'');
  if(action==='save'){
   const customerId=String(b.customer_id||''),number=String(b.card_number||'').replace(/[ -]/g,''),month=Number(b.expiry_month),year=Number(b.expiry_year);
-  if(!/^[0-9a-f-]{36}$/i.test(customerId)||!validCard(number)||!Number.isInteger(month)||month<1||month>12||!Number.isInteger(year)||year<2026||year>2100)return json(400,{error:'Enter a valid customer, card number and expiry date.'});
+  const now=new Date(),expired=year<now.getFullYear()||(year===now.getFullYear()&&month<now.getMonth()+1);if(!/^[0-9a-f-]{36}$/i.test(customerId)||!validCard(number)||!Number.isInteger(month)||month<1||month>12||!Number.isInteger(year)||year<now.getFullYear()||year>2100||expired)return json(400,{error:'Enter a valid customer, card number and future expiry date.'});
   const enc=encrypt(number),row={customer_id:customerId,...enc,first_six:number.slice(0,6),last_four:number.slice(-4),card_length:number.length,expiry_month:month,expiry_year:year,is_revealed:false,updated_at:new Date().toISOString()};
   const saved=await db('ads_locker_cards?on_conflict=customer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)});return json(200,{ok:true,message:'Locker Card saved and set to hidden for this customer.'});
  }
