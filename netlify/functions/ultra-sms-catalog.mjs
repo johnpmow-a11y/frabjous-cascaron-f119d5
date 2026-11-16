@@ -60,7 +60,7 @@ export async function handler(event) {
         const markup = Number(process.env.ULTRA_SMS_MARKUP_PERCENT ?? 3);
         const baseNgn = Math.round(supplierCents * fx) / 100;
         const europeanCountries = new Set(['AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','XK','LV','LI','LT','LU','MT','MD','MC','ME','NL','MK','NO','PL','PT','RO','RU','SM','RS','SK','SI','ES','SE','CH','UA','VA','TR','GE','AM','AZ']);
-        const fixedMarkupNgn = country === 'US' ? 3000 : country === 'GB' ? 4000 : country === 'CA' ? 2000 : europeanCountries.has(country) ? 3800 : 1800;
+        const fixedMarkupNgn = country === 'US' ? 3000 : country === 'GB' ? 4000 : country === 'CA' ? 2000 : country === 'NZ' ? 3800 : europeanCountries.has(country) ? 3800 : 1800;
         const customerPriceNgn = pricingReady ? Number((baseNgn + fixedMarkupNgn).toFixed(2)) : null;
         return { ...row, customer_price_ngn: customerPriceNgn, pricingReady };
       }),
