@@ -58,17 +58,16 @@ export async function handler(event) {
         const pricingReady = Number.isFinite(fx) && fx > 0 && Number.isSafeInteger(supplierCents) && supplierCents > 0;
         // price_cents is USD cents; multiplying by NGN/USD yields kobo.
         const markup = Number(process.env.ULTRA_SMS_MARKUP_PERCENT ?? 3);
-        const fixedMarkupNgn = service === 'wa' && country === 'US' ? 2500 : service === 'wa' && country === 'GB' ? 2480 : null;
         const baseNgn = Math.round(supplierCents * fx) / 100;
-        const customerPriceNgn = pricingReady && Number.isFinite(markup) && markup >= 0 && markup <= 500
-          ? Number((baseNgn + (fixedMarkupNgn ?? baseNgn * markup / 100)).toFixed(2))
-          : null;
+        const europeanCountries = new Set(['AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','XK','LV','LI','LT','LU','MT','MD','MC','ME','NL','MK','NO','PL','PT','RO','RU','SM','RS','SK','SI','ES','SE','CH','UA','VA','TR','GE','AM','AZ']);
+        const fixedMarkupNgn = country === 'US' ? 3000 : country === 'GB' ? 4000 : country === 'CA' ? 2000 : europeanCountries.has(country) ? 3800 : 1800;
+        const customerPriceNgn = pricingReady ? Number((baseNgn + fixedMarkupNgn).toFixed(2)) : null;
         return { ...row, customer_price_ngn: customerPriceNgn, pricingReady };
       }),
       pricingReady: Number.isFinite(Number(process.env.ULTRA_SMS_USD_NGN_RATE)) && Number(process.env.ULTRA_SMS_USD_NGN_RATE) > 0,
       currency: pricesData.currency || balance.currency || 'USD',
       fxNgnPerUsd: Number(process.env.ULTRA_SMS_USD_NGN_RATE) || null,
-      markupPercent: Number(process.env.ULTRA_SMS_MARKUP_PERCENT ?? 3),
+      markupNgn: country === 'US' ? 3000 : country === 'GB' ? 4000 : country === 'CA' ? 2000 : ['AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','XK','LV','LI','LT','LU','MT','MD','MC','ME','NL','MK','NO','PL','PT','RO','RU','SM','RS','SK','SI','ES','SE','CH','UA','VA','TR','GE','AM','AZ'].includes(country) ? 3800 : 1800,
       selectedServiceName: selected?.name || service
     });
   } catch (error) {
