@@ -39,7 +39,7 @@ export async function handler(event){
     if(!supabase||!serviceKey)throw Error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing in Netlify.');
     const {response,data}=await readJson(supabase+'/rest/v1/rpc/bt_admin_personal_wallet_get',{
       method:'POST',
-      headers:{apikey:serviceKey,Authorization:'Bearer '+serviceKey,'Content-Type':'application/json'},
+      headers:serviceKey.startsWith('sb_secret_')?{apikey:serviceKey,'Content-Type':'application/json'}:{apikey:serviceKey,Authorization:'Bearer '+serviceKey,'Content-Type':'application/json'},
       body:JSON.stringify({p_token:token})
     });
     if(!response.ok){
@@ -59,7 +59,7 @@ export async function handler(event){
 
   checks.push(await probe('Push notification subscription table',async()=>{
     const {response,data}=await readJson(supabase+'/rest/v1/ads_manager_push_subscriptions?select=id&limit=1',{
-      headers:{apikey:serviceKey,Authorization:'Bearer '+serviceKey}
+      headers:serviceKey.startsWith('sb_secret_')?{apikey:serviceKey}:{apikey:serviceKey,Authorization:'Bearer '+serviceKey}
     });
     if(!response.ok){
       const msg=String(data?.message||data?.error||'');
