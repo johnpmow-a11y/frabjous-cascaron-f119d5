@@ -4,6 +4,7 @@
   "private": true,
   "description": "ALL ADS MANAGER site with Netlify support email function",
   "dependencies": {
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^6.9.16",
+    "web-push": "^3.6.7"
   }
 }
