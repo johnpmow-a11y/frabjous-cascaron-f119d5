@@ -1,3 +1,4 @@
+import { sendPush } from './_push.mjs';
 const json = (statusCode, body) => ({ statusCode, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(body) });
 export async function handler(event) {
   if (event.httpMethod !== 'GET') return json(405, { error: 'Method not allowed' });
@@ -28,6 +29,15 @@ export async function handler(event) {
     reference
   });
 }
+      const creditResult = await credit.json().catch(() => ({}));
+      if (creditResult?.alreadyCredited !== true) {
+        try {
+          const amount = (Number(deposits[0].amount_kobo) / 100).toLocaleString('en-NG');
+          await sendPush({ role: 'customer', customerId: sessions[0].customer_id, title: 'Wallet funded successfully', body: `Your wallet has been credited with ₦${amount}.`, url: '/' });
+        } catch (pushError) {
+          console.warn('Wallet credit push failed:', pushError.message);
+        }
+      }
       return json(200, { status: 'success', message: 'Payment confirmed and your balance has been updated.' });
     }
     return json(200, { status: deposits[0].status, message: 'Payment is not confirmed yet. If you have just paid, wait a moment and refresh.' });
