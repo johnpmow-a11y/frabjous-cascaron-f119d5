@@ -44,6 +44,23 @@ export async function handler(event){
     return 'Connected; Admin Wallet RPC exists and admin session is valid.';
   }));
 
+  checks.push(await probe('Push notification subscription table',async()=>{
+    if(!supabase||!serviceKey)throw Error('Supabase server configuration is missing.');
+    const r=await fetch(supabase+'/rest/v1/ads_manager_push_subscriptions?select=id&limit=1',{
+      headers:{apikey:serviceKey,Authorization:'Bearer '+serviceKey},
+      cache:'no-store',
+      signal:AbortSignal.timeout(12000)
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){
+      const msg=String(d.message||d.error||'');
+      if(r.status===401||r.status===403||/invalid api key/i.test(msg))throw Error('Supabase rejected the server API key.');
+      if(r.status===404||/does not exist/i.test(msg))throw Error('Push subscription table is missing. Run the push-subscriptions SQL previously provided.');
+      throw Error(msg||'Could not check push subscriptions.');
+    }
+    return 'Push subscription table exists; actual delivery depends on customer device permission and saved subscriptions.';
+  }));
+
   checks.push(await probe('UltraSMS API key',async()=>{
     if(!process.env.ULTRA_SMS_API_KEY)throw Error('ULTRA_SMS_API_KEY is missing in Netlify.');
     const r=await fetch('https://ultrasmsin.com/api/v1/services',{headers:{Authorization:'Bearer '+process.env.ULTRA_SMS_API_KEY,Accept:'application/json'},cache:'no-store',signal:AbortSignal.timeout(12000)});
