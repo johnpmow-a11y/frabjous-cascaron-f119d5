@@ -13,7 +13,7 @@ const json = (statusCode, body) => ({
 
 async function upstream(path, key) {
   const response = await fetch(`${BASE}${path}`, {
-    headers: { ...( key.startsWith('sb_secret_') ? {} : {Authorization:`Bearer ${key}`}), Accept: 'application/json' },
+    headers: { Authorization:`Bearer ${key}`, Accept: 'application/json' },
     cache: 'no-store'
   });
   const data = await response.json().catch(() => ({}));

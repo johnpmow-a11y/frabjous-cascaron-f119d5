@@ -13,7 +13,7 @@ async function db(path,options={}) {
   const base=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!base||!key)throw new Error("Password recovery database is not configured.");
   const response=await fetch(base+"/rest/v1/"+path,{...options,headers:{
-    apikey:key,...( k.startsWith('sb_secret_') ? {} : {Authorization:"Bearer "+k})ey,"Content-Type":"application/json",
+    apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json",
     ...(options.headers||{})
   }});
   const raw=await response.text();let data;try{data=raw?JSON.parse(raw):null}catch{data=raw}

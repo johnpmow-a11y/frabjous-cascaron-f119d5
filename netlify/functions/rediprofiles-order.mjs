@@ -19,7 +19,7 @@ async function db(path, options = {}) {
     ...options,
     headers: {
       apikey: key,
-      ...( key.startsWith('sb_secret_') ? {} : {Authorization:`Bearer ${key}`}),
+      Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
       ...(options.headers || {})
     },

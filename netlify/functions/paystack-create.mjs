@@ -3,7 +3,7 @@ const json = (statusCode, body) => ({ statusCode, headers: { 'Content-Type': 'ap
 const env = () => ({ secret: process.env.PAYSTACK_SECRET_KEY, supabase: process.env.SUPABASE_URL, service: process.env.SUPABASE_SERVICE_ROLE_KEY });
 async function sb(path, options = {}) {
   const { supabase, service } = env();
-  const response = await fetch(`${supabase}/rest/v1/${path}`, { ...options, headers: { apikey: service, ...( service.startsWith('sb_secret_') ? {} : {Authorization:`Bearer ${service}`}), 'Content-Type': 'application/json', ...(options.headers || {}) } });
+  const response = await fetch(`${supabase}/rest/v1/${path}`, { ...options, headers: { apikey: service, Authorization: `Bearer ${service}`, 'Content-Type': 'application/json', ...(options.headers || {}) } });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.message || data.error || 'Database request failed');
   return data;

@@ -6,7 +6,7 @@ const reply = (statusCode, body = 'ok') => ({ statusCode, body });
 
 async function savePaidServiceOrder(customerId,reference,row,tx){
   const key=process.env.SUPABASE_SERVICE_ROLE_KEY,base=process.env.SUPABASE_URL;
-  const headers={apikey:key,...( key.startsWith('sb_secret_') ? {} : {Authorization:`Bearer ${key}`}),'Content-Type':'application/json'};
+  const headers={apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json'};
   const existingResponse=await fetch(`${base}/rest/v1/business_tools_customer_data?select=records&customer_id=eq.${encodeURIComponent(customerId)}&limit=1`,{headers});
   const existing=await existingResponse.json().catch(()=>[]);
   if(!existingResponse.ok)throw new Error('Could not load customer order history.');
@@ -44,7 +44,7 @@ export async function handler(event) {
     const verified = await verifyResponse.json();
     const tx = verified.data;
     if (!verifyResponse.ok || !verified.status || tx?.status !== 'success') return reply(400, 'transaction not successful');
-    const headers = { apikey: service, ...( service.startsWith('sb_secret_') ? {} : {Authorization:`Bearer ${service}`}), 'Content-Type': 'application/json' };
+    const headers = { apikey: service, Authorization: `Bearer ${service}`, 'Content-Type': 'application/json' };
     // Service payments use their own table and must never be sent to the wallet-credit RPC.
     const servicePaymentResponse=await fetch(`${supabase}/rest/v1/service_payments?select=customer_id,amount_kobo,status,service,details&reference=eq.${encodeURIComponent(reference)}&limit=1`,{headers});
     const servicePayments=await servicePaymentResponse.json().catch(()=>[]);
