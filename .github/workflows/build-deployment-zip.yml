@@ -3,7 +3,7 @@ name: Build All Ads Manager deployment ZIP
 on:
   push:
     branches:
-      - feature/shadow-otp-temporary-email
+      - fix/customer-messaging-media-notifications
     paths:
       - '.github/workflows/build-deployment-zip.yml'
   workflow_dispatch:
@@ -18,7 +18,7 @@ jobs:
       - name: Check out selected branch
         uses: actions/checkout@v4
         with:
-          ref: feature/shadow-otp-temporary-email
+          ref: ${{ github.ref }}
 
       - name: Build deployment archive
         run: |
