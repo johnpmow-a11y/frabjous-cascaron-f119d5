@@ -155,6 +155,20 @@ export async function handler(event){
     return 'Live key accepted by Paystack. No payment or transfer was created.';
   }));
 
+  checks.push(await probe('UltraSMS webhook signature secret',async()=>{
+    const secret=String(process.env.ULTRA_SMS_WEBHOOK_SECRET||'');
+    if(!secret)throw Error('ULTRA_SMS_WEBHOOK_SECRET is missing. Incoming SMS status webhooks cannot be authenticated without it.');
+    if(secret.length<32)throw Error('ULTRA_SMS_WEBHOOK_SECRET is shorter than 32 characters. Use the exact signing secret configured in the UltraSMS webhook dashboard.');
+    return 'Webhook signing secret is present and has a suitable minimum length. No webhook was sent or changed.';
+  }));
+
+  checks.push(await probe('UltraSMS customer pricing setting',async()=>{
+    const raw=process.env.ULTRA_SMS_MARKUP_PERCENT;
+    const markup=raw===undefined||raw===''?3:Number(raw);
+    if(!Number.isFinite(markup)||markup<0||markup>500)throw Error('ULTRA_SMS_MARKUP_PERCENT must be between 0 and 500. If unset, the app uses its built-in 3% default.');
+    return 'Markup setting is valid ('+markup+'%).';
+  }));
+
   checks.push(await probe('Exchange-rate settings',async()=>{
     const ultra=Number(process.env.ULTRA_SMS_USD_NGN_RATE);
     const shadow=Number(process.env.SHADOW_OTP_PKR_NGN_RATE);
