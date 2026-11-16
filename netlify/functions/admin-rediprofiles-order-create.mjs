@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 const BASE='https://rediprofiles.com/api/v1';
 const json=(s,b)=>({statusCode:s,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'},body:JSON.stringify(b)});
-async function db(path,options={}){const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!u||!k)throw Error('Supabase is not configured.');const r=await fetch(u+'/rest/v1/'+path,{...options,headers:{apikey:k,Authorization:'Bearer '+k,'Content-Type':'application/json',...(options.headers||{})},signal:AbortSignal.timeout(15000)});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||d.error||'Database request failed.');return d}
+async function db(path,options={}){const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!u||!k)throw Error('Supabase is not configured.');const r=await fetch(u+'/rest/v1/'+path,{...options,headers:{apikey:k,...( k.startsWith('sb_secret_') ? {} : {Authorization:'Bearer '+k}),'Content-Type':'application/json',...(options.headers||{})},signal:AbortSignal.timeout(15000)});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||d.error||'Database request failed.');return d}
 async function rpc(n,a){return db('rpc/'+n,{method:'POST',body:JSON.stringify(a)})}
 async function supplier(path,key,options={}){const r=await fetch(BASE+path,{...options,headers:{'X-API-Key':key,Accept:'application/json','Content-Type':'application/json',...(options.headers||{})},signal:AbortSignal.timeout(20000)});const d=await r.json().catch(()=>({}));return {ok:r.ok,status:r.status,data:d}}
 function unwrap(x){return x?.order||x?.data?.order||x?.data||x||{}}
