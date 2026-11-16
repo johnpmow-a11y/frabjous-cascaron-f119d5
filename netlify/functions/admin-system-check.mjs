@@ -11,7 +11,7 @@ async function probe(name,run){
     const detail=await run();
     return {name,status:'ok',detail:detail||'Connected'};
   }catch(error){
-    const message=String(error?.message||'Connection failed').replace(/https?:\\/\\/\\S+/g,'[provider endpoint]');
+    const message=String(error?.message||'Connection failed').replace(/https?:\/\/\S+/g,'[provider endpoint]');
     return {name,status:'error',detail:message.slice(0,220)};
   }
 }
@@ -140,7 +140,7 @@ export async function handler(event){
     const pub=process.env.VAPID_PUBLIC_KEY,priv=process.env.VAPID_PRIVATE_KEY;
     if(!pub||!priv)throw Error('VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY is missing.');
     const subject=process.env.VAPID_SUBJECT||'mailto:trustdansan@gmail.com';
-    if(!/^mailto:\\S+@\\S+$/.test(subject))throw Error('VAPID_SUBJECT must be a valid mailto: address.');
+    if(!/^mailto:\S+@\S+$/.test(subject))throw Error('VAPID_SUBJECT must be a valid mailto: address.');
     webpush.setVapidDetails(subject,pub,priv);
     return 'VAPID values pass library format validation. Key-pair matching and real device delivery are not verified by this read-only check.';
   }));
