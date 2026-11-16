@@ -116,6 +116,35 @@ export async function handler(event){
     return 'Key accepted by both catalogue actions used by the live integration; '+services.length+' Gmail services and '+domains.length+' domains returned.';
   }));
 
+  checks.push(await probe('SnappyDigits API key + account and boosting catalogues',async()=>{
+    const key=process.env.SNAPPYDIGITS_API_KEY;
+    if(!key)throw Error('SNAPPYDIGITS_API_KEY is missing in Netlify.');
+    const headers={Authorization:'Bearer '+key,Accept:'application/json'};
+    const [accountsResult,boostsResult]=await Promise.all([
+      readJson('https://snappydigits.com/api/v1/services',{headers}),
+      readJson('https://snappydigits.com/api/v1/smm/services',{headers})
+    ]);
+    for(const [label,result] of [['account',accountsResult],['boost',boostsResult]]){
+      if(!result.response.ok||result.data?.ok===false){
+        if(result.response.status===401||result.response.status===403)throw Error('SnappyDigits rejected SNAPPYDIGITS_API_KEY.');
+        throw Error('SnappyDigits '+label+' catalogue failed (HTTP '+result.response.status+').');
+      }
+      if(!Array.isArray(result.data?.services))throw Error('SnappyDigits '+label+' catalogue returned an unexpected response.');
+    }
+    return 'Key accepted by both catalogue endpoints used by the live integration; '+accountsResult.data.services.length+' account services and '+boostsResult.data.services.length+' boosting services returned.';
+  }));
+
+  checks.push(await probe('Gmail email configuration',async()=>{
+    if(!process.env.GMAIL_USER||!process.env.GMAIL_APP_PASSWORD)throw Error('GMAIL_USER or GMAIL_APP_PASSWORD is missing in Netlify. Existing email sending configuration has not been changed.');
+    return 'Both Gmail settings are present. This read-only check does not send an email or change the existing mail configuration.';
+  }));
+
+  checks.push(await probe('Locker Card encryption key',async()=>{
+    const key=String(process.env.CARD_DATA_ENCRYPTION_KEY||'');
+    if(!/^[a-f0-9]{64}$/i.test(key))throw Error('CARD_DATA_ENCRYPTION_KEY is missing or is not 64 hexadecimal characters. Do not replace it casually: existing encrypted card records depend on this exact key.');
+    return 'Encryption key has the required AES-256 format. Existing encrypted records were not read or modified.';
+  }));
+
   checks.push(await probe('Paystack live secret key',async()=>{
     const key=process.env.PAYSTACK_SECRET_KEY;
     if(!key||!key.startsWith('sk_live_'))throw Error('PAYSTACK_SECRET_KEY is missing or is not a live secret key.');
