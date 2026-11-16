@@ -56,17 +56,20 @@ export async function handler(event) {
       const updatedResponse=await fetch(`${supabase}/rest/v1/service_payments?reference=eq.${encodeURIComponent(reference)}&status=eq.pending`,{method:'PATCH',headers:{...headers,Prefer:'return=representation'},body:JSON.stringify({status:'paid',paystack_transaction_id:String(tx.id),paystack_channel:String(tx.channel||''),paid_at:paidAt})});
       if(!updatedResponse.ok)return reply(500,'service payment update failed');
       const updated=await updatedResponse.json().catch(()=>[]);
-      if(Array.isArray(updated)&&updated.length){
-        const customerName=await savePaidServiceOrder(order.customer_id,reference,order,tx);
-        if(order.service==='International Gift Delivery'||order.service==='Pizza Delivery'){
-          let details={};try{details=JSON.parse(order.details||'{}')}catch{return reply(500,'invalid delivery details')}
-          if(order.service==='Pizza Delivery'&&!['US','CA'].includes(String(details.country||'')))return reply(400,'pizza delivery country is invalid');
-          await createDeliveryOrder({supabase,serviceKey:service,reference,customerId:order.customer_id,amountKobo:Number(order.amount_kobo),details});
-        }
-        if(order.service==='Create Your Consignment Box Video'){
-          let details={};try{details=JSON.parse(order.details||'{}')}catch{return reply(500,'invalid consignment details')}
-          await createConsignmentJob({supabase,serviceKey:service,reference,customerId:order.customer_id,details,paidAt});
-        }
+      const newlyPaid=Array.isArray(updated)&&updated.length>0;
+      // Re-run idempotent history/fulfilment helpers on webhook retries; only the
+      // first successful status transition emits push notifications.
+      const customerName=await savePaidServiceOrder(order.customer_id,reference,order,tx);
+      if(order.service==='International Gift Delivery'||order.service==='Pizza Delivery'){
+        let details={};try{details=JSON.parse(order.details||'{}')}catch{return reply(500,'invalid delivery details')}
+        if(order.service==='Pizza Delivery'&&!['US','CA'].includes(String(details.country||'')))return reply(400,'pizza delivery country is invalid');
+        await createDeliveryOrder({supabase,serviceKey:service,reference,customerId:order.customer_id,amountKobo:Number(order.amount_kobo),details});
+      }
+      if(order.service==='Create Your Consignment Box Video'){
+        let details={};try{details=JSON.parse(order.details||'{}')}catch{return reply(500,'invalid consignment details')}
+        await createConsignmentJob({supabase,serviceKey:service,reference,customerId:order.customer_id,details,paidAt});
+      }
+      if(newlyPaid){
         try{await sendPush({role:'admin',title:'Payment confirmed — new order',body:`${customerName} paid for ${order.service}.`,url:'/'});}catch(pushError){console.warn('Admin paid-order push failed:',pushError.message);}
         try{await sendPush({role:'customer',customerId:order.customer_id,title:'Payment confirmed',body:`Your payment for ${order.service} was successful. Your order is now in processing.`,url:'/'});}catch(pushError){console.warn('Customer paid-order push failed:',pushError.message);}
       }
