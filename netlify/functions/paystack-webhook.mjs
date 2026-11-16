@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { sendPush } from './_push.mjs';
 const reply = (statusCode, body = 'ok') => ({ statusCode, body });
 export async function handler(event) {
   if (event.httpMethod !== 'POST') return reply(405, 'method not allowed');
@@ -30,6 +31,21 @@ export async function handler(event) {
       body: JSON.stringify({ p_reference: reference, p_transaction_id: String(tx.id), p_channel: String(tx.channel || ''), p_paid_at: tx.paid_at || tx.paidAt || new Date().toISOString(), p_amount_kobo: Number(tx.amount), p_currency: String(tx.currency || '') })
     });
     if (!rpc.ok) return reply(500, isAdminDeposit ? 'admin wallet credit failed' : 'customer wallet credit failed');
+    const creditResult = await rpc.json().catch(() => ({}));
+    // The database RPC is idempotent. Only the request that actually credits
+    // the wallet sends the notification, so webhook retries cannot spam users.
+    if (!isAdminDeposit && creditResult?.alreadyCredited !== true) {
+      try {
+        const deposits = await fetch(`${supabase}/rest/v1/wallet_deposits?select=customer_id,amount_kobo&reference=eq.${encodeURIComponent(reference)}&limit=1`, { headers });
+        const depositRows = await deposits.json().catch(() => []);
+        if (deposits.ok && depositRows.length) {
+          const amount = (Number(depositRows[0].amount_kobo) / 100).toLocaleString('en-NG');
+          await sendPush({ role: 'customer', customerId: depositRows[0].customer_id, title: 'Wallet funded successfully', body: `Your wallet has been credited with ₦${amount}.`, url: '/' });
+        }
+      } catch (pushError) {
+        console.warn('Wallet credit push failed:', pushError.message);
+      }
+    }
     return reply(200, isAdminDeposit ? 'admin wallet credited' : 'customer wallet credited');
   } catch (error) { return reply(500, 'webhook processing error'); }
 }
