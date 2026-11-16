@@ -152,9 +152,9 @@ export async function handler(event) {
 
     const supplierPrice = servicePriceNgn(item);
     if (supplierPrice === null) return json(502, { ok: false, error: 'The supplier did not provide a valid naira price. No money has been deducted.' });
-    // Customer price = supplier price + 50% + ₦800.
+    // Customer price = supplier price + ₦3,800.
     const supplierKobo = Math.round(supplierPrice * 100);
-    const customerKobo = Math.round((supplierPrice * 1.5 + 800) * 100);
+    const customerKobo = Math.round((supplierPrice + 3800) * 100);
     if (!Number.isSafeInteger(supplierKobo) || !Number.isSafeInteger(customerKobo) || customerKobo <= 0) {
       return json(502, { ok: false, error: 'The supplier price is invalid.' });
     }
