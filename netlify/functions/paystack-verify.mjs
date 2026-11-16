@@ -9,7 +9,7 @@ export async function handler(event) {
   const token = event.queryStringParameters?.token || '';
   if (!reference || !/^[0-9a-f-]{36}$/i.test(token)) return json(400, { error: 'Missing payment reference or login session.' });
   try {
-    const headers = { apikey: service, Authorization: `Bearer ${service}` };
+    const headers = { apikey: service, ...(service.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${service}` }) };
     const sessionRes = await fetch(`${supabase}/rest/v1/customer_sessions?select=customer_id,expires_at&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`, { headers });
     const sessions = await sessionRes.json();
     if (!sessions?.length) return json(401, { error: 'Please log in again to view this payment.' });
