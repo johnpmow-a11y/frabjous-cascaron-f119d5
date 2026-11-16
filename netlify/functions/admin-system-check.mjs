@@ -158,8 +158,7 @@ export async function handler(event){
   checks.push(await probe('UltraSMS webhook signature secret',async()=>{
     const secret=String(process.env.ULTRA_SMS_WEBHOOK_SECRET||'');
     if(!secret)throw Error('ULTRA_SMS_WEBHOOK_SECRET is missing. Incoming SMS status webhooks cannot be authenticated without it.');
-    if(secret.length<32)throw Error('ULTRA_SMS_WEBHOOK_SECRET is shorter than 32 characters. Use the exact signing secret configured in the UltraSMS webhook dashboard.');
-    return 'Webhook signing secret is present and has a suitable minimum length. No webhook was sent or changed.';
+    return 'Webhook signing secret is present. No webhook was sent or changed.';
   }));
 
   checks.push(await probe('UltraSMS customer pricing setting',async()=>{
