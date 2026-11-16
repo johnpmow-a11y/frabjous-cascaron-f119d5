@@ -32,7 +32,7 @@ export async function handler(event) {
   if (!/^[0-9a-f-]{36}$/i.test(token)) return json(401, { error: 'Please log in to view the catalogue.' });
   const dbUrl = process.env.SUPABASE_URL, dbKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!dbUrl || !dbKey) return json(503, { error: 'Supabase server settings are missing.' });
-  const sessionCheck = await fetch(`${dbUrl}/rest/v1/customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`, { headers: { apikey: dbKey, Authorization: `Bearer ${dbKey}` } });
+  const sessionCheck = await fetch(`${dbUrl}/rest/v1/customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`, { headers: { apikey: dbKey,...(dbKey.startsWith('sb_secret_')?{}:{Authorization:'Bearer '+dbKey}) } });
   const sessionRows = sessionCheck.ok ? await sessionCheck.json() : [];
   if (!sessionRows.length) return json(401, { error: 'Your login session has expired.' });
   const key = process.env.ULTRA_SMS_API_KEY;
