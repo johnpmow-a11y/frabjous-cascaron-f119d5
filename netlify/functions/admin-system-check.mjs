@@ -44,6 +44,11 @@ export async function handler(event){
     return 'Connected; Admin Wallet RPC exists and admin session is valid.';
   }));
 
+  // Do not probe supplier credentials unless Supabase has confirmed this is a live admin session.
+  if(checks[0]?.status!=='ok'){
+    return json(200,{ok:false,checked:1,failed:1,checks,notice:'Admin authentication failed. No supplier API keys were tested.'});
+  }
+
   checks.push(await probe('Push notification subscription table',async()=>{
     if(!supabase||!serviceKey)throw Error('Supabase server configuration is missing.');
     const r=await fetch(supabase+'/rest/v1/ads_manager_push_subscriptions?select=id&limit=1',{
