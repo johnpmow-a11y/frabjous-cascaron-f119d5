@@ -39,7 +39,7 @@ Apply the following in the existing Supabase project ftwhcqrtmfxdzokmudvu, only 
 
 The consolidated customer-only recovery migration replaces the older separate customer-contact-email and secure-email-recovery migrations for this deployment. Do not run both sets unnecessarily. Do not rerun historical migrations or reset the database.
 
-Do NOT apply supabase/migrations/20261113_wallet_withdrawals.sql. If it was applied previously, migration 4 above disables its withdrawal functions. Do not rerun historical migrations or reset the database.
+Do NOT apply supabase/migrations/20261113_wallet_withdrawals.sql. If it was applied previously, migration 2 above disables its withdrawal functions. Do not rerun historical migrations or reset the database.
 
 PASSWORD RECOVERY
 Customer login remains username plus four-digit code. If a customer forgets the code, they enter their username and request a six-digit code sent to the email address saved on that customer's account. The code expires after 10 minutes and is limited to five attempts. The customer enters the emailed code and chooses a new four-digit code. The customer controls this process. The administrator has NO reset button or reset RPC. Existing Gmail sending environment variables GMAIL_USER and GMAIL_APP_PASSWORD are preserved and must be configured for the reset email to send.
