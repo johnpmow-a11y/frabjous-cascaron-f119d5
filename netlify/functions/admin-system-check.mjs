@@ -161,12 +161,8 @@ export async function handler(event){
     return 'Webhook signing secret is present. No webhook was sent or changed.';
   }));
 
-  checks.push(await probe('UltraSMS customer pricing setting',async()=>{
-    const raw=process.env.ULTRA_SMS_MARKUP_PERCENT;
-    const markup=raw===undefined||raw===''?3:Number(raw);
-    if(!Number.isFinite(markup)||markup<0||markup>500)throw Error('ULTRA_SMS_MARKUP_PERCENT must be between 0 and 500. If unset, the app uses its built-in 3% default.');
-    return 'Markup setting is valid ('+markup+'%).';
-  }));
+  // UltraSMS customer prices use the fixed country markups in the catalogue and order endpoint.
+  // ULTRA_SMS_MARKUP_PERCENT is not the active customer-pricing rule.
 
   checks.push(await probe('Exchange-rate settings',async()=>{
     const ultra=Number(process.env.ULTRA_SMS_USD_NGN_RATE);
