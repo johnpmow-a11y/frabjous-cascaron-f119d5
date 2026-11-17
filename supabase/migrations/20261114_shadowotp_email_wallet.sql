@@ -14,7 +14,7 @@ create table if not exists public.shadowotp_email_orders (
   email_address text,
   supplier_price_pkr numeric(14,2) not null check (supplier_price_pkr > 0),
   fx_ngn_per_pkr numeric(14,6) not null check (fx_ngn_per_pkr > 0),
-  markup_ngn_kobo bigint not null default 100000 check (markup_ngn_kobo = 100000),
+  markup_ngn_kobo bigint not null default 120000 check (markup_ngn_kobo = 120000),
   supplier_cost_kobo bigint not null check (supplier_cost_kobo > 0),
   customer_charge_kobo bigint not null check (customer_charge_kobo > 0),
   status text not null default 'supplier_pending'
@@ -51,7 +51,7 @@ begin
     raise exception 'INVALID_PRICING';
   end if;
   v_supplier := round(p_supplier_price_pkr * p_fx_ngn_per_pkr * 100)::bigint;
-  v_charge := v_supplier + 100000; -- fixed ₦1,000 markup
+  v_charge := v_supplier + 120000; -- fixed ₦1,200 markup
   if v_supplier<=0 or v_charge<=0 then raise exception 'INVALID_PRICING'; end if;
   insert into public.wallet_balances(customer_id,balance_kobo) values(v_customer,0)
     on conflict(customer_id) do nothing;
@@ -68,7 +68,7 @@ begin
     customer_charge_kobo,status
   ) values(
     v_customer,p_reference,p_server,p_service_code,p_service_name,p_domain,
-    p_supplier_price_pkr,p_fx_ngn_per_pkr,100000,v_supplier,v_charge,'supplier_pending'
+    p_supplier_price_pkr,p_fx_ngn_per_pkr,120000,v_supplier,v_charge,'supplier_pending'
   ) returning * into v_order;
   return jsonb_build_object('order_id',v_order.id,'customer_charge_kobo',v_charge,'status',v_order.status);
 end;
