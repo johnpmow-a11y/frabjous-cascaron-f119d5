@@ -132,7 +132,7 @@ async function loadShadowOtpCatalog(){
 }
 async function buyShadowOtpEmail(server,domain,serviceId,displayedPricePkr){
  if(!guard())return;const platform=server===2?String(document.getElementById('shadowOtpPlatform')?.value||'').trim().toLowerCase():'';if(server===2&&!/^(?:[a-z0-9-]+[.])+[a-z]{2,}$/i.test(platform))return toast('Enter a valid platform domain, such as example.com.');
- const label=server===1?'Gmail · '+serviceId:domain+' for '+platform;if(!confirm('Buy one temporary email ('+label+')? The live price plus ₦1,000 will be deducted from your wallet.'))return;
+ const label=server===1?'Gmail · '+serviceId:domain+' for '+platform;if(!confirm('Buy one temporary email ('+label+')? The live supplier cost converted to naira plus exactly ₦1,200 will be deducted from your wallet.'))return;
  const box=document.getElementById('shadowOtpOrders');if(box)box.textContent='Creating your temporary email. Please do not press Buy again…';
  try{const r=await fetch('/.netlify/functions/shadowotp-email-create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:sessionStorage.getItem('btToken'),server,domain,service_id:serviceId,service:platform,displayed_price_pkr:displayedPricePkr})});const d=await r.json();if(!r.ok&&!d.pending)throw new Error(d.error||'Could not buy temporary email.');if(d.pending){if(box)box.textContent=d.message||'Supplier confirmation is pending. Do not purchase again.';return;}if(box)box.innerHTML='<div class="payment-note">Temporary email purchased. Your order is below. We will check for the OTP automatically.</div>';await loadShadowOtpMyOrders();if(d.order?.id)watchShadowOtpOrder(d.order.id);
  }catch(e){if(box)box.textContent=e.message||'Purchase failed.';}
