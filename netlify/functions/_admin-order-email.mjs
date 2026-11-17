@@ -22,7 +22,10 @@ export async function sendAdminOrderEmail({customerName='Customer',customerId=''
   ].join('\n');
   const transporter=nodemailer.createTransport({
     service:'gmail',
-    auth:{user,pass:String(password).replace(/\s+/g,'')}
+    auth:{user,pass:String(password).replace(/\s+/g,'')},
+    connectionTimeout:8000,
+    greetingTimeout:8000,
+    socketTimeout:12000
   });
   await transporter.sendMail({
     from:{name:'All Ads Manager — Order Alerts',address:user},
