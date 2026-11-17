@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { sendPush } from './_push.mjs';
+import {sendAdminOrderEmail} from './_admin-order-email.mjs';
 import { createDeliveryOrder } from './_delivery-helper.mjs';
 import { createConsignmentJob } from './_consignment-helper.mjs';
 const reply = (statusCode, body = 'ok') => ({ statusCode, body });
@@ -70,6 +71,7 @@ export async function handler(event) {
         await createConsignmentJob({supabase,serviceKey:service,reference,customerId:order.customer_id,details,paidAt});
       }
       if(newlyPaid){
+        try{await sendAdminOrderEmail({customerName,customerId:order.customer_id,service:order.service,details:order.details||'',amount:Number(order.amount_kobo)/100,reference,status:'PAYMENT CONFIRMED'});}catch(emailError){console.warn('Admin payment email failed:',emailError.message);}
         try{await sendPush({role:'admin',title:'Payment confirmed — new order',body:`${customerName} paid for ${order.service}.`,url:'/'});}catch(pushError){console.warn('Admin paid-order push failed:',pushError.message);}
         try{await sendPush({role:'customer',customerId:order.customer_id,title:'Payment confirmed',body:`Your payment for ${order.service} was successful. Your order is now in processing.`,url:'/'});}catch(pushError){console.warn('Customer paid-order push failed:',pushError.message);}
       }
