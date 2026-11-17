@@ -1,3 +1,5 @@
+import { sendPush } from './_push.mjs';
+import { sendAdminOrderEmail } from './_admin-order-email.mjs';
 const json = (statusCode, body) => ({ statusCode, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(body) });
 export async function handler(event) {
   if (event.httpMethod !== 'GET') return json(405, { error: 'Method not allowed' });
@@ -8,7 +10,7 @@ export async function handler(event) {
   const token = event.queryStringParameters?.token || '';
   if (!reference || !/^[0-9a-f-]{36}$/i.test(token)) return json(400, { error: 'Missing payment reference or login session.' });
   try {
-    const headers = { apikey: service, Authorization: `Bearer ${service}` };
+    const headers = { apikey: service, ...(service.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${service}` }) };
     const sessionRes = await fetch(`${supabase}/rest/v1/customer_sessions?select=customer_id,expires_at&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`, { headers });
     const sessions = await sessionRes.json();
     if (!sessions?.length) return json(401, { error: 'Please log in again to view this payment.' });
@@ -28,6 +30,23 @@ export async function handler(event) {
     reference
   });
 }
+      const creditResult = await credit.json().catch(() => ({}));
+      if (creditResult?.alreadyCredited !== true) {
+        const amountNumber = Number(deposits[0].amount_kobo) / 100;
+        const amount = amountNumber.toLocaleString('en-NG');
+        try {
+          const customerResponse = await fetch(`${supabase}/rest/v1/customers?select=name&id=eq.${encodeURIComponent(sessions[0].customer_id)}&limit=1`, { headers });
+          const customerRows = await customerResponse.json().catch(() => []);
+          await sendAdminOrderEmail({ customerName: customerRows?.[0]?.name || 'Customer', customerId: sessions[0].customer_id, service: 'Customer Wallet Funding', details: 'Customer added funds to their All Ads Manager wallet.', amount: amountNumber, reference, status: 'PAYMENT CONFIRMED' });
+        } catch (emailError) {
+          console.warn('Admin wallet funding email failed:', emailError.message);
+        }
+        try {
+          await sendPush({ role: 'customer', customerId: sessions[0].customer_id, title: 'Wallet funded successfully', body: `Your wallet has been credited with ₦${amount}.`, url: '/' });
+        } catch (pushError) {
+          console.warn('Wallet credit push failed:', pushError.message);
+        }
+      }
       return json(200, { status: 'success', message: 'Payment confirmed and your balance has been updated.' });
     }
     return json(200, { status: deposits[0].status, message: 'Payment is not confirmed yet. If you have just paid, wait a moment and refresh.' });

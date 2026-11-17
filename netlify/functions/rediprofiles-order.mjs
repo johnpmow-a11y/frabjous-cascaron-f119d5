@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import {sendAdminOrderEmail} from './_admin-order-email.mjs';
 
 const BASE = 'https://rediprofiles.com/api/v1';
 const json = (statusCode, body) => ({
@@ -19,7 +20,7 @@ async function db(path, options = {}) {
     ...options,
     headers: {
       apikey: key,
-      Authorization: `Bearer ${key}`,
+      ...(key.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${key}` }),
       'Content-Type': 'application/json',
       ...(options.headers || {})
     },
@@ -152,9 +153,9 @@ export async function handler(event) {
 
     const supplierPrice = servicePriceNgn(item);
     if (supplierPrice === null) return json(502, { ok: false, error: 'The supplier did not provide a valid naira price. No money has been deducted.' });
-    // Customer price = supplier price + 50% + ₦800.
+    // Customer price = supplier price + ₦3,800.
     const supplierKobo = Math.round(supplierPrice * 100);
-    const customerKobo = Math.round((supplierPrice * 1.5 + 800) * 100);
+    const customerKobo = Math.round((supplierPrice + 3800) * 100);
     if (!Number.isSafeInteger(supplierKobo) || !Number.isSafeInteger(customerKobo) || customerKobo <= 0) {
       return json(502, { ok: false, error: 'The supplier price is invalid.' });
     }
@@ -168,6 +169,8 @@ export async function handler(event) {
       p_supplier_price_kobo: supplierKobo,
       p_customer_price_kobo: customerKobo
     });
+
+    try { const customerRows=await db(`customers?select=name&id=eq.${encodeURIComponent(sessions[0].customer_id)}&limit=1`); await sendAdminOrderEmail({customerName:customerRows?.[0]?.name||'Customer',customerId:sessions[0].customer_id,service:'Ready-Made Social Media Account',details:{service_name:String(item.name||'Ready-made account'),supplier_service_id:serviceId,supplier_reference:externalRef,supplier_price_ngn:supplierPrice,customer_price_ngn:customerKobo/100},amount:customerKobo/100,reference:externalRef,status:'WALLET ORDER SUBMITTED'}); } catch(emailError) { console.warn('Admin Rediprofiles order email failed:',emailError.message); }
 
     let supplierResult;
     try {

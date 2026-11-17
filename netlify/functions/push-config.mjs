@@ -1,0 +1,2 @@
+const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
+export async function handler(event){if(event.httpMethod!=='GET')return json(405,{error:'Method not allowed.'});const publicKey=process.env.VAPID_PUBLIC_KEY;if(!publicKey)return json(503,{error:'Background notification keys have not been configured in Netlify yet.'});return json(200,{publicKey});}
