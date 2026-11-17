@@ -29,7 +29,7 @@ export async function sendAdminOrderEmail({customerName='Customer',customerId=''
     to:ADMIN_INBOX,
     subject:'All Ads Manager: '+String(status)+' — '+String(service),
     text,
-    attachments:(Array.isArray(pictures)?pictures.slice(0,3):[]).map((picture,index)=>{const match=String(picture?.data||'').match(/^data:image\\/jpeg;base64,([A-Za-z0-9+/=]+)$/);if(!match)return null;const filename=String(picture.name||'ad-attachment-'+(index+1)+'.jpg').replace(/[^a-zA-Z0-9._-]/g,'_').slice(0,100);return {filename,content:match[1],encoding:'base64',contentType:'image/jpeg'};}).filter(Boolean)
+    attachments:(Array.isArray(pictures)?pictures.slice(0,3):[]).map((picture,index)=>{const match=String(picture?.data||'').match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);if(!match)return null;const filename=String(picture.name||'ad-attachment-'+(index+1)+'.jpg').replace(/[^a-zA-Z0-9._-]/g,'_').slice(0,100);return {filename,content:match[1],encoding:'base64',contentType:'image/jpeg'};}).filter(Boolean)
   });
   return true;
 }
