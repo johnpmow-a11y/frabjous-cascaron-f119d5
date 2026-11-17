@@ -8,9 +8,7 @@ alter table public.shadowotp_email_orders
 alter table public.shadowotp_email_orders
   drop constraint if exists shadowotp_email_orders_markup_ngn_kobo_check;
 
-alter table public.shadowotp_email_orders
-  add constraint shadowotp_email_orders_markup_ngn_kobo_check
-  check (markup_ngn_kobo = 120000);
+-- Historical orders retain their original recorded markup; new orders use ₦1,200.
 
 create or replace function public.bt_shadowotp_reserve_email_order(
   p_token uuid, p_reference text, p_server integer, p_service_code text,
