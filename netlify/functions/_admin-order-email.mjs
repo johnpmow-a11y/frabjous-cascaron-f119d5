@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 
 const ADMIN_INBOX = 'trustdansan@gmail.com';
 
-export async function sendAdminOrderEmail({customerName='Customer',customerId='',service='Customer order',details='',amount=null,reference='',status='Order submitted'}) {
+export async function sendAdminOrderEmail({customerName='Customer',customerId='',service='Customer order',details='',amount=null,reference='',status='Order submitted',pictures=[]}) {
   const user=process.env.GMAIL_USER;
   const password=process.env.GMAIL_APP_PASSWORD;
   if(!user||!password) throw new Error('Existing Gmail settings are not configured.');
@@ -28,7 +28,8 @@ export async function sendAdminOrderEmail({customerName='Customer',customerId=''
     from:{name:'All Ads Manager — Order Alerts',address:user},
     to:ADMIN_INBOX,
     subject:'All Ads Manager: '+String(status)+' — '+String(service),
-    text
+    text,
+    attachments:(Array.isArray(pictures)?pictures.slice(0,3):[]).map((picture,index)=>{const match=String(picture?.data||'').match(/^data:image\\/jpeg;base64,([A-Za-z0-9+/=]+)$/);if(!match)return null;const filename=String(picture.name||'ad-attachment-'+(index+1)+'.jpg').replace(/[^a-zA-Z0-9._-]/g,'_').slice(0,100);return {filename,content:match[1],encoding:'base64',contentType:'image/jpeg'};}).filter(Boolean)
   });
   return true;
 }
