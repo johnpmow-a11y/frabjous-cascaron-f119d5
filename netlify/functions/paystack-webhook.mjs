@@ -81,7 +81,9 @@ export async function handler(event) {
     // Never send an admin purchase reference to the customer wallet-credit RPC.
     const adminPurchaseResponse = await fetch(`${supabase}/rest/v1/admin_purchases?select=reference,item,amount_kobo,status&reference=eq.${encodeURIComponent(reference)}&limit=1`, { headers });
     const adminPurchases = await adminPurchaseResponse.json().catch(() => []);
-    if (!adminPurchaseResponse.ok) return reply(500, 'could not inspect admin purchase');
+    // If the optional Apple migration has not been applied yet, leave other
+    // customer wallet payments working; the Apple callback still verifies its own reference.
+    if (!adminPurchaseResponse.ok && adminPurchaseResponse.status !== 404) return reply(500, 'could not inspect admin purchase');
     if (Array.isArray(adminPurchases) && adminPurchases.length) {
       const purchase = adminPurchases[0];
       if (Number(tx.amount) !== Number(purchase.amount_kobo) || String(tx.currency).toUpperCase() !== 'NGN') return reply(400, 'admin purchase amount or currency mismatch');
