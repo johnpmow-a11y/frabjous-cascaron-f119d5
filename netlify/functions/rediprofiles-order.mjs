@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import {sendAdminOrderEmail} from './_admin-order-email.mjs';
 
 const BASE = 'https://rediprofiles.com/api/v1';
 const json = (statusCode, body) => ({
@@ -168,6 +169,8 @@ export async function handler(event) {
       p_supplier_price_kobo: supplierKobo,
       p_customer_price_kobo: customerKobo
     });
+
+    try { const customerRows=await db(`customers?select=name&id=eq.${encodeURIComponent(sessions[0].customer_id)}&limit=1`); await sendAdminOrderEmail({customerName:customerRows?.[0]?.name||'Customer',customerId:sessions[0].customer_id,service:'Ready-Made Social Media Account',details:{service_name:String(item.name||'Ready-made account'),supplier_service_id:serviceId,supplier_reference:externalRef,supplier_price_ngn:supplierPrice,customer_price_ngn:customerKobo/100},amount:customerKobo/100,reference:externalRef,status:'WALLET ORDER SUBMITTED'}); } catch(emailError) { console.warn('Admin Rediprofiles order email failed:',emailError.message); }
 
     let supplierResult;
     try {

@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { sendPush } from './_push.mjs';
+import {sendAdminOrderEmail} from './_admin-order-email.mjs';
 import { createDeliveryOrder } from './_delivery-helper.mjs';
 import { createConsignmentJob } from './_consignment-helper.mjs';
 const reply = (statusCode, body = 'ok') => ({ statusCode, body });
@@ -70,10 +71,34 @@ export async function handler(event) {
         await createConsignmentJob({supabase,serviceKey:service,reference,customerId:order.customer_id,details,paidAt});
       }
       if(newlyPaid){
+        try{await sendAdminOrderEmail({customerName,customerId:order.customer_id,service:order.service,details:order.details||'',amount:Number(order.amount_kobo)/100,reference,status:'PAYMENT CONFIRMED'});}catch(emailError){console.warn('Admin payment email failed:',emailError.message);}
         try{await sendPush({role:'admin',title:'Payment confirmed — new order',body:`${customerName} paid for ${order.service}.`,url:'/'});}catch(pushError){console.warn('Admin paid-order push failed:',pushError.message);}
         try{await sendPush({role:'customer',customerId:order.customer_id,title:'Payment confirmed',body:`Your payment for ${order.service} was successful. Your order is now in processing.`,url:'/'});}catch(pushError){console.warn('Customer paid-order push failed:',pushError.message);}
       }
       return reply(200,'service payment processed');
+    }
+    // Admin-only Apple purchases are separate from customer wallet deposits.
+    // Never send an admin purchase reference to the customer wallet-credit RPC.
+    const adminPurchaseResponse = await fetch(`${supabase}/rest/v1/admin_purchases?select=reference,item,amount_kobo,status&reference=eq.${encodeURIComponent(reference)}&limit=1`, { headers });
+    const adminPurchases = await adminPurchaseResponse.json().catch(() => []);
+    // If the optional Apple migration has not been applied yet, leave other
+    // customer wallet payments working; the Apple callback still verifies its own reference.
+    if (!adminPurchaseResponse.ok && adminPurchaseResponse.status !== 404) return reply(500, 'could not inspect admin purchase');
+    if (Array.isArray(adminPurchases) && adminPurchases.length) {
+      const purchase = adminPurchases[0];
+      if (Number(tx.amount) !== Number(purchase.amount_kobo) || String(tx.currency).toUpperCase() !== 'NGN') return reply(400, 'admin purchase amount or currency mismatch');
+      if (purchase.status === 'paid') return reply(200, 'admin purchase already processed');
+      const updatedPurchaseResponse = await fetch(`${supabase}/rest/v1/admin_purchases?reference=eq.${encodeURIComponent(reference)}&status=eq.pending`, {
+        method: 'PATCH', headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify({ status: 'paid', paystack_transaction_id: String(tx.id), paystack_channel: String(tx.channel || ''), paid_at: tx.paid_at || tx.paidAt || new Date().toISOString() })
+      });
+      if (!updatedPurchaseResponse.ok) return reply(500, 'admin purchase update failed');
+      const updatedPurchases = await updatedPurchaseResponse.json().catch(() => []);
+      if (Array.isArray(updatedPurchases) && updatedPurchases.length) {
+        try { await sendAdminOrderEmail({ customerName: 'Administrator', service: purchase.item || 'Admin purchase', details: 'Administrator purchase paid through Paystack.', amount: Number(purchase.amount_kobo) / 100, reference, status: 'ADMIN PURCHASE PAID' }); } catch (emailError) { console.warn('Admin purchase email failed:', emailError.message); }
+        try { await sendPush({ role: 'admin', title: 'Admin purchase paid', body: `Administrator paid ₦${(Number(purchase.amount_kobo) / 100).toLocaleString('en-NG')} for ${purchase.item || 'an item'}.`, url: '/' }); } catch (pushError) { console.warn('Admin purchase push failed:', pushError.message); }
+      }
+      return reply(200, 'admin purchase processed');
     }
     const adminDeposit = await fetch(`${supabase}/rest/v1/admin_wallet_deposits?select=reference&reference=eq.${encodeURIComponent(reference)}&limit=1`, { headers });
     const adminRows = await adminDeposit.json().catch(() => []);
@@ -93,6 +118,7 @@ export async function handler(event) {
         const depositRows = await deposits.json().catch(() => []);
         if (deposits.ok && depositRows.length) {
           const amount = (Number(depositRows[0].amount_kobo) / 100).toLocaleString('en-NG');
+          try { const customers=await fetch(`${supabase}/rest/v1/customers?select=name&id=eq.${encodeURIComponent(depositRows[0].customer_id)}&limit=1`,{headers}); const customerRows=await customers.json().catch(()=>[]); await sendAdminOrderEmail({customerName:customerRows?.[0]?.name||'Customer',customerId:depositRows[0].customer_id,service:'Customer Wallet Funding',details:'Customer added funds to their All Ads Manager wallet.',amount:Number(depositRows[0].amount_kobo)/100,reference,status:'WALLET FUNDING PAID'}); } catch(emailError) { console.warn('Admin wallet funding email failed:',emailError.message); }
           await sendPush({ role: 'customer', customerId: depositRows[0].customer_id, title: 'Wallet funded successfully', body: `Your wallet has been credited with ₦${amount}.`, url: '/' });
         }
       } catch (pushError) {
