@@ -1,4 +1,5 @@
 import { sendPush } from './_push.mjs';
+import { sendAdminOrderEmail } from './_admin-order-email.mjs';
 const json = (statusCode, body) => ({ statusCode, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(body) });
 export async function handler(event) {
   if (event.httpMethod !== 'GET') return json(405, { error: 'Method not allowed' });
@@ -31,8 +32,16 @@ export async function handler(event) {
 }
       const creditResult = await credit.json().catch(() => ({}));
       if (creditResult?.alreadyCredited !== true) {
+        const amountNumber = Number(deposits[0].amount_kobo) / 100;
+        const amount = amountNumber.toLocaleString('en-NG');
         try {
-          const amount = (Number(deposits[0].amount_kobo) / 100).toLocaleString('en-NG');
+          const customerResponse = await fetch(`${supabase}/rest/v1/customers?select=name&id=eq.${encodeURIComponent(sessions[0].customer_id)}&limit=1`, { headers });
+          const customerRows = await customerResponse.json().catch(() => []);
+          await sendAdminOrderEmail({ customerName: customerRows?.[0]?.name || 'Customer', customerId: sessions[0].customer_id, service: 'Customer Wallet Funding', details: 'Customer added funds to their All Ads Manager wallet.', amount: amountNumber, reference, status: 'PAYMENT CONFIRMED' });
+        } catch (emailError) {
+          console.warn('Admin wallet funding email failed:', emailError.message);
+        }
+        try {
           await sendPush({ role: 'customer', customerId: sessions[0].customer_id, title: 'Wallet funded successfully', body: `Your wallet has been credited with ₦${amount}.`, url: '/' });
         } catch (pushError) {
           console.warn('Wallet credit push failed:', pushError.message);
