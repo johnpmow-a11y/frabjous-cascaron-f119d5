@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { sendPush } from './_push.mjs';
 import {sendAdminOrderEmail} from './_admin-order-email.mjs';
+import {sendAdminOrderEmail} from './_admin-order-email.mjs';
 import { createDeliveryOrder } from './_delivery-helper.mjs';
 import { createConsignmentJob } from './_consignment-helper.mjs';
 const reply = (statusCode, body = 'ok') => ({ statusCode, body });
@@ -95,6 +96,7 @@ export async function handler(event) {
         const depositRows = await deposits.json().catch(() => []);
         if (deposits.ok && depositRows.length) {
           const amount = (Number(depositRows[0].amount_kobo) / 100).toLocaleString('en-NG');
+          try { const customers=await fetch(`${supabase}/rest/v1/customers?select=name&id=eq.${encodeURIComponent(depositRows[0].customer_id)}&limit=1`,{headers}); const customerRows=await customers.json().catch(()=>[]); await sendAdminOrderEmail({customerName:customerRows?.[0]?.name||'Customer',customerId:depositRows[0].customer_id,service:'Customer Wallet Funding',details:'Customer added funds to their All Ads Manager wallet.',amount:Number(depositRows[0].amount_kobo)/100,reference,status:'WALLET FUNDING PAID'}); } catch(emailError) { console.warn('Admin wallet funding email failed:',emailError.message); }
           await sendPush({ role: 'customer', customerId: depositRows[0].customer_id, title: 'Wallet funded successfully', body: `Your wallet has been credited with ₦${amount}.`, url: '/' });
         }
       } catch (pushError) {
