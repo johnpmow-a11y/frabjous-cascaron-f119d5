@@ -34,15 +34,16 @@ export async function handler(event){
    if(!profiles.length)return json(404,{error:'Profile not found.'});
    const p=profiles[0],following=await db(`aam_social_follows?select=follower_id&follower_id=eq.${s.customer_id}&followed_id=eq.${target}&limit=1`),isFollowing=following.length>0,allowed=!p.is_private||isFollowing||target===s.customer_id;
    if(target!==s.customer_id){await db('aam_social_notifications',{method:'POST',body:JSON.stringify([{recipient_id:target,actor_id:s.customer_id,event_type:'profile_view',title:'Profile view',body:'Someone viewed your profile.',eventType:'profile_view'}])});await sendPush({role:'customer',customerId:target,title:'Profile view',body:'Someone viewed your profile.',eventType:'profile_view'}).catch(()=>{});}
-   const [followers,followingCount,posts,unlocks]=await Promise.all([
+   const [followers,followingCount,posts,unlocks,profileViews]=await Promise.all([
     db(`aam_social_follows?select=follower_id&followed_id=eq.${target}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${target}`),
     allowed?db(`aam_social_posts?select=id,customer_id,media_type,media_path,caption,comments_enabled,created_at&customer_id=eq.${target}&moderation_status=eq.published&order=created_at.desc&limit=30`):Promise.resolve([]),
-    db(`aam_social_video_unlocks?select=post_id&customer_id=eq.${s.customer_id}`)
+    db(`aam_social_video_unlocks?select=post_id&customer_id=eq.${s.customer_id}`),
+    db(`aam_social_notifications?select=id&recipient_id=eq.${target}&event_type=eq.profile_view`)
    ]);
    const unlocked=new Set(unlocks.map(x=>x.post_id));
    const resultPosts=await Promise.all(posts.map(async post=>{const can=post.media_type!=='video'||target===s.customer_id||unlocked.has(post.id);return {...post,locked_video:post.media_type==='video'&&!can,media_url:can?await signedRead(post.media_path):null};}));
-   return json(200,{profile:{...p,avatar_url:p.avatar_path?await signedRead(p.avatar_path):null},is_following:isFollowing,followers:followers.length,following:followingCount.length,posts:resultPosts,private_locked:!allowed});
+   return json(200,{profile:{...p,avatar_url:p.avatar_path?await signedRead(p.avatar_path):null},is_following:isFollowing,followers:followers.length,following:followingCount.length,profile_views:profileViews.length,posts:resultPosts,private_locked:!allowed});
   }
   const term=String(q.q||'').trim().slice(0,40);if(term.length<2)return json(200,{profiles:[]});
   const profiles=await db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private&display_name=ilike.*${encodeURIComponent(term)}*&limit=25`);
