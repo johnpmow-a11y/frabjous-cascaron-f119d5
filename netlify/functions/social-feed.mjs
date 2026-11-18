@@ -37,6 +37,13 @@ export async function handler(event){
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||''),admin=b.role==='admin';
   const s=await session(token,admin);if(!s)return json(401,{error:'Please log in again.'});
   const customerId=admin?null:s.customer_id;
+  if(action==='sign_thumbnail_upload'){
+   if(admin)return json(403,{error:'Admin thumbnails are uploaded with admin media.'});
+   const path=`thumbnails/${customerId}/${randomUUID()}.jpg`,u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;
+   const r=await fetch(`${u}/storage/v1/object/upload/sign/aam-social-media/${path}`,{method:'POST',headers:h(k,{'Content-Type':'application/json'}),body:'{}'});
+   const d=await r.json().catch(()=>({}));if(!r.ok)return json(502,{error:d.message||'Could not prepare video preview.'});
+   return json(200,{path,token:d.token});
+  }
   if(action==='sign_avatar_upload'){
    if(admin)return json(403,{error:'Use administrator creator settings for the admin picture.'});
    const mime=String(b.mime_type||''),ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[mime];if(!ext)return json(400,{error:'Choose a JPG, PNG or WebP profile picture.'});
@@ -65,9 +72,9 @@ export async function handler(event){
   }
   if(action==='publish_post'){
    const path=String(b.media_path||''),mime=String(b.mime_type||''),ext=mimeExt[mime],prefix=admin?'admin/':customerId+'/';
-   if(!ext||!path.startsWith(prefix)||path.includes('..'))return json(400,{error:'Invalid uploaded media.'});
+   const thumb=String(b.thumbnail_path||'');if(!ext||!path.startsWith(prefix)||path.includes('..')||(thumb&&(!thumb.startsWith('thumbnails/'+customerId+'/')||thumb.includes('..'))))return json(400,{error:'Invalid uploaded media.'});
    const caption=String(b.caption||'').trim().slice(0,2200),type=mime.startsWith('video/')?'video':'image';
-   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:customerId,author_role:admin?'admin':'customer',media_type:type,media_path:path,caption,moderation_status:'published'}])});
+   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:customerId,author_role:admin?'admin':'customer',media_type:type,media_path:path,thumbnail_path:thumb||null,caption,moderation_status:'published'}])});
    return json(200,{ok:true,post:rows[0]});
   }
   return json(400,{error:'Unsupported feed action.'});
