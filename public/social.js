@@ -56,12 +56,109 @@ async function groupRole(id,makeAdmin){try{await adminApi('POST',{action:'group_
 async function adminAvatar(){const file=document.getElementById('aamAdminAvatar')?.files?.[0];if(!file)return notice('Choose a profile picture first.');try{const signed=await adminApi('POST',{action:'sign_upload',mime_type:file.type}),up=await socialDb.storage.from('aam-social-media').uploadToSignedUrl(signed.path,signed.token,file,{contentType:file.type,upsert:false});if(up.error)throw up.error;await adminApi('POST',{action:'set_avatar',avatar_path:signed.path});notice('Creator picture updated.');admin();}catch(e){notice(e.message);}}
 async function adminSave(){try{await adminApi('POST',{action:'update_profile',display_name:document.getElementById('aamAdminName')?.value||'',follower_count:Number(document.getElementById('aamAdminFollowers')?.value)});notice('Creator profile saved.');admin();}catch(e){notice(e.message);}}
 async function createAdminVideoThumbnail(file){const url=URL.createObjectURL(file),video=document.createElement('video');video.muted=true;video.playsInline=true;video.preload='auto';try{await new Promise((resolve,reject)=>{video.addEventListener('loadeddata',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('Could not read this video to create its preview.')), {once:true});video.src=url;video.load();});if(Number.isFinite(video.duration)&&video.duration>0.2){const seekTo=Math.min(0.8,video.duration/4);if(seekTo>0.05)await new Promise((resolve,reject)=>{video.addEventListener('seeked',resolve,{once:true});video.addEventListener('error',()=>reject(new Error('Could not create the video preview.')),{once:true});video.currentTime=seekTo;});}const scale=Math.min(1,1280/(video.videoWidth||1280)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round((video.videoWidth||720)*scale));canvas.height=Math.max(1,Math.round((video.videoHeight||1280)*scale));const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Video preview is not supported on this device.');ctx.drawImage(video,0,0,canvas.width,canvas.height);const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.84));if(!blob)throw new Error('Could not create the video preview.');return blob;}finally{URL.revokeObjectURL(url);video.removeAttribute('src');video.load();}}
-let aamAdminMixedBlob=null,aamAdminMixRecorder=null,aamAdminMixContext=null,aamAdminMixFrame=0,aamAdminMixUrl=null,aamAdminSourceUrl=null;
+let aamAdminMixedBlob=null,aamAdminMixRecorder=null,aamAdminMixContext=null,aamAdminMixFrame=0,aamAdminMixUrl=null,aamAdminSourceUrl=null,aamAdminMixCleanup=null;
 function audioVolumeLabel(which,value){const e=document.getElementById(which==='voice'?'aamVoiceVolumeValue':'aamMusicVolumeValue');if(e)e.textContent=value+'%';}
-function previewAdminSource(){const file=document.getElementById('aamAdminMedia')?.files?.[0],video=document.getElementById('aamAdminSourcePreview'),lockOption=document.getElementById('aamAdminLockOption');if(lockOption){lockOption.hidden=!file?.type.startsWith('video/');if(!file?.type.startsWith('video/')){const cb=document.getElementById('aamAdminLockVideo');if(cb)cb.checked=false;}}aamAdminMixedBlob=null;if(aamAdminSourceUrl)URL.revokeObjectURL(aamAdminSourceUrl);if(aamAdminMixUrl)URL.revokeObjectURL(aamAdminMixUrl);aamAdminSourceUrl=file?URL.createObjectURL(file):null;aamAdminMixUrl=null;const mixed=document.getElementById('aamAdminMixedPreview');if(mixed){mixed.hidden=true;mixed.removeAttribute('src');}if(video&&file?.type.startsWith('video/')){video.src=aamAdminSourceUrl;video.load();}else if(video){video.removeAttribute('src');video.load();}}
+function previewAdminSource(){const file=document.getElementById('aamAdminMedia')?.files?.[0],video=document.getElementById('aamAdminSourcePreview'),lockOption=document.getElementById('aamAdminLockOption'),editor=document.getElementById('aamAdminAudioEditor');if(editor)editor.hidden=!file?.type.startsWith('video/');if(lockOption){lockOption.hidden=!file?.type.startsWith('video/');if(!file?.type.startsWith('video/')){const cb=document.getElementById('aamAdminLockVideo');if(cb)cb.checked=false;}}aamAdminMixedBlob=null;if(aamAdminSourceUrl)URL.revokeObjectURL(aamAdminSourceUrl);if(aamAdminMixUrl)URL.revokeObjectURL(aamAdminMixUrl);aamAdminSourceUrl=file?URL.createObjectURL(file):null;aamAdminMixUrl=null;const mixed=document.getElementById('aamAdminMixedPreview');if(mixed){mixed.hidden=true;mixed.removeAttribute('src');}if(video&&file?.type.startsWith('video/')){video.src=aamAdminSourceUrl;video.load();}else if(video){video.removeAttribute('src');video.load();}}
 function stopVideoMix(){if(aamAdminMixRecorder&&aamAdminMixRecorder.state!=='inactive')aamAdminMixRecorder.stop();}
-async function recordVideoMix(){const file=document.getElementById('aamAdminMedia')?.files?.[0],video=document.getElementById('aamAdminSourcePreview'),status=document.getElementById('aamVideoMixStatus');if(!file||!file.type.startsWith('video/'))return notice('Choose a video first.');if(!HTMLCanvasElement.prototype.captureStream||!window.MediaRecorder)return notice('Video mixing is not supported in this browser. You can still publish the original video.');const C=window.AudioContext||window.webkitAudioContext;if(!C)return notice('Audio mixing is not supported in this browser.');try{if(aamAdminMixRecorder&&aamAdminMixRecorder.state!=='inactive')aamAdminMixRecorder.stop();aamAdminMixedBlob=null;const ctx=new C();aamAdminMixContext=ctx;await ctx.resume();const audio=new Audio(aamAdminSourceUrl);audio.preload='auto';const source=ctx.createMediaElementSource(audio),original=ctx.createGain(),destination=ctx.createMediaStreamDestination();original.gain.value=document.getElementById('aamKeepOriginalAudio')?.checked?1:0;source.connect(original);original.connect(destination);let mic=null;if(document.getElementById('aamRecordVoiceOver')?.checked){if(!navigator.mediaDevices?.getUserMedia)throw new Error('Microphone access is unavailable.');mic=await navigator.mediaDevices.getUserMedia({audio:true});const voice=ctx.createMediaStreamSource(mic),gain=ctx.createGain();gain.gain.value=Number(document.getElementById('aamVoiceVolume')?.value||100)/100;voice.connect(gain);gain.connect(destination);}let music=null,musicUrl=null;const musicFile=document.getElementById('aamBackgroundMusic')?.files?.[0];if(musicFile){music=new Audio();musicUrl=URL.createObjectURL(musicFile);music.src=musicUrl;music.loop=true;const ms=ctx.createMediaElementSource(music),mg=ctx.createGain();mg.gain.value=Number(document.getElementById('aamMusicVolume')?.value||25)/100;ms.connect(mg);mg.connect(destination);}const canvas=document.createElement('canvas'),scale=Math.min(1,1280/(video.videoWidth||1280));canvas.width=Math.max(1,Math.round((video.videoWidth||720)*scale));canvas.height=Math.max(1,Math.round((video.videoHeight||1280)*scale));const draw=canvas.getContext('2d');if(!draw)throw new Error('Video preview is unavailable.');const paint=()=>{if(video.readyState>=2)draw.drawImage(video,0,0,canvas.width,canvas.height);aamAdminMixFrame=requestAnimationFrame(paint);};video.muted=true;paint();const stream=canvas.captureStream(30);destination.stream.getAudioTracks().forEach(t=>stream.addTrack(t));const type=MediaRecorder.isTypeSupported('video/mp4')?'video/mp4':(MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')?'video/webm;codecs=vp9,opus':(MediaRecorder.isTypeSupported('video/webm')?'video/webm':''));if(!type)throw new Error('This browser has no supported video recording format.');const recorder=new MediaRecorder(stream,{mimeType:type}),chunks=[];aamAdminMixRecorder=recorder;recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};recorder.onstop=()=>{cancelAnimationFrame(aamAdminMixFrame);stream.getTracks().forEach(t=>t.stop());mic?.getTracks().forEach(t=>t.stop());audio.pause();music?.pause();if(musicUrl)URL.revokeObjectURL(musicUrl);video.muted=false;ctx.close().catch(()=>{});aamAdminMixContext=null;aamAdminMixedBlob=new Blob(chunks,{type});if(aamAdminMixedBlob.size){if(aamAdminMixUrl)URL.revokeObjectURL(aamAdminMixUrl);aamAdminMixUrl=URL.createObjectURL(aamAdminMixedBlob);const preview=document.getElementById('aamAdminMixedPreview');preview.src=aamAdminMixUrl;preview.hidden=false;preview.load();if(status)status.textContent='Finished mix ready. Play the preview, then publish.';}else if(status)status.textContent='No mixed video was recorded. Publish the original if you prefer.';};recorder.start(500);video.currentTime=0;await Promise.all([video.play(),audio.play(),music?music.play():Promise.resolve()]);video.onended=()=>stopVideoMix();if(status)status.textContent='Recording voice-over and music mix. Speak while the video plays; it stops at the end or when you tap Stop recording.';}catch(e){aamAdminMixContext?.close().catch(()=>{});aamAdminMixContext=null;if(status)status.textContent=e.message;notice(e.message);}}
-async function adminPublish(){let file=document.getElementById('aamAdminMedia')?.files?.[0];if(!file)return notice('Choose a picture or video first.');if(file.type.startsWith('video/')&&aamAdminMixedBlob)file=new File([aamAdminMixedBlob],'aam-mixed-video.'+(aamAdminMixedBlob.type.includes('mp4')?'mp4':'webm'),{type:aamAdminMixedBlob.type});try{let thumbnailPath=null;if(file.type.startsWith('video/')){const preview=await createAdminVideoThumbnail(file),thumb=await adminApi('POST',{action:'sign_thumbnail_upload'}),thumbUpload=await socialDb.storage.from('aam-social-media').uploadToSignedUrl(thumb.path,thumb.token,preview,{contentType:'image/jpeg',upsert:false});if(thumbUpload.error)throw thumbUpload.error;thumbnailPath=thumb.path;}const signed=await adminApi('POST',{action:'sign_upload',mime_type:file.type}),up=await socialDb.storage.from('aam-social-media').uploadToSignedUrl(signed.path,signed.token,file,{contentType:file.type,upsert:false});if(up.error)throw up.error;await adminApi('POST',{action:'publish_post',media_path:signed.path,thumbnail_path:thumbnailPath,mime_type:file.type,is_locked:file.type.startsWith('video/')&&!!document.getElementById('aamAdminLockVideo')?.checked,caption:document.getElementById('aamAdminCaption')?.value||''});notice('Administrator post published.');aamAdminMixedBlob=null;admin();}catch(e){notice(e.message);}}
+async function recordVideoMix(){
+ const file=document.getElementById('aamAdminMedia')?.files?.[0],video=document.getElementById('aamAdminSourcePreview'),status=document.getElementById('aamVideoMixStatus');
+ if(!file||!file.type.startsWith('video/'))return notice('Choose a video first.');
+ if(!HTMLCanvasElement.prototype.captureStream||!window.MediaRecorder)return notice('Video mixing is not supported in this browser. You can still publish the original video.');
+ const AudioCtx=window.AudioContext||window.webkitAudioContext;
+ if(!AudioCtx)return notice('Audio mixing is not supported in this browser. You can still publish the original video.');
+ if(aamAdminMixRecorder&&aamAdminMixRecorder.state!=='inactive')return notice('A video mix is already recording. Stop it before starting another.');
+ let ctx=null,mic=null,music=null,musicUrl=null,stream=null,raf=0,oldMuted=video.muted,endedHandler=null,cleaned=false;
+ const cleanup=()=>{
+  if(cleaned)return;cleaned=true;
+  if(raf)cancelAnimationFrame(raf);
+  if(endedHandler)video.removeEventListener('ended',endedHandler);
+  stream?.getTracks().forEach(t=>t.stop());
+  mic?.getTracks().forEach(t=>t.stop());
+  music?.pause();
+  if(musicUrl)URL.revokeObjectURL(musicUrl);
+  video.muted=oldMuted;
+  if(ctx&&ctx.state!=='closed')ctx.close().catch(()=>{});
+  if(aamAdminMixCleanup===cleanup)aamAdminMixCleanup=null;
+  aamAdminMixContext=null;
+ };
+ try{
+  if(status)status.textContent='Preparing video and audio…';
+  if(video.readyState<2)await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>reject(new Error('The video took too long to load. Try selecting it again.')),12000);
+   video.addEventListener('loadeddata',()=>{clearTimeout(timer);resolve();},{once:true});
+   video.addEventListener('error',()=>{clearTimeout(timer);reject(new Error('This video could not be opened for editing.'));},{once:true});
+  });
+  ctx=new AudioCtx();aamAdminMixContext=ctx;
+  const sourceAudio=new Audio(aamAdminSourceUrl);sourceAudio.preload='auto';
+  await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>reject(new Error('The original video sound could not be prepared.')),12000);
+   sourceAudio.addEventListener('canplay',()=>{clearTimeout(timer);resolve();},{once:true});
+   sourceAudio.addEventListener('error',()=>{clearTimeout(timer);reject(new Error('The original video sound could not be opened.'));},{once:true});
+   sourceAudio.load();
+  });
+  const source=ctx.createMediaElementSource(sourceAudio),original=ctx.createGain(),destination=ctx.createMediaStreamDestination();
+  original.gain.value=document.getElementById('aamKeepOriginalAudio')?.checked?1:0;
+  source.connect(original);original.connect(destination);
+  if(document.getElementById('aamRecordVoiceOver')?.checked){
+   if(!navigator.mediaDevices?.getUserMedia)throw new Error('Microphone access is unavailable in this browser.');
+   if(status)status.textContent='Allow microphone access to record your voice.';
+   mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+   const voice=ctx.createMediaStreamSource(mic),gain=ctx.createGain();
+   gain.gain.value=Number(document.getElementById('aamVoiceVolume')?.value||100)/100;
+   voice.connect(gain);gain.connect(destination);
+  }
+  const musicFile=document.getElementById('aamBackgroundMusic')?.files?.[0];
+  if(musicFile){
+   music=new Audio();music.preload='auto';musicUrl=URL.createObjectURL(musicFile);music.src=musicUrl;music.loop=true;
+   await new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error('Background music could not be prepared.')),12000);
+    music.addEventListener('canplay',()=>{clearTimeout(timer);resolve();},{once:true});
+    music.addEventListener('error',()=>{clearTimeout(timer);reject(new Error('The selected background music could not be opened.'));},{once:true});
+    music.load();
+   });
+   const musicSource=ctx.createMediaElementSource(music),musicGain=ctx.createGain();
+   musicGain.gain.value=Number(document.getElementById('aamMusicVolume')?.value||25)/100;
+   musicSource.connect(musicGain);musicGain.connect(destination);
+  }
+  const canvas=document.createElement('canvas'),scale=Math.min(1,1280/(video.videoWidth||1280));
+  canvas.width=Math.max(1,Math.round((video.videoWidth||720)*scale));canvas.height=Math.max(1,Math.round((video.videoHeight||1280)*scale));
+  const draw=canvas.getContext('2d');if(!draw)throw new Error('Video preview is not supported on this device.');
+  const paint=()=>{if(video.readyState>=2)draw.drawImage(video,0,0,canvas.width,canvas.height);raf=requestAnimationFrame(paint);};
+  video.muted=true;video.currentTime=0;sourceAudio.currentTime=0;if(music)music.currentTime=0;
+  await ctx.resume();
+  stream=canvas.captureStream(30);destination.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+  const types=['video/mp4;codecs=h264,aac','video/mp4','video/webm;codecs=vp9,opus','video/webm'];
+  const type=types.find(t=>MediaRecorder.isTypeSupported(t));
+  if(!type)throw new Error('This browser cannot export a mixed video. You can still publish the original.');
+  const recorder=new MediaRecorder(stream,{mimeType:type}),chunks=[];
+  aamAdminMixRecorder=recorder;aamAdminMixCleanup=cleanup;aamAdminMixedBlob=null;
+  recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
+  recorder.onerror=()=>{cleanup();if(status)status.textContent='Recording failed. You can publish the original video.';};
+  recorder.onstop=()=>{
+   cleanup();
+   aamAdminMixRecorder=null;
+   const blob=new Blob(chunks,{type:recorder.mimeType||type});
+   if(blob.size){
+    aamAdminMixedBlob=blob;
+    if(aamAdminMixUrl)URL.revokeObjectURL(aamAdminMixUrl);
+    aamAdminMixUrl=URL.createObjectURL(blob);
+    const preview=document.getElementById('aamAdminMixedPreview');
+    preview.src=aamAdminMixUrl;preview.hidden=false;preview.load();
+    if(status)status.textContent='Mix ready. Play the preview and check the sound before publishing.';
+   }else if(status)status.textContent='No mixed video was recorded. You can publish the original video.';
+  };
+  endedHandler=()=>stopVideoMix();video.addEventListener('ended',endedHandler,{once:true});
+  paint();recorder.start(500);
+  await Promise.all([video.play(),sourceAudio.play(),music?music.play():Promise.resolve()]);
+  if(status)status.textContent='Recording. Speak while the video plays. It stops at the end or when you tap Stop recording.';
+ }catch(e){
+  if(aamAdminMixRecorder&&aamAdminMixRecorder.state!=='inactive'){try{aamAdminMixRecorder.stop();}catch(_){}}
+  cleanup();
+  aamAdminMixRecorder=null;
+  if(status)status.textContent=e.message+' You can still publish the original video.';
+  notice(e.message);
+ }
+}async function adminPublish(){let file=document.getElementById('aamAdminMedia')?.files?.[0];if(!file)return notice('Choose a picture or video first.');if(file.type.startsWith('video/')&&aamAdminMixedBlob)file=new File([aamAdminMixedBlob],'aam-mixed-video.'+(aamAdminMixedBlob.type.includes('mp4')?'mp4':'webm'),{type:aamAdminMixedBlob.type});try{let thumbnailPath=null;if(file.type.startsWith('video/')){const preview=await createAdminVideoThumbnail(file),thumb=await adminApi('POST',{action:'sign_thumbnail_upload'}),thumbUpload=await socialDb.storage.from('aam-social-media').uploadToSignedUrl(thumb.path,thumb.token,preview,{contentType:'image/jpeg',upsert:false});if(thumbUpload.error)throw thumbUpload.error;thumbnailPath=thumb.path;}const signed=await adminApi('POST',{action:'sign_upload',mime_type:file.type}),up=await socialDb.storage.from('aam-social-media').uploadToSignedUrl(signed.path,signed.token,file,{contentType:file.type,upsert:false});if(up.error)throw up.error;await adminApi('POST',{action:'publish_post',media_path:signed.path,thumbnail_path:thumbnailPath,mime_type:file.type,is_locked:file.type.startsWith('video/')&&!!document.getElementById('aamAdminLockVideo')?.checked,caption:document.getElementById('aamAdminCaption')?.value||''});notice('Administrator post published.');aamAdminMixedBlob=null;admin();}catch(e){notice(e.message);}}
 async function adminDeletePost(id){if(!confirm('Remove this social post?'))return;try{await adminApi('POST',{action:'delete_post',post_id:id});admin();}catch(e){notice(e.message);}}
 async function adminDeleteComment(id){if(!confirm('Delete this comment?'))return;try{await adminApi('POST',{action:'delete_comment',comment_id:id});admin();}catch(e){notice(e.message);}}
 function open(page){if(page!=='chat'&&window.aamChatPresenceTimer){clearInterval(window.aamChatPresenceTimer);window.aamChatPresenceTimer=null;}if(page!=='chat'&&window.aamChatRefreshTimer){clearInterval(window.aamChatRefreshTimer);window.aamChatRefreshTimer=null;window.aamActiveChatId=null;}if(page==='home')return home();if(page==='upload')return upload();if(page==='chat')return chat();if(page==='profile')return profile();document.getElementById('aamSocialDock')?.remove();if(adminToken()&&typeof window.admin==='function')return window.admin();if(typeof window.profile==='function')return window.profile();}
