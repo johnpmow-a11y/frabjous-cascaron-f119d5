@@ -67,7 +67,7 @@ async function recordVideoMix(){
  const AudioCtx=window.AudioContext||window.webkitAudioContext;
  if(!AudioCtx)return notice('Audio mixing is not supported in this browser. You can still publish the original video.');
  if(aamAdminMixRecorder&&aamAdminMixRecorder.state!=='inactive')return notice('A video mix is already recording. Stop it before starting another.');
- let ctx=null,mic=null,music=null,musicUrl=null,sourceAudio=null,stream=null,raf=0,oldMuted=video.muted,endedHandler=null,cleaned=false;
+ let ctx=null,mic=null,music=null,musicUrl=null,sourceAudio=null,stream=null,raf=0,oldMuted=video.muted,endedHandler=null,cleaned=false,discardMix=false;
  const cleanup=()=>{
   if(cleaned)return;cleaned=true;
   if(raf)cancelAnimationFrame(raf);
@@ -137,6 +137,7 @@ async function recordVideoMix(){
   recorder.onstop=()=>{
    cleanup();
    aamAdminMixRecorder=null;
+   if(discardMix){aamAdminMixedBlob=null;if(status)status.textContent='Recording was cancelled. You can publish the original video.';return;}
    const blob=new Blob(chunks,{type:recorder.mimeType||type});
    if(blob.size){
     aamAdminMixedBlob=blob;
@@ -152,6 +153,7 @@ async function recordVideoMix(){
   await Promise.all([video.play(),sourceAudio.play(),music?music.play():Promise.resolve()]);
   if(status)status.textContent='Recording. Speak while the video plays. It stops at the end or when you tap Stop recording.';
  }catch(e){
+  discardMix=true;
   if(aamAdminMixRecorder&&aamAdminMixRecorder.state!=='inactive'){try{aamAdminMixRecorder.stop();}catch(_){}}
   cleanup();
   aamAdminMixRecorder=null;
