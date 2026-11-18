@@ -16,12 +16,12 @@ export async function handler(event){
     db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_preferences?select=notification_sound,chat_wallpaper,custom_wallpaper_path&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`)
    ]);
-   const preferences=prefs[0]||{notification_sound:1,chat_wallpaper:'default'};if(preferences.custom_wallpaper_path)preferences.custom_wallpaper_url=await signedRead(preferences.custom_wallpaper_path);return json(200,{coin_balance:Number(balance[0]?.balance_coins||0),profile:profile[0]||null,preferences});
+   const preferences=prefs[0]||{notification_sound:1,chat_wallpaper:'default'};if(preferences.custom_wallpaper_path)preferences.custom_wallpaper_url=await signedRead(preferences.custom_wallpaper_path);const currentProfile=profile[0]||null;if(currentProfile?.avatar_path)currentProfile.avatar_url=await signedRead(currentProfile.avatar_path);return json(200,{coin_balance:Number(balance[0]?.balance_coins||0),profile:currentProfile,preferences});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||'');
   if(!await session(token))return json(401,{error:'Your session has expired. Please log in again.'});
-  if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
+  if(action==='update_avatar'){const path=String(b.avatar_path||'');return json(200,await rpc('aam_social_update_avatar',{p_token:token,p_avatar_path:path}));}\n  if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
   if(action==='update_preferences')return json(200,await rpc('aam_social_update_preferences',{p_token:token,p_sound:Number(b.notification_sound||1),p_wallpaper:String(b.chat_wallpaper||'default'),p_custom_wallpaper_path:b.custom_wallpaper_path||null}));
   if(action==='confirm_age')return json(200,await rpc('aam_social_confirm_age',{p_token:token}));
   if(action==='follow'){
