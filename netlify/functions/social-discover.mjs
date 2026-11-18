@@ -44,14 +44,15 @@ export async function handler(event){
     db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${target}`)
    ]);
    const unlocked=new Set(unlocks.map(x=>x.post_id));
-   const resultPosts=await Promise.all(posts.map(async post=>{const can=post.media_type!=='video'||target===s.customer_id||unlocked.has(post.id);return {...post,locked_video:post.media_type==='video'&&!can,media_url:can?await signedRead(post.media_path):null};}));
-   return json(200,{profile:{...p,avatar_url:p.avatar_path?await signedRead(p.avatar_path):null},is_following:isFollowing,followers:followers.length,following:followingCount.length,profile_views:profileViews.length,posts:resultPosts,private_locked:!allowed});
+   const resultPosts=await Promise.all(posts.map(async post=>{const can=post.media_type!=='video'||target===s.customer_id||unlocked.has(post.id),{media_path,...publicPost}=post;return {...publicPost,locked_video:post.media_type==='video'&&!can,media_url:can?await signedRead(media_path):null};}));
+   const {avatar_path,...publicProfile}=p;
+   return json(200,{profile:{...publicProfile,avatar_url:avatar_path?await signedRead(avatar_path):null},is_following:isFollowing,followers:followers.length,following:followingCount.length,profile_views:profileViews.length,posts:resultPosts,private_locked:!allowed});
   }
   const term=String(q.q||'').trim().slice(0,40);if(term.length<2)return json(200,{profiles:[]});
   const profiles=await db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private&display_name=ilike.*${encodeURIComponent(term)}*&limit=25`);
   const ids=profiles.map(p=>p.customer_id).filter(id=>id!==s.customer_id);
   const follows=ids.length?await db(`aam_social_follows?select=followed_id&follower_id=eq.${s.customer_id}&followed_id=in.(${ids.join(',')})`):[];
   const set=new Set(follows.map(f=>f.followed_id));
-  return json(200,{profiles:await Promise.all(profiles.filter(p=>p.customer_id!==s.customer_id).map(async p=>({...p,avatar_url:p.avatar_path?await signedRead(p.avatar_path):null,is_following:set.has(p.customer_id)})))});
+  return json(200,{profiles:await Promise.all(profiles.filter(p=>p.customer_id!==s.customer_id).map(async p=>{const {avatar_path,...publicProfile}=p;return {...publicProfile,avatar_url:avatar_path?await signedRead(avatar_path):null,is_following:set.has(p.customer_id)};}))});
  }catch(e){return json(/session expired/i.test(e.message)?401:400,{error:e.message||'Could not load discovery.'});}
 }
