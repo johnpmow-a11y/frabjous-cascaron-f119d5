@@ -20,6 +20,16 @@ insert into public.aam_social_profiles(customer_id, display_name)
 select id, name from public.customers
 on conflict (customer_id) do nothing;
 
+create table if not exists public.aam_social_admin_profile (
+  id boolean primary key default true check (id=true),
+  display_name text not null default 'All Ads Manager',
+  avatar_path text,
+  follower_count bigint not null default 0 check (follower_count between 0 and 100000000),
+  is_verified boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+insert into public.aam_social_admin_profile(id) values(true) on conflict(id) do nothing;
+
 create table if not exists public.aam_coin_balances (
   customer_id uuid primary key references public.customers(id) on delete cascade,
   balance_coins bigint not null default 0 check (balance_coins >= 0),
@@ -176,7 +186,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'aam_social_profiles','aam_coin_balances','aam_coin_transactions','aam_social_follows',
+    'aam_social_profiles','aam_social_admin_profile','aam_coin_balances','aam_coin_transactions','aam_social_follows',
     'aam_social_referrals','aam_social_posts','aam_social_likes','aam_social_comments',
     'aam_social_notifications','aam_chat_conversations','aam_chat_participants',
     'aam_chat_messages','aam_chat_message_reads','aam_social_preferences'
