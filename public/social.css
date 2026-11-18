@@ -60,3 +60,5 @@
 
 .aam-social-message .aam-read{animation:aamReadBlink .35s ease-in-out 3;}
 @keyframes aamReadBlink{0%,100%{opacity:1}50%{opacity:.12}}
+
+.aam-coin-packages{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:12px}.aam-coin-packages .aam-social-btn:disabled{opacity:.55;cursor:not-allowed}
