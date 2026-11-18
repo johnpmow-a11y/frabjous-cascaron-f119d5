@@ -11,13 +11,13 @@ export async function handler(event){
  try{
   if(event.httpMethod==='GET'){
    const q=event.queryStringParameters||{};if(!await adminSession(String(q.token||'')))return json(401,{error:'Administrator login required.'});
-   const [rows,posts,comments]=await Promise.all([db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1'),db('aam_social_posts?select=id,media_type,caption,created_at,author_role&order=created_at.desc&limit=30'),db('aam_social_comments?select=id,post_id,customer_id,body,created_at&order=created_at.desc&limit=60')]);
+   const [rows,posts,comments,groupMembers]=await Promise.all([db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1'),db('aam_social_posts?select=id,media_type,caption,created_at,author_role&order=created_at.desc&limit=30'),db('aam_social_comments?select=id,post_id,customer_id,body,created_at&order=created_at.desc&limit=60'),db('aam_chat_group_members?select=customer_id,group_role,joined_at&conversation_id=eq.a0000000-0000-4000-8000-000000000001&order=joined_at.desc&limit=500')]);
    const ids=[...new Set(comments.map(c=>c.customer_id))],profiles=ids.length?await db('aam_social_profiles?select=customer_id,display_name&customer_id=in.('+ids.join(',')+')'):[],pm=new Map(profiles.map(p=>[p.customer_id,p.display_name]));
-   return json(200,{profile:rows[0]||{display_name:'All Ads Manager',follower_count:0,is_verified:true},posts,comments:comments.map(c=>({...c,creator_name:pm.get(c.customer_id)||'Creator'}))});
+   const memberIds=groupMembers.map(m=>m.customer_id),memberRows=memberIds.length?await db('customers?select=id,name&id=in.('+memberIds.join(',')+')'):[],memberNames=new Map(memberRows.map(m=>[m.id,m.name]));\n   return json(200,{profile:rows[0]||{display_name:'All Ads Manager',follower_count:0,is_verified:true},posts,comments:comments.map(c=>({...c,creator_name:pm.get(c.customer_id)||'Creator'})),group_members:groupMembers.map(m=>({customer_id:m.customer_id,name:memberNames.get(m.customer_id)||'Customer',group_role:m.group_role,joined_at:m.joined_at}))});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||'');if(!await adminSession(token))return json(401,{error:'Administrator login required.'});
-  if(b.action==='update_profile'){
+  if(b.action==='group_set_admin'){if(!uuid.test(String(b.customer_id||'')))return json(400,{error:'Choose a valid group member.'});const result=await db('rpc/aam_chat_group_set_admin',{method:'POST',body:JSON.stringify({p_customer_id:b.customer_id,p_make_admin:!!b.make_admin})});return json(200,result);}\n  if(b.action==='update_profile'){
    const name=String(b.display_name||'All Ads Manager').trim().slice(0,40),count=Number(b.follower_count);
    if(!name||!Number.isInteger(count)||count<0||count>100000000)return json(400,{error:'Enter a display name and follower count from 0 to 100,000,000.'});
    const rows=await db('aam_social_admin_profile?id=eq.true',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({display_name:name,follower_count:count,updated_at:new Date().toISOString()})});
