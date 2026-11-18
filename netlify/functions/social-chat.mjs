@@ -40,6 +40,14 @@ export async function handler(event){
    return json(200,{conversations:conversations.map(c=>({ ...c,other:allParts.filter(p=>p.conversation_id===c.id&&p.customer_id!==s.customer_id).map(p=>({...pm.get(p.customer_id),last_seen_at:p.last_seen_at}))[0]||{},last_message:messages.find(m=>m.conversation_id===c.id)||null }))});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
+  if(b.action==='sign_media_upload'){
+   const mime=String(b.mime_type||''),ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','video/mp4':'mp4','video/quicktime':'mov','video/webm':'webm'}[mime];
+   if(!ext)return json(400,{error:'Choose a supported image or video.'});
+   const path=`${s.customer_id}/chat/${randomUUID()}.${ext}`,u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;
+   const r=await fetch(`${u}/storage/v1/object/upload/sign/aam-social-media/${path}`,{method:'POST',headers:headers(k,{'Content-Type':'application/json'}),body:'{}'});
+   const d=await r.json().catch(()=>({}));if(!r.ok)return json(502,{error:d.message||'Could not prepare the attachment.'});
+   return json(200,{path,token:d.token,message_type:mime.startsWith('video/')?'video':'image'});
+  }
   if(b.action==='sign_voice_upload'){
    const mime=String(b.mime_type||'audio/webm');if(!['audio/webm','audio/mp4'].includes(mime))return json(400,{error:'Unsupported voice-note format.'});
    const ext=mime==='audio/mp4'?'m4a':'webm',path=`voice/${s.customer_id}/${randomUUID()}.${ext}`,u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;
