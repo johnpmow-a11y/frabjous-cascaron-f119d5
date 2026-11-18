@@ -8,3 +8,25 @@
 .aam-top-actions{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:flex;gap:8px;align-items:center}.aam-notify-btn,.tiny-admin{border:0;border-radius:10px;background:#273449;color:#fff;min-width:38px;min-height:38px;position:relative;font-size:20px}.aam-notify-count{position:absolute;top:-5px;right:-5px;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;min-width:17px;padding:2px 4px}.aam-social-notification{padding:12px;border-bottom:1px solid #e5e7eb}.aam-social-notification.unread{background:#eff6ff}.aam-social-notification strong,.aam-social-notification span{display:inline-block;margin-right:7px}.aam-social-notification p{margin:6px 0}.aam-social-notification small{color:#64748b;font-size:11px}
 
 .aam-voice-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}.aam-voice-controls .aam-social-btn{width:auto}.aam-voice-controls span{font-size:12px}.aam-voice-controls span:has(+*){animation:none} .aam-voice-controls .recording{animation:aamBlink .9s steps(2,start) infinite}@keyframes aamBlink{to{visibility:hidden}}.aam-social-message audio{display:block;max-width:100%;margin-top:8px}
+
+.aam-social-chat-messages.wallpaper-default{background:#fff}
+.aam-social-chat-messages.wallpaper-theme-01{background:linear-gradient(135deg,#f8fafc,#e2e8f0);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-02{background:linear-gradient(135deg,#fff7ed,#ffedd5);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-03{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-04{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-05{background:linear-gradient(135deg,#fdf2f8,#fce7f3);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-06{background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-07{background:linear-gradient(135deg,#ecfeff,#cffafe);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-08{background:linear-gradient(135deg,#fefce8,#fef9c3);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-09{background:linear-gradient(135deg,#fff1f2,#ffe4e6);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-10{background:linear-gradient(135deg,#f1f5f9,#cbd5e1);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-11{background:linear-gradient(135deg,#faf5ff,#f3e8ff);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-12{background:linear-gradient(135deg,#f0fdfa,#ccfbf1);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-13{background:linear-gradient(135deg,#f7fee7,#ecfccb);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-14{background:linear-gradient(135deg,#fff7ed,#fed7aa);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-15{background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-16{background:linear-gradient(135deg,#fdf4ff,#fae8ff);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-17{background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-18{background:linear-gradient(135deg,#fef2f2,#fee2e2);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-19{background:linear-gradient(135deg,#f8fafc,#e0f2fe);border-radius:14px;padding:12px}
+.aam-social-chat-messages.wallpaper-theme-20{background:linear-gradient(135deg,#fafaf9,#e7e5e4);border-radius:14px;padding:12px}
