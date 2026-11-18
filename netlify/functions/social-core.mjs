@@ -37,10 +37,6 @@ export async function handler(event){
    const code=String(b.referral_code||'').trim().slice(0,32);
    return json(200,await rpc('aam_social_apply_referral',{p_token:token,p_referral_code:code}));
   }
-  if(action==='unlock_video'){
-   if(!uuid.test(String(b.post_id||'')))return json(400,{error:'Choose a valid video.'});
-   return json(200,await rpc('aam_social_unlock_video',{p_token:token,p_post_id:b.post_id}));
-  }
   return json(400,{error:'Unsupported social action.'});
  }catch(e){const message=String(e.message||'Could not complete this social action.');const status=/insufficient coins/i.test(message)?402:/session expired/i.test(message)?401:400;return json(status,{error:message});}
 }
