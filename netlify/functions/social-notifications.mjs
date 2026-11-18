@@ -14,7 +14,7 @@ export async function handler(event){
    const ids=[...new Set(rows.map(n=>n.actor_id).filter(Boolean))];
    const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
    const map=new Map(profiles.map(p=>[p.customer_id,p]));
-   const notifications=await Promise.all(rows.map(async n=>{const actor=map.get(n.actor_id)||null;return {...n,actor:actor?{...actor,avatar_url:actor.avatar_path?await signedRead(actor.avatar_path):null}:null};}));
+   const notifications=await Promise.all(rows.map(async n=>{const actor=map.get(n.actor_id)||null;if(!actor)return {...n,actor:null};const {avatar_path,...publicActor}=actor;return {...n,actor:{...publicActor,avatar_url:avatar_path?await signedRead(avatar_path):null}};}));
    return json(200,{notifications,unread_count:rows.filter(n=>!n.read_at).length});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
