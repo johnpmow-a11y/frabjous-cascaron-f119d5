@@ -62,7 +62,7 @@ export async function handler(event){
    if(!uuid.test(String(b.conversation_id||'')))return json(400,{error:'Invalid conversation.'});
    const recipients=await db(`aam_chat_participants?select=customer_id&conversation_id=eq.${b.conversation_id}&customer_id=neq.${s.customer_id}`);
    const result=await rpc('aam_chat_send',{p_token:token,p_conversation:b.conversation_id,p_body:String(b.body||''),p_type:String(b.message_type||'text'),p_media_path:b.media_path||null,p_shared_post:b.shared_post_id||null});
-   await Promise.allSettled(recipients.map(x=>sendPush({role:'customer',customerId:x.customer_id,title:'New message',body:String(b.message_type==='voice'?'You received a voice note.':b.message_type==='shared_post'?'Someone shared a post with you.':b.message_type==='image'||b.message_type==='video'?'You received a media message.':b.body||'You have a new message.').slice(0,180),eventType:'message'})));
+   await Promise.allSettled(recipients.map(x=>sendPush({role:'customer',customerId:x.customer_id,title:'New message',body:String(b.message_type==='voice'?'You received a voice note.':b.message_type==='shared_post'?'Someone shared a post with you.':b.message_type==='image'||b.message_type==='video'?'You received a media message.':b.body||'You have a new message.').slice(0,180),eventType:b.message_type==='shared_post'?'share':'message'})));
    return json(200,result);
   }
   return json(400,{error:'Unsupported chat action.'});
