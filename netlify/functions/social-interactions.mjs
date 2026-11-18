@@ -10,7 +10,6 @@ export async function handler(event){
  try{
   const b=event.httpMethod==='GET'?event.queryStringParameters||{}:JSON.parse(event.body||'{}');
   const token=String(b.token||''),s=await session(token);if(!s)return json(401,{error:'Please log in again.'});
-  const age=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${s.customer_id}&limit=1`);if(!age[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older first.'});
   if(event.httpMethod==='GET'){
    const post=String(b.post_id||'');if(!uuid.test(post))return json(400,{error:'Choose a valid post.'});
    const postRows=await db(`aam_social_posts?select=customer_id,comments_enabled&id=eq.${post}&moderation_status=eq.published&limit=1`);
