@@ -2,7 +2,7 @@ const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/
 const uuid=/^[0-9a-f-]{36}$/i;
 const headers=(key,extra={})=>({apikey:key,...(key.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${key}`}),...extra});
 async function db(path,options={}){const base=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!base||!key)throw new Error('Notifications are not configured.');const r=await fetch(`${base}/rest/v1/${path}`,{...options,headers:headers(key,{'Content-Type':'application/json',...(options.headers||{})})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.message||data.error||'Notification request failed.');return data;}
-async function session(token){if(!uuid.test(token))return null;const rows=await db(`customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);return rows[0]||null;}
+async function signedRead(path){const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;const r=await fetch(`${u}/storage/v1/object/sign/aam-social-media/${path}`,{method:'POST',headers:headers(k,{'Content-Type':'application/json'}),body:JSON.stringify({expiresIn:1800})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||'Could not load notification avatar.');const p=d.signedURL||d.signedUrl||'';return /^https?:\\/\\//i.test(p)?p:u+(p.startsWith('/storage/v1/')?p:'/storage/v1'+(p.startsWith('/')?p:'/'));}\nasync function session(token){if(!uuid.test(token))return null;const rows=await db(`customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);return rows[0]||null;}
 export async function handler(event){
  if(event.httpMethod==='OPTIONS')return json(204,{});
  try{
@@ -13,7 +13,8 @@ export async function handler(event){
    const ids=[...new Set(rows.map(n=>n.actor_id).filter(Boolean))];
    const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
    const map=new Map(profiles.map(p=>[p.customer_id,p]));
-   return json(200,{notifications:rows.map(n=>({...n,actor:map.get(n.actor_id)||null})),unread_count:rows.filter(n=>!n.read_at).length});
+   const notifications=await Promise.all(rows.map(async n=>{const actor=map.get(n.actor_id)||null;return {...n,actor:actor?{...actor,avatar_url:actor.avatar_path?await signedRead(actor.avatar_path):null}:null};}));
+   return json(200,{notifications,unread_count:rows.filter(n=>!n.read_at).length});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const ids=Array.isArray(b.ids)?b.ids.filter(x=>uuid.test(String(x))):[];
