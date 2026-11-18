@@ -10,8 +10,9 @@ export async function handler(event){
  try{
   if(event.httpMethod==='GET'){
    const q=event.queryStringParameters||{};if(!await adminSession(String(q.token||'')))return json(401,{error:'Administrator login required.'});
-   const rows=await db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1');
-   return json(200,{profile:rows[0]||{display_name:'All Ads Manager',follower_count:0,is_verified:true}});
+   const [rows,posts,comments]=await Promise.all([db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1'),db('aam_social_posts?select=id,media_type,caption,created_at,author_role&order=created_at.desc&limit=30'),db('aam_social_comments?select=id,post_id,customer_id,body,created_at&order=created_at.desc&limit=60')]);
+   const ids=[...new Set(comments.map(c=>c.customer_id))],profiles=ids.length?await db('aam_social_profiles?select=customer_id,display_name&customer_id=in.('+ids.join(',')+')'):[],pm=new Map(profiles.map(p=>[p.customer_id,p.display_name]));
+   return json(200,{profile:rows[0]||{display_name:'All Ads Manager',follower_count:0,is_verified:true},posts,comments:comments.map(c=>({...c,creator_name:pm.get(c.customer_id)||'Creator'}))});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||'');if(!await adminSession(token))return json(401,{error:'Administrator login required.'});
