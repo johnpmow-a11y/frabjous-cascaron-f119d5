@@ -31,6 +31,8 @@ const checks=[
  ['admin video mix can be previewed before publishing',ui.includes('aamAdminMixedPreview')&&ui.includes('Finished mix ready. Play the preview, then publish.')],
  ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
  ['locked feed responses omit raw storage paths',feed.includes('media_path,thumbnail_path,customer_id,...publicPost')],
+ ['admin profile also respects free versus locked video setting',socialDiscover.includes('created_at,is_locked&author_role=eq.admin')&&socialDiscover.includes("p.is_locked===true&&!unlocked.has(p.id)")&&socialDiscover.includes('media_url:locked?null:await signedRead(media_path)')],
+ ['customer profile videos remain free',socialDiscover.includes('locked_video:false,media_url:await signedRead(media_path)')],
  ['creator discovery omits raw media paths',discover.includes('{media_path,...publicPost}=post')&&discover.includes('const {avatar_path,...publicProfile}=p')],
  ['chat responses omit raw media paths',chat.includes('const {media_path,...publicMessage}=m')],
  ['notification preferences filter in-app alerts',notifications.includes('before insert on public.aam_social_notifications')&&notifications.includes('profile_update_notifications')],
