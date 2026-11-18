@@ -57,6 +57,8 @@ begin
       (v_follower,'follow:'||v_follower::text||':'||p_target::text||':follower','follow_reward_sent',35,'Reward for following a friend',p_target),
       (p_target,'follow:'||v_follower::text||':'||p_target::text||':followed','follow_reward_received',60,'Reward for receiving a new follower',v_follower)
     on conflict(reference) do nothing;
+    insert into public.aam_social_notifications(recipient_id,actor_id,event_type,title,body)
+    values(p_target,v_follower,'follow','New follower','Someone followed your profile.');
   end if;
   select balance_coins into v_balance from public.aam_coin_balances where customer_id=v_follower;
   return jsonb_build_object('following',true,'new_follow',v_inserted=1,'coins_earned',case when v_inserted=1 then 35 else 0 end,'coin_balance',coalesce(v_balance,0));
