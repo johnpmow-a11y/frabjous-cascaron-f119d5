@@ -18,7 +18,7 @@ export async function handler(event){
     db(`aam_social_preferences?select=notification_sound,chat_wallpaper,custom_wallpaper_path,profile_view_notifications,follow_notifications,like_notifications,comment_notifications,share_notifications,message_notifications,profile_update_notifications&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_follows?select=follower_id&followed_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
-    db(`aam_social_notifications?select=id&recipient_id=eq.${encodeURIComponent(s.customer_id)}&event_type=eq.profile_view`)
+    db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${encodeURIComponent(s.customer_id)}`)
    ]);
    const preferences=prefs[0]||{notification_sound:1,chat_wallpaper:'default'};if(preferences.custom_wallpaper_path)preferences.custom_wallpaper_url=await signedRead(preferences.custom_wallpaper_path);const currentProfile=profile[0]||null;if(currentProfile?.avatar_path)currentProfile.avatar_url=await signedRead(currentProfile.avatar_path);return json(200,{coin_balance:Number(balance[0]?.balance_coins||0),followers:followers.length,following:following.length,profile_views:profileViews.length,profile:currentProfile,preferences});
   }
