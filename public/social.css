@@ -32,3 +32,5 @@
 .aam-social-chat-messages.wallpaper-theme-20{background:linear-gradient(135deg,#fafaf9,#e7e5e4);border-radius:14px;padding:12px}
 
 .aam-social-message .aam-read{animation:aamReadBlink .4s 3 forwards}@keyframes aamReadBlink{0%,55%{opacity:.15}100%{opacity:1}}
+
+.aam-social-discover-row{padding:12px 0;border-top:1px solid #e5e7eb}.aam-social-discover-row p{margin:6px 0 10px;color:#64748b;font-size:14px}.aam-social-check{display:flex;align-items:center;gap:9px;margin:10px 0}.aam-social-check input{width:18px;height:18px}
