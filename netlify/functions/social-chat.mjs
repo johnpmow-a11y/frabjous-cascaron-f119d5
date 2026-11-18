@@ -19,7 +19,7 @@ export async function handler(event){
     if(!uuid.test(conv))return json(400,{error:'Invalid conversation.'});
     const part=await db(`aam_chat_participants?select=conversation_id&conversation_id=eq.${conv}&customer_id=eq.${s.customer_id}&limit=1`);
     if(!part.length)return json(404,{error:'Conversation not found.'});
-    const [conversationRows,groupMember]=await Promise.all([db(`aam_chat_conversations?select=id,conversation_type,title& id=eq.${conv}&limit=1`),db(`aam_chat_group_members?select=group_role&conversation_id=eq.${conv}&customer_id=eq.${s.customer_id}&limit=1`)]);\n    const messages=await db(`aam_chat_messages?select=id,sender_id,message_type,body,media_path,shared_post_id,created_at&conversation_id=eq.${conv}&order=created_at.desc&limit=100`);
+    const [conversationRows,groupMember]=await Promise.all([db(`aam_chat_conversations?select=id,conversation_type,title&id=eq.${conv}&limit=1`),db(`aam_chat_group_members?select=group_role&conversation_id=eq.${conv}&customer_id=eq.${s.customer_id}&limit=1`)]);\n    const messages=await db(`aam_chat_messages?select=id,sender_id,message_type,body,media_path,shared_post_id,created_at&conversation_id=eq.${conv}&order=created_at.desc&limit=100`);
     messages.reverse();
     const reads=messages.length?await db(`aam_chat_message_reads?select=message_id,customer_id,read_at&message_id=in.(${messages.map(m=>m.id).join(',')})`):[];
     const ids=[...new Set(messages.map(m=>m.sender_id))];
