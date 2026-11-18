@@ -38,6 +38,7 @@ begin
   select customer_id into v_follower from public.customer_sessions
   where token=p_token and expires_at>now();
   if v_follower is null then raise exception 'Session expired'; end if;
+  if not exists(select 1 from public.aam_social_profiles where customer_id=v_follower and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older first'; end if;
   if v_follower=p_target then raise exception 'You cannot follow your own profile'; end if;
   if not exists(select 1 from public.customers where id=p_target) then raise exception 'Friend not found'; end if;
   insert into public.aam_social_profiles(customer_id)
