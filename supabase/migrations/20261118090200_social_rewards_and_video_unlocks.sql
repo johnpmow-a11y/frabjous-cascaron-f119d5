@@ -110,6 +110,7 @@ begin
   if v_post.customer_id=v_customer then
     return jsonb_build_object('unlocked',true,'own_video',true);
   end if;
+  if v_post.customer_id is not null and exists(select 1 from public.aam_social_profiles where customer_id=v_post.customer_id and is_private=true) and not exists(select 1 from public.aam_social_follows where follower_id=v_customer and followed_id=v_post.customer_id) then raise exception 'This profile is private'; end if;
   if not exists(select 1 from public.aam_social_profiles where customer_id=v_customer and adult_confirmed_at is not null) then
     raise exception 'Confirm that you are 18 or older to continue';
   end if;
