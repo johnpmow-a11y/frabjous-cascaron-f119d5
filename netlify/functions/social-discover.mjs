@@ -14,7 +14,7 @@ export async function handler(event){
    await db('aam_social_profile_views?on_conflict=profile_key,viewer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({profile_key:'admin',viewer_id:s.customer_id,viewed_at:new Date().toISOString()})});
    await sendPush({role:'admin',title:'Creator profile view',body:'Someone viewed the All Ads Manager creator profile.'}).catch(()=>{});
    const adminRows=await db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1'),admin=adminRows[0]||{display_name:'All Ads Manager',follower_count:0,is_verified:true};
-   const posts=await db('aam_social_posts?select=id,media_type,media_path,thumbnail_path,caption,comments_enabled,created_at&author_role=eq.admin&moderation_status=eq.published&order=created_at.desc&limit=30');
+   const posts=await db('aam_social_posts?select=id,media_type,media_path,thumbnail_path,caption,comments_enabled,created_at,is_locked&author_role=eq.admin&moderation_status=eq.published&order=created_at.desc&limit=30');
    const ids=posts.map(p=>p.id),inList=ids.length?'in.('+ids.join(',')+')':null;
    const [likes,comments,mine,unlocks]=inList?await Promise.all([
     db('aam_social_likes?select=post_id&post_id='+inList),
@@ -23,7 +23,7 @@ export async function handler(event){
     db('aam_social_video_unlocks?select=post_id&customer_id=eq.'+s.customer_id+'&post_id='+inList)
    ]):[[],[],[],[]];
    const liked=new Set(mine.map(x=>x.post_id)),unlocked=new Set(unlocks.map(x=>x.post_id));
-   const resultPosts=await Promise.all(posts.map(async p=>{const can=p.media_type!=='video'||unlocked.has(p.id),{media_path,thumbnail_path,...publicPost}=p;return {...publicPost,like_count:3500,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),follower_count:Number(admin.follower_count||0),following_count:0,verified:!!admin.is_verified,locked_video:p.media_type==='video'&&!can,media_url:can?await signedRead(p.media_path):null,thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null,creator:{id:null,name:admin.display_name||'All Ads Manager',avatar_url:admin.avatar_path?await signedRead(admin.avatar_path):null}};}));
+   undefined{id:null,name:admin.display_name||'All Ads Manager',avatar_url:admin.avatar_path?await signedRead(admin.avatar_path):null}};}));
    const profileViews=await db('aam_social_profile_views?select=viewer_id&profile_key=eq.admin');
    return json(200,{profile:{display_name:admin.display_name||'All Ads Manager',avatar_url:admin.avatar_path?await signedRead(admin.avatar_path):null,is_verified:!!admin.is_verified},followers:Number(admin.follower_count||0),following:0,profile_views:profileViews.length,posts:resultPosts});
   }
@@ -42,7 +42,7 @@ export async function handler(event){
     db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${target}`)
    ]);
    const unlocked=new Set(unlocks.map(x=>x.post_id));
-   const resultPosts=await Promise.all(posts.map(async post=>{const can=post.media_type!=='video'||target===s.customer_id||unlocked.has(post.id),{media_path,...publicPost}=post;return {...publicPost,locked_video:post.media_type==='video'&&!can,media_url:can?await signedRead(media_path):null};}));
+   const resultPosts=await Promise.all(posts.map(async post=>{const {media_path,...publicPost}=post;return {...publicPost,locked_video:false,media_url:await signedRead(media_path)};}));
    const {avatar_path,...publicProfile}=p;
    return json(200,{profile:{...publicProfile,avatar_url:avatar_path?await signedRead(avatar_path):null},is_following:isFollowing,followers:followers.length,following:followingCount.length,profile_views:profileViews.length,posts:resultPosts,private_locked:!allowed});
   }
