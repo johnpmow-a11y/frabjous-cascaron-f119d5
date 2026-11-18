@@ -13,6 +13,7 @@ export async function handler(event){
   const age=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${s.customer_id}&limit=1`);
   if(!age[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older first.'});
   if(q.admin_profile==='1'){
+   await sendPush({role:'admin',title:'Creator profile view',body:'Someone viewed the All Ads Manager creator profile.'}).catch(()=>{});
    const adminRows=await db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1'),admin=adminRows[0]||{display_name:'All Ads Manager',follower_count:0,is_verified:true};
    const posts=await db('aam_social_posts?select=id,media_type,media_path,thumbnail_path,caption,comments_enabled,created_at&author_role=eq.admin&moderation_status=eq.published&order=created_at.desc&limit=30');
    const ids=posts.map(p=>p.id),inList=ids.length?'in.('+ids.join(',')+')':null;
