@@ -12,6 +12,20 @@ export async function handler(event){
   const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);if(!s)return json(401,{error:'Please log in again.'});
   const age=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${s.customer_id}&limit=1`);
   if(!age[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older first.'});
+  if(q.admin_profile==='1'){
+   const adminRows=await db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1'),admin=adminRows[0]||{display_name:'All Ads Manager',follower_count:0,is_verified:true};
+   const posts=await db('aam_social_posts?select=id,media_type,media_path,thumbnail_path,caption,comments_enabled,created_at&author_role=eq.admin&moderation_status=eq.published&order=created_at.desc&limit=30');
+   const ids=posts.map(p=>p.id),inList=ids.length?'in.('+ids.join(',')+')':null;
+   const [likes,comments,mine,unlocks]=inList?await Promise.all([
+    db('aam_social_likes?select=post_id&post_id='+inList),
+    db('aam_social_comments?select=post_id&post_id='+inList),
+    db('aam_social_likes?select=post_id&customer_id=eq.'+s.customer_id+'&post_id='+inList),
+    db('aam_social_video_unlocks?select=post_id&customer_id=eq.'+s.customer_id+'&post_id='+inList)
+   ]):[[],[],[],[]];
+   const liked=new Set(mine.map(x=>x.post_id)),unlocked=new Set(unlocks.map(x=>x.post_id));
+   const resultPosts=await Promise.all(posts.map(async p=>{const can=p.media_type!=='video'||unlocked.has(p.id);return {...p,like_count:3500,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),follower_count:Number(admin.follower_count||0),following_count:0,verified:!!admin.is_verified,locked_video:p.media_type==='video'&&!can,media_url:can?await signedRead(p.media_path):null,thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null,creator:{id:null,name:admin.display_name||'All Ads Manager',avatar_url:admin.avatar_path?await signedRead(admin.avatar_path):null}};}));
+   return json(200,{profile:{display_name:admin.display_name||'All Ads Manager',avatar_url:admin.avatar_path?await signedRead(admin.avatar_path):null,is_verified:!!admin.is_verified},followers:Number(admin.follower_count||0),following:0,posts:resultPosts});
+  }
   const target=String(q.profile_id||'');
   if(target){
    if(!uuid.test(target))return json(400,{error:'Invalid profile.'});
