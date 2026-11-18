@@ -12,17 +12,16 @@ export async function handler(event){
   if(event.httpMethod==='GET'){
    const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);
    if(!s)return json(401,{error:'Please log in again.'});
-   const [posts,profiles,follows,unlocks,likes,comments,mineLikes,adminProfile]=await Promise.all([
+   const [posts,profiles,follows,likes,comments,mineLikes,adminProfile]=await Promise.all([
     db('aam_social_posts?select=*&moderation_status=eq.published&order=created_at.desc&limit=60'),
     db('aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled'),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
-    db(`aam_social_video_unlocks?select=post_id&customer_id=eq.${encodeURIComponent(s.customer_id)}`),
     db('aam_social_likes?select=post_id'),
     db('aam_social_comments?select=post_id'),
     db(`aam_social_likes?select=post_id&customer_id=eq.${encodeURIComponent(s.customer_id)}`),
     db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1')
    ]);
-   const profileMap=new Map(profiles.map(p=>[p.customer_id,p])),following=new Set(follows.map(f=>f.followed_id)),unlocked=new Set(unlocks.map(x=>x.post_id)),liked=new Set(mineLikes.map(x=>x.post_id));
+   const profileMap=new Map(profiles.map(p=>[p.customer_id,p])),following=new Set(follows.map(f=>f.followed_id)),liked=new Set(mineLikes.map(x=>x.post_id));
    const visible=posts.filter(p=>p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id));
    const feed=await Promise.all(visible.slice(0,30).map(async p=>{
     const owner=p.customer_id?profileMap.get(p.customer_id):null,admin=adminProfile[0]||{};
