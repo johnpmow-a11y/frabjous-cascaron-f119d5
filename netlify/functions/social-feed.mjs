@@ -1,0 +1,49 @@
+import {sendPush} from './_push.mjs';
+const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
+const uuid=/^[0-9a-f-]{36}$/i;
+const mimeExt={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','video/mp4':'mp4','video/quicktime':'mov','video/webm':'webm'};
+function h(k,x={}){return {apikey:k,...(k.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${k}`}),...x};}
+async function db(path,options={}){const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!u||!k)throw new Error('Social storage is not configured.');const r=await fetch(`${u}/rest/v1/${path}`,{...options,headers:h(k,{'Content-Type':'application/json',...(options.headers||{})})});const d=await r.json().catch(()=>[]);if(!r.ok)throw new Error(d.message||d.error||'Social database request failed.');return d;}
+async function session(token,admin=false){if(!uuid.test(token))return null;const t=admin?'admin_sessions':'customer_sessions';const rows=await db(`${t}?select=${admin?'token':'customer_id'}&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);return rows[0]||null;}
+async function signedRead(path){const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;const r=await fetch(`${u}/storage/v1/object/sign/aam-social-media/${path}`,{method:'POST',headers:h(k,{'Content-Type':'application/json'}),body:JSON.stringify({expiresIn:1800})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||'Could not prepare media preview.');const p=d.signedURL||d.signedUrl||'';return /^https?:\/\//i.test(p)?p:u+(p.startsWith('/storage/v1/')?p:'/storage/v1'+(p.startsWith('/')?p:'/'));}
+export async function handler(event){
+ if(event.httpMethod==='OPTIONS')return json(204,{});
+ try{
+  if(event.httpMethod==='GET'){
+   const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);
+   if(!s)return json(401,{error:'Please log in again.'});
+   const me=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`);
+   if(!me[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older to open the social feed.'});
+   const [posts,profiles,follows]=await Promise.all([
+    db('aam_social_posts?select=*&moderation_status=eq.published&order=created_at.desc&limit=60'),
+    db('aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private'),
+    db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`)
+   ]);
+   const profileMap=new Map(profiles.map(p=>[p.customer_id,p])),following=new Set(follows.map(f=>f.followed_id));
+   const visible=posts.filter(p=>p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id));
+   const feed=await Promise.all(visible.slice(0,30).map(async p=>{const owner=p.customer_id?profileMap.get(p.customer_id):null;return {...p,creator:{id:p.customer_id||null,name:owner?.display_name||'All Ads Manager Creator',bio:owner?.bio||'',avatar_url:owner?.avatar_path?await signedRead(owner.avatar_path):null},media_url:await signedRead(p.media_path),thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};}));
+   return json(200,{posts:feed});
+  }
+  if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
+  const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||''),admin=b.role==='admin';
+  const s=await session(token,admin);if(!s)return json(401,{error:'Please log in again.'});
+  const customerId=admin?null:s.customer_id;
+  if(action==='sign_upload'){
+   const mime=String(b.mime_type||''),ext=mimeExt[mime];if(!ext)return json(400,{error:'Choose a supported image or video.'});
+   if(!admin){const p=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(customerId)}&limit=1`);if(!p[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older before posting.'});}
+   const path=`${admin?'admin':customerId}/${crypto.randomUUID() }.${ext}`;
+   const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;
+   const r=await fetch(`${u}/storage/v1/object/upload/sign/aam-social-media/${path}`,{method:'POST',headers:h(k,{'Content-Type':'application/json'}),body:'{}'});
+   const d=await r.json().catch(()=>({}));if(!r.ok)return json(502,{error:d.message||'Could not prepare the upload.'});
+   return json(200,{path,token:d.token,signed_url:d.signedURL||d.signedUrl||null});
+  }
+  if(action==='publish_post'){
+   const path=String(b.media_path||''),mime=String(b.mime_type||''),ext=mimeExt[mime],prefix=admin?'admin/':customerId+'/';
+   if(!ext||!path.startsWith(prefix)||path.includes('..'))return json(400,{error:'Invalid uploaded media.'});
+   const caption=String(b.caption||'').trim().slice(0,2200),type=mime.startsWith('video/')?'video':'image';
+   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:customerId,author_role:admin?'admin':'customer',media_type:type,media_path:path,caption,moderation_status:'published'}])});
+   return json(200,{ok:true,post:rows[0]});
+  }
+  return json(400,{error:'Unsupported feed action.'});
+ }catch(e){return json(400,{error:e.message||'Could not load the social feed.'});}
+}
