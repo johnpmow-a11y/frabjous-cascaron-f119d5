@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import {sendPush} from './_push.mjs';
 const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
 const uuid=/^[0-9a-f-]{36}$/i;
 const mimeExt={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','video/mp4':'mp4','video/quicktime':'mov','video/webm':'webm'};
@@ -48,7 +49,7 @@ export async function handler(event){
   if(b.action==='set_avatar'){
    const path=String(b.avatar_path||'');if(!path.startsWith('admin/')||path.includes('..'))return json(400,{error:'Invalid administrator avatar.'});
    await db('aam_social_admin_profile?id=eq.true',{method:'PATCH',body:JSON.stringify({avatar_path:path,updated_at:new Date().toISOString()})});
-   const customers=await db('customers?select=id');if(customers.length)await db('aam_social_notifications',{method:'POST',body:JSON.stringify(customers.map(c=>({recipient_id:c.id,actor_id:null,event_type:'profile_update',title:'Creator picture updated',body:'All Ads Manager updated its creator picture.'})))});
+   const customers=await db('customers?select=id');if(customers.length){await db('aam_social_notifications',{method:'POST',body:JSON.stringify(customers.map(c=>({recipient_id:c.id,actor_id:null,event_type:'profile_update',title:'Creator picture updated',body:'All Ads Manager updated its creator picture.'})))});await Promise.allSettled(customers.map(c=>sendPush({role:'customer',customerId:c.id,title:'Creator picture updated',body:'All Ads Manager updated its creator picture.',eventType:'profile_update'})));}
    return json(200,{saved:true});
   }
   return json(400,{error:'Unsupported admin social action.'});
