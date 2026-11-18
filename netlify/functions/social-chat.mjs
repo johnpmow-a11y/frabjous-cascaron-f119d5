@@ -19,7 +19,8 @@ export async function handler(event){
     if(!uuid.test(conv))return json(400,{error:'Invalid conversation.'});
     const part=await db(`aam_chat_participants?select=conversation_id&conversation_id=eq.${conv}&customer_id=eq.${s.customer_id}&limit=1`);
     if(!part.length)return json(404,{error:'Conversation not found.'});
-    const messages=await db(`aam_chat_messages?select=id,sender_id,message_type,body,media_path,shared_post_id,created_at&conversation_id=eq.${conv}&order=created_at.asc&limit=100`);
+    const messages=await db(`aam_chat_messages?select=id,sender_id,message_type,body,media_path,shared_post_id,created_at&conversation_id=eq.${conv}&order=created_at.desc&limit=100`);
+    messages.reverse();
     const reads=messages.length?await db(`aam_chat_message_reads?select=message_id,customer_id,read_at&message_id=in.(${messages.map(m=>m.id).join(',')})`):[];
     const ids=[...new Set(messages.map(m=>m.sender_id))];
     const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
