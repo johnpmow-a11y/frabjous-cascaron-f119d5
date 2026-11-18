@@ -16,7 +16,7 @@ export async function handler(event){
    if(!me[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older to open the social feed.'});
    const [posts,profiles,follows,unlocks,likes,comments,mineLikes,adminProfile]=await Promise.all([
     db('aam_social_posts?select=*&moderation_status=eq.published&order=created_at.desc&limit=60'),
-    db('aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private'),
+    db('aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled'),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_video_unlocks?select=post_id&customer_id=eq.${encodeURIComponent(s.customer_id)}`),
     db('aam_social_likes?select=post_id'),
@@ -29,7 +29,7 @@ export async function handler(event){
    const feed=await Promise.all(visible.slice(0,30).map(async p=>{
     const owner=p.customer_id?profileMap.get(p.customer_id):null,admin=adminProfile[0]||{};
     const canWatch=p.media_type!=='video'||p.customer_id===s.customer_id||unlocked.has(p.id);
-    return {...p,comments_enabled:p.comments_enabled!==false,like_count:p.author_role==='admin'?3500:likes.filter(x=>x.post_id===p.id).length,follower_count:p.author_role==='admin'?Number(admin.follower_count||0):undefined,following_count:p.author_role==='admin'?0:undefined,verified:p.author_role==='admin'?!!admin.is_verified:false,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),locked_video:p.media_type==='video'&&!canWatch,creator:{id:p.customer_id||null,name:p.author_role==='admin'?(admin.display_name||'All Ads Manager'):(owner?.display_name||'Creator'),bio:owner?.bio||'',avatar_url:(p.author_role==='admin'?admin.avatar_path:owner?.avatar_path)?await signedRead(p.author_role==='admin'?admin.avatar_path:owner.avatar_path):null,followers:p.author_role==='admin'?Number(admin.follower_count||0):null,following:p.author_role==='admin'?0:null},media_url:canWatch?await signedRead(p.media_path):null,thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};
+    return {...p,comments_enabled:p.comments_enabled!==false&&owner?.comments_enabled!==false,like_count:p.author_role==='admin'?3500:likes.filter(x=>x.post_id===p.id).length,follower_count:p.author_role==='admin'?Number(admin.follower_count||0):undefined,following_count:p.author_role==='admin'?0:undefined,verified:p.author_role==='admin'?!!admin.is_verified:false,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),locked_video:p.media_type==='video'&&!canWatch,creator:{id:p.customer_id||null,name:p.author_role==='admin'?(admin.display_name||'All Ads Manager'):(owner?.display_name||'Creator'),bio:owner?.bio||'',avatar_url:(p.author_role==='admin'?admin.avatar_path:owner?.avatar_path)?await signedRead(p.author_role==='admin'?admin.avatar_path:owner.avatar_path):null,followers:p.author_role==='admin'?Number(admin.follower_count||0):null,following:p.author_role==='admin'?0:null},media_url:canWatch?await signedRead(p.media_path):null,thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};
    }));
    return json(200,{posts:feed});
   }
