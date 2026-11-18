@@ -70,7 +70,7 @@ end;
 $$;
 create or replace function public.aam_chat_touch(p_token uuid,p_conversation uuid)
 returns jsonb language plpgsql security definer set search_path = ''
-as $
+as $$
 declare v_me uuid;
 begin
  select customer_id into v_me from public.customer_sessions where token=p_token and expires_at>now();
@@ -79,7 +79,7 @@ begin
  if not found then raise exception 'Conversation not found'; end if;
  return jsonb_build_object('last_seen_at',now());
 end;
-$;
+$$;
 revoke all on function public.aam_chat_touch(uuid,uuid) from public,anon,authenticated;
 grant execute on function public.aam_chat_touch(uuid,uuid) to service_role;
 revoke all on function public.aam_chat_start(uuid,uuid) from public,anon,authenticated;
