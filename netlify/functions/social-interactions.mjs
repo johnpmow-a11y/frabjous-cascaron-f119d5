@@ -11,7 +11,7 @@ export async function handler(event){
   const token=String(b.token||''),s=await session(token);if(!s)return json(401,{error:'Please log in again.'});
   if(event.httpMethod==='GET'){
    const post=String(b.post_id||'');if(!uuid.test(post))return json(400,{error:'Choose a valid post.'});
-   const [comments,likes,mine]=await Promise.all([
+   const postRows=await db(`aam_social_posts?select=customer_id,comments_enabled&id=eq.${post}&moderation_status=eq.published&limit=1`);\n   if(!postRows.length)return json(404,{error:'Post is unavailable.'});\n   if(postRows[0].customer_id){const owner=await db(`aam_social_profiles?select=is_private&customer_id=eq.${postRows[0].customer_id}&limit=1`);if(owner[0]?.is_private){const rel=await db(`aam_social_follows?select=follower_id&follower_id=eq.${s.customer_id}&followed_id=eq.${postRows[0].customer_id}&limit=1`);if(!rel.length&&postRows[0].customer_id!==s.customer_id)return json(403,{error:'This profile is private.'});}}\n   const [comments,likes,mine]=await Promise.all([
     db(`aam_social_comments?select=id,customer_id,body,created_at&post_id=eq.${post}&order=created_at.asc&limit=100`),
     db(`aam_social_likes?select=customer_id&post_id=eq.${post}`),
     db(`aam_social_likes?select=customer_id&post_id=eq.${post}&customer_id=eq.${s.customer_id}&limit=1`)
