@@ -21,7 +21,8 @@ export async function handler(event){
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||'');
   if(!await session(token))return json(401,{error:'Your session has expired. Please log in again.'});
-  if(action==='update_avatar'){const path=String(b.avatar_path||'');return json(200,await rpc('aam_social_update_avatar',{p_token:token,p_avatar_path:path}));}\n  if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
+  if(action==='update_avatar'){const path=String(b.avatar_path||'');return json(200,await rpc('aam_social_update_avatar',{p_token:token,p_avatar_path:path}));}
+  if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
   if(action==='update_preferences')return json(200,await rpc('aam_social_update_preferences',{p_token:token,p_sound:Number(b.notification_sound||1),p_wallpaper:String(b.chat_wallpaper||'default'),p_custom_wallpaper_path:b.custom_wallpaper_path||null}));
   if(action==='confirm_age')return json(200,await rpc('aam_social_confirm_age',{p_token:token}));
   if(action==='follow'){
