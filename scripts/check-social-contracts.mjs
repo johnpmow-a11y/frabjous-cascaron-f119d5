@@ -11,9 +11,9 @@ const ui=read('public/social.js');
 const checks=[
  ['video unlock charges exactly one coin',/balance_coins\s*=\s*balance_coins\s*-\s*1/.test(migration)&&/['\"]video_view['\"]\s*,\s*-1/.test(migration)],
  ['video unlocks are per customer and post',/primary key\s*\(customer_id,\s*post_id\)/i.test(migration)],
- ['only admin Professional Videos require a coin',/v_post\\.author_role\\s*<>\\s*'admin'/i.test(professionalVideo)&&/p\.author_role==='admin'/.test(feed)],
- ['customer videos are always playable without an unlock',/p\.author_role!=='admin'\\|\\|unlocked\.has\\(p\.id\\)/.test(feed)],
- ['Professional Video debit is atomic and costs one coin',/balance_coins=balance_coins-1[\\s\\S]*?balance_coins>=1/.test(professionalVideo)&&/coins_charged',1/.test(professionalVideo)],
+ ['only admin Professional Videos require a coin',professionalVideo.includes("if v_post.author_role <> 'admin'")&&feed.includes("p.author_role==='admin'")],
+ ['customer videos are always playable without an unlock',feed.includes("p.author_role!=='admin'||unlocked.has(p.id)")],
+ ['Professional Video debit is atomic and costs one coin',professionalVideo.includes('balance_coins=balance_coins-1')&&professionalVideo.includes('balance_coins>=1')&&professionalVideo.includes("'coins_charged',1")],
  ['referral code field exists at registration',index.includes('newCustomerReferral')&&index.includes("action:'apply_referral'")],
  ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
  ['locked feed responses omit raw storage paths',feed.includes('media_path,thumbnail_path,customer_id,...publicPost')],
