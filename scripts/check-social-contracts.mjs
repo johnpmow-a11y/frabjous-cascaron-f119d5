@@ -2,6 +2,7 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const foundation=read('supabase/migrations/20261118090000_social_feed_coins_foundation.sql');
 const policy=read('supabase/migrations/20261118120000_remove_age_gate_and_promotion_coins.sql');
+const videoLocks=read('supabase/migrations/20261118130000_admin_selective_video_locking.sql');
 const notifications=read('supabase/migrations/20261118090500_social_notification_preferences_and_profile_views.sql');
 const community=read('supabase/migrations/20261118100000_community_group_chat.sql');
 const direct=read('supabase/migrations/20261118100100_direct_chat_group_separation.sql');
@@ -18,11 +19,14 @@ const ui=read('public/social.js');
 const checks=[
  ['no 18+ gate remains in feed, uploads, or customer UI',!feed.includes('18 or older')&&!feed.includes('adult_confirmed_at')&&!ui.includes('ensureAge')&&!index.includes('18 or older')],
  ['age confirmation field and RPC are removed by migration',policy.includes('drop column if exists adult_confirmed_at')&&policy.includes('drop function if exists public.aam_social_confirm_age')],
- ['all social videos and pictures are free to view',feed.includes('locked_video:false')&&feed.includes('media_url:await signedRead(p.media_path)')&&!ui.includes('Professional Video locked')],
- ['Promotion Coins are only for promotion',ui.includes('Promotion Coin packages')&&ui.includes('used only to promote your posts and profile')&&policy.includes('promotion only')],
+ ['admin can choose which videos are locked; other videos and pictures remain free',videoLocks.includes('add column if not exists is_locked')&&feed.includes("p.is_locked===true")&&feed.includes('media_url:locked?null:await signedRead(p.media_path)')&&admin.includes('is_locked:mime.startsWith(\'video/\')&&b.is_locked===true')],
+ ['locked admin videos cost one Promotion Coin once per customer',videoLocks.includes("'video_view',-1")&&videoLocks.includes('balance_coins>=1')&&videoLocks.includes('aam_social_video_unlocks')&&ui.includes('Unlock with 1 Promotion Coin')],
+ ['video unlock action is server-side and exposed to logged-in customers',core.includes("action==='unlock_video'")&&core.includes("rpc('aam_social_unlock_video'")&&ui.includes('AAMSocial.unlockVideo')],
+ ['Promotion Coins can be used for promotion and locked-video unlocks',ui.includes('promote your posts and profiles, and unlock videos')&&ui.includes('unlock videos marked Locked by the administrator')],
  ['Promotion Coin packages show Nigerian values and stay disabled until payment approval',ui.includes('amounts=[100,200,500,1000,2000,5000,10000,20000,50000,100000,200000]')&&ui.includes('type="button" disabled')&&ui.includes('Your existing tools wallet is separate.')],
  ['follow and referral actions cannot mint Promotion Coins',policy.includes("'promotion_coins_earned',0")&&policy.includes('promotion_coins_are_purchase_only')],
  ['admin video editor supports original sound mute/keep, voice-over and background music',ui.includes('Keep original video sound')&&ui.includes('Record my voice over the video')&&ui.includes('Background music volume')&&ui.includes('recordVideoMix')],
+ ['admin can choose lock or free before publishing a video',ui.includes('Lock this video (customers pay 1 Promotion Coin to unlock)')&&ui.includes('is_locked:file.type.startsWith(\'video/\')')],
  ['voice and background music have independent volume controls',ui.includes('aamVoiceVolume')&&ui.includes('aamMusicVolume')],
  ['admin video mix can be previewed before publishing',ui.includes('aamAdminMixedPreview')&&ui.includes('Finished mix ready. Play the preview, then publish.')],
  ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
