@@ -1,3 +1,4 @@
+import {sendPush} from './_push.mjs';
 import {randomUUID} from 'node:crypto';
 const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
 const uuid=/^[0-9a-f-]{36}$/i;
@@ -59,7 +60,10 @@ export async function handler(event){
   if(b.action==='start'){if(!uuid.test(String(b.target_customer_id||'')))return json(400,{error:'Choose a valid profile.'});return json(200,await rpc('aam_chat_start',{p_token:token,p_target:b.target_customer_id}));}
   if(b.action==='send'){
    if(!uuid.test(String(b.conversation_id||'')))return json(400,{error:'Invalid conversation.'});
-   return json(200,await rpc('aam_chat_send',{p_token:token,p_conversation:b.conversation_id,p_body:String(b.body||''),p_type:String(b.message_type||'text'),p_media_path:b.media_path||null,p_shared_post:b.shared_post_id||null}));
+   const recipients=await db(`aam_chat_participants?select=customer_id&conversation_id=eq.${b.conversation_id}&customer_id=neq.${s.customer_id}`);
+   const result=await rpc('aam_chat_send',{p_token:token,p_conversation:b.conversation_id,p_body:String(b.body||''),p_type:String(b.message_type||'text'),p_media_path:b.media_path||null,p_shared_post:b.shared_post_id||null});
+   await Promise.allSettled(recipients.map(x=>sendPush({role:'customer',customerId:x.customer_id,title:'New message',body:String(b.message_type==='voice'?'You received a voice note.':b.message_type==='shared_post'?'Someone shared a post with you.':b.message_type==='image'||b.message_type==='video'?'You received a media message.':b.body||'You have a new message.').slice(0,180)})));
+   return json(200,result);
   }
   return json(400,{error:'Unsupported chat action.'});
  }catch(e){return json(/session expired/i.test(e.message)?401:400,{error:e.message||'Could not complete that chat action.'});}
