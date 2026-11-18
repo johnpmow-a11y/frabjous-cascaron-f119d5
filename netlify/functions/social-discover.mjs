@@ -10,8 +10,6 @@ export async function handler(event){
  try{
   if(event.httpMethod!=='GET')return json(405,{error:'Method not allowed.'});
   const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);if(!s)return json(401,{error:'Please log in again.'});
-  const age=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${s.customer_id}&limit=1`);
-  if(!age[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older first.'});
   if(q.admin_profile==='1'){
    await db('aam_social_profile_views?on_conflict=profile_key,viewer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({profile_key:'admin',viewer_id:s.customer_id,viewed_at:new Date().toISOString()})});
    await sendPush({role:'admin',title:'Creator profile view',body:'Someone viewed the All Ads Manager creator profile.'}).catch(()=>{});
