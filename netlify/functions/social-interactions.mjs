@@ -1,0 +1,30 @@
+const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
+const uuid=/^[0-9a-f-]{36}$/i;
+const headers=(key,extra={})=>({apikey:key,...(key.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${key}`}),...extra});
+async function db(path,options={}){const base=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!base||!key)throw new Error('Social service is not configured.');const r=await fetch(`${base}/rest/v1/${path}`,{...options,headers:headers(key,{'Content-Type':'application/json',...(options.headers||{})})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.message||data.error||'Social request failed.');return data;}
+async function session(token){if(!uuid.test(token))return null;const rows=await db(`customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);return rows[0]||null;}
+async function rpc(name,args){return db(`rpc/${name}`,{method:'POST',body:JSON.stringify(args)});}
+export async function handler(event){
+ if(event.httpMethod==='OPTIONS')return json(204,{});
+ try{
+  const b=event.httpMethod==='GET'?event.queryStringParameters||{}:JSON.parse(event.body||'{}');
+  const token=String(b.token||''),s=await session(token);if(!s)return json(401,{error:'Please log in again.'});
+  if(event.httpMethod==='GET'){
+   const post=String(b.post_id||'');if(!uuid.test(post))return json(400,{error:'Choose a valid post.'});
+   const [comments,likes,mine]=await Promise.all([
+    db(`aam_social_comments?select=id,customer_id,body,created_at&post_id=eq.${post}&order=created_at.asc&limit=100`),
+    db(`aam_social_likes?select=customer_id&post_id=eq.${post}`),
+    db(`aam_social_likes?select=customer_id&post_id=eq.${post}&customer_id=eq.${s.customer_id}&limit=1`)
+   ]);
+   const ids=[...new Set(comments.map(c=>c.customer_id))];
+   const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
+   const map=new Map(profiles.map(p=>[p.customer_id,p]));
+   return json(200,{comments:comments.map(c=>({...c,creator:map.get(c.customer_id)||{display_name:'Creator'}})),like_count:likes.length,liked:mine.length>0});
+  }
+  if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
+  const post=String(b.post_id||'');if(!uuid.test(post))return json(400,{error:'Choose a valid post.'});
+  if(b.action==='like')return json(200,await rpc('aam_social_toggle_like',{p_token:token,p_post_id:post}));
+  if(b.action==='comment')return json(200,await rpc('aam_social_add_comment',{p_token:token,p_post_id:post,p_body:String(b.body||'')}));
+  return json(400,{error:'Unsupported social interaction.'});
+ }catch(e){return json(/session expired/i.test(e.message)?401:400,{error:e.message||'Could not complete that action.'});}
+}
