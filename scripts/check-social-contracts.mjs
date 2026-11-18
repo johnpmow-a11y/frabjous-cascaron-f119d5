@@ -18,9 +18,8 @@ const checks=[
  ['notification preferences filter in-app alerts',notifications.includes('before insert on public.aam_social_notifications')&&notifications.includes('profile_update_notifications')],
  ['profile views count unique viewers',/primary key\s*\(profile_key,viewer_id\)/i.test(notifications)],
  ['admin social controls are linked from dashboard',index.includes('adminSocialPanel()')],
- ['coin balance remains a separate social table',/create table if not exists public\.aam_coin_balances/.test(read('supabase/migrations/20261118090000_social_feed_coins_foundation.sql'))]
-
- ['community group auto-provisions existing and new customers',/aam_chat_provision_community_member/.test(read('supabase/migrations/20261118100000_community_group_chat.sql'))&&/after insert on public\\.customers/.test(read('supabase/migrations/20261118100000_community_group_chat.sql'))],
+ ['coin balance remains a separate social table',/create table if not exists public\.aam_coin_balances/.test(read('supabase/migrations/20261118090000_social_feed_coins_foundation.sql'))],
+ ['community group auto-provisions existing and new customers',/aam_chat_provision_community_member/.test(read('supabase/migrations/20261118100000_community_group_chat.sql'))&&/after insert on public\.customers/.test(read('supabase/migrations/20261118100000_community_group_chat.sql'))],
  ['community group roles are separate from platform admin',/aam_chat_group_members/.test(read('supabase/migrations/20261118100000_community_group_chat.sql'))&&/group_set_admin/.test(read('netlify/functions/social-admin.mjs'))],
  ['direct chats exclude the shared group',/conversation_type='direct'/.test(read('supabase/migrations/20261118100100_direct_chat_group_separation.sql'))],
  ['community group appears in customer chat list',/is_group:true/.test(chat)&&/Community/.test(ui)]
