@@ -64,3 +64,5 @@
 .aam-coin-packages{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:12px}.aam-coin-packages .aam-social-btn:disabled{opacity:.55;cursor:not-allowed}
 
 .aam-social-audio-editor{display:grid;gap:9px;margin:12px 0;padding:12px;border:1px solid #dbe3ec;border-radius:14px;background:#f8fafc}.aam-social-audio-editor label{font-weight:650;font-size:13px}.aam-social-audio-editor input[type=range]{width:100%;accent-color:#087443}.aam-social-audio-editor .aam-social-actions{display:flex;flex-wrap:wrap;gap:8px}.aam-social-audio-editor .aam-social-preview{width:100%;max-height:300px;background:#111827;border-radius:12px}
+
+.aam-social-locked{position:relative;min-height:250px;overflow:hidden;display:grid;place-items:center;text-align:center;border-radius:14px;margin-top:10px;padding:24px;background:#172554}.aam-social-locked>div{position:relative;z-index:2;background:rgba(15,23,42,.76);padding:18px;border-radius:14px;max-width:100%}.aam-social-locked .aam-social-thumbnail{width:100%;height:100%;max-height:420px;object-fit:cover;filter:brightness(.4) blur(2px);position:absolute;inset:0}
