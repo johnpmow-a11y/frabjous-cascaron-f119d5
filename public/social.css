@@ -48,3 +48,8 @@
 .aam-social-chat-messages{overflow-y:auto;overscroll-behavior:contain;scroll-behavior:smooth}
 
 #aamAdminSocialLauncher{position:fixed;right:14px;bottom:18px;z-index:9998;box-shadow:0 4px 18px rgba(0,0,0,.2)}
+
+.aam-read{color:#1674df;font-weight:800;animation:aamReadBlink .45s ease-in-out 3}
+@keyframes aamReadBlink{0%,100%{opacity:1}50%{opacity:.12}}
+.aam-voice-controls .recording{animation:aamRecordingPulse .9s ease-in-out infinite}
+@keyframes aamRecordingPulse{0%,100%{opacity:1}50%{opacity:.45}}
