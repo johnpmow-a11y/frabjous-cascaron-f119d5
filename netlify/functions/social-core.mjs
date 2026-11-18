@@ -29,6 +29,10 @@ export async function handler(event){
   if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
   if(action==='update_preferences')return json(200,await rpc('aam_social_update_preferences',{p_token:token,p_sound:Number(b.notification_sound||1),p_wallpaper:String(b.chat_wallpaper||'default'),p_custom_wallpaper_path:b.custom_wallpaper_path||null}));
   if(action==='update_notification_preferences')return json(200,await rpc('aam_social_update_notification_preferences',{p_token:token,p_profile_views:b.profile_view_notifications!==false,p_follows:b.follow_notifications!==false,p_likes:b.like_notifications!==false,p_comments:b.comment_notifications!==false,p_shares:b.share_notifications!==false,p_messages:b.message_notifications!==false,p_profile_updates:b.profile_update_notifications!==false}));
+  if(action==='unlock_video'){
+   if(!uuid.test(String(b.post_id||'')))return json(400,{error:'Choose a valid video.'});
+   return json(200,await rpc('aam_social_unlock_video',{p_token:token,p_post_id:b.post_id}));
+  }
   if(action==='follow'){
    if(!uuid.test(String(b.target_customer_id||'')))return json(400,{error:'Choose a valid profile.'});
    const result=await rpc('aam_social_follow',{p_token:token,p_target:b.target_customer_id});if(result.new_follow)await sendPush({role:'customer',customerId:b.target_customer_id,title:'New follower',body:'Someone followed your profile.',eventType:'follow'}).catch(()=>{});return json(200,result);
