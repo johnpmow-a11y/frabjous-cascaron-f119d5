@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check social feature contracts
+        run: node scripts/check-social-contracts.mjs
       - name: Check Netlify function syntax
         run: |
           node --check netlify/functions/_push.mjs
