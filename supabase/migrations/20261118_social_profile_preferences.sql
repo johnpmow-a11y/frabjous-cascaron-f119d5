@@ -33,6 +33,23 @@ begin
  return jsonb_build_object('saved',true);
 end;
 $$;
+create or replace function public.aam_social_update_avatar(p_token uuid,p_avatar_path text)
+returns jsonb language plpgsql security definer set search_path = ''
+as $
+declare v_customer uuid;
+begin
+ select customer_id into v_customer from public.customer_sessions where token=p_token and expires_at>now();
+ if v_customer is null then raise exception 'Session expired'; end if;
+ if p_avatar_path not like 'avatars/'||v_customer::text||'/%' or position('..' in p_avatar_path)>0 then raise exception 'Invalid profile picture'; end if;
+ update public.aam_social_profiles set avatar_path=p_avatar_path,updated_at=now() where customer_id=v_customer;
+ insert into public.aam_social_notifications(recipient_id,actor_id,event_type,title,body)
+ select follower_id,v_customer,'profile_update','Profile picture updated','A creator you follow updated their profile picture.'
+ from public.aam_social_follows where followed_id=v_customer;
+ return jsonb_build_object('saved',true);
+end;
+$;
+revoke all on function public.aam_social_update_avatar(uuid,text) from public,anon,authenticated;
+grant execute on function public.aam_social_update_avatar(uuid,text) to service_role;
 revoke all on function public.aam_social_update_profile(uuid,text,text,boolean,boolean) from public,anon,authenticated;
 revoke all on function public.aam_social_update_preferences(uuid,integer,text,text) from public,anon,authenticated;
 grant execute on function public.aam_social_update_profile(uuid,text,text,boolean,boolean) to service_role;
