@@ -24,6 +24,7 @@ jobs:
           node --check netlify/functions/social-feed.mjs
           node --check netlify/functions/social-interactions.mjs
           node --check netlify/functions/social-chat.mjs
+          node --check netlify/functions/social-discover.mjs
           node --check netlify/functions/social-notifications.mjs
           node --check netlify/functions/social-chat.mjs
           node --check public/social.js
