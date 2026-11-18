@@ -23,7 +23,7 @@ export async function handler(event){
     messages.reverse();
     const reads=messages.length?await db(`aam_chat_message_reads?select=message_id,customer_id,read_at&message_id=in.(${messages.map(m=>m.id).join(',')})`):[];
     const ids=[...new Set(messages.map(m=>m.sender_id))];
-    const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
+    const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];\n    const senderNames=new Map(profiles.map(p=>[p.customer_id,p]));
     const pm=new Map(profiles.map(p=>[p.customer_id,p]));
     await rpc('aam_chat_mark_read',{p_token:token,p_conversation:conv});
     return json(200,{messages:await Promise.all(messages.map(async m=>{const {media_path,...publicMessage}=m;return {...publicMessage,media_url:media_path?await signedRead(media_path):null,creator:pm.get(m.sender_id)||{display_name:'Creator'},read_by:reads.filter(r=>r.message_id===m.id)}}))});
@@ -32,14 +32,14 @@ export async function handler(event){
    if(!parts.length)return json(200,{conversations:[]});
    const ids=parts.map(p=>p.conversation_id);
    const [conversations,messages,allParts]=await Promise.all([
-    db(`aam_chat_conversations?select=id,updated_at&id=in.(${ids.join(',')})&order=updated_at.desc`),
+    db(`aam_chat_conversations?select=id,updated_at,conversation_type,title&id=in.(${ids.join(',')})&order=updated_at.desc`),
     db(`aam_chat_messages?select=id,conversation_id,sender_id,message_type,body,created_at&conversation_id=in.(${ids.join(',')})&order=created_at.desc`),
     db(`aam_chat_participants?select=conversation_id,customer_id,last_seen_at&conversation_id=in.(${ids.join(',')})`)
    ]);
-   const otherIds=[...new Set(allParts.filter(p=>p.customer_id!==s.customer_id).map(p=>p.customer_id))];
+   const groupIds=conversations.filter(c=>c.conversation_type==='group').map(c=>c.id);\n   const memberships=groupIds.length?await db(`aam_chat_group_members?select=conversation_id,customer_id,group_role&conversation_id=in.(${groupIds.join(',')})`):[];\n   const ownRoles=new Map(memberships.filter(m=>m.customer_id===s.customer_id).map(m=>[m.conversation_id,m.group_role]));\n   const otherIds=[...new Set(allParts.filter(p=>p.customer_id!==s.customer_id).map(p=>p.customer_id))];
    const profiles=otherIds.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${otherIds.join(',')})`):[];
    const pm=new Map(profiles.map(p=>[p.customer_id,p]));
-   return json(200,{conversations:conversations.map(c=>({ ...c,other:allParts.filter(p=>p.conversation_id===c.id&&p.customer_id!==s.customer_id).map(p=>({...pm.get(p.customer_id),last_seen_at:p.last_seen_at}))[0]||{},last_message:messages.find(m=>m.conversation_id===c.id)||null }))});
+   return json(200,{conversations:conversations.map(c=>c.conversation_type==='group'?({...c,other:{display_name:c.title||'All Ads Manager Community',is_group:true,group_role:ownRoles.get(c.id)||'member',member_count:memberships.filter(m=>m.conversation_id===c.id).length},last_message:messages.find(m=>m.conversation_id===c.id)||null}):({...c,other:allParts.filter(p=>p.conversation_id===c.id&&p.customer_id!==s.customer_id).map(p=>({...pm.get(p.customer_id),last_seen_at:p.last_seen_at}))[0]||{},last_message:messages.find(m=>m.conversation_id===c.id)||null}))});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   if(b.action==='sign_media_upload'){
