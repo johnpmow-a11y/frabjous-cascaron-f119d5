@@ -15,17 +15,17 @@ export async function handler(event){
    const post=String(b.post_id||'');if(!uuid.test(post))return json(400,{error:'Choose a valid post.'});
    const postRows=await db(`aam_social_posts?select=customer_id,comments_enabled&id=eq.${post}&moderation_status=eq.published&limit=1`);
    if(!postRows.length)return json(404,{error:'Post is unavailable.'});
-   if(postRows[0].comments_enabled===false)return json(200,{comments:[],like_count:0,liked:false,comments_disabled:true});
-   if(postRows[0].customer_id){const owner=await db(`aam_social_profiles?select=is_private,comments_enabled&customer_id=eq.${postRows[0].customer_id}&limit=1`);if(owner[0]?.comments_enabled===false)return json(200,{comments:[],like_count:0,liked:false,comments_disabled:true});if(owner[0]?.is_private){const rel=await db(`aam_social_follows?select=follower_id&follower_id=eq.${s.customer_id}&followed_id=eq.${postRows[0].customer_id}&limit=1`);if(!rel.length&&postRows[0].customer_id!==s.customer_id)return json(403,{error:'This profile is private.'});}}
+   let commentsDisabled=postRows[0].comments_enabled===false;
+   if(postRows[0].customer_id){const owner=await db(`aam_social_profiles?select=is_private,comments_enabled&customer_id=eq.${postRows[0].customer_id}&limit=1`);if(owner[0]?.comments_enabled===false)commentsDisabled=true;if(owner[0]?.is_private){const rel=await db(`aam_social_follows?select=follower_id&follower_id=eq.${s.customer_id}&followed_id=eq.${postRows[0].customer_id}&limit=1`);if(!rel.length&&postRows[0].customer_id!==s.customer_id)return json(403,{error:'This profile is private.'});}}
    const [comments,likes,mine]=await Promise.all([
-    db(`aam_social_comments?select=id,customer_id,body,created_at&post_id=eq.${post}&order=created_at.asc&limit=100`),
+    commentsDisabled?Promise.resolve([]):db(`aam_social_comments?select=id,customer_id,body,created_at&post_id=eq.${post}&order=created_at.asc&limit=100`),
     db(`aam_social_likes?select=customer_id&post_id=eq.${post}`),
     db(`aam_social_likes?select=customer_id&post_id=eq.${post}&customer_id=eq.${s.customer_id}&limit=1`)
    ]);
    const ids=[...new Set(comments.map(c=>c.customer_id))];
-   const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
+   const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name&customer_id=in.(${ids.join(',')})`):[];
    const map=new Map(profiles.map(p=>[p.customer_id,p]));
-   return json(200,{comments:comments.map(c=>({...c,creator:map.get(c.customer_id)||{display_name:'Creator'}})),like_count:likes.length,liked:mine.length>0});
+   return json(200,{comments:comments.map(c=>({...c,creator:map.get(c.customer_id)||{display_name:'Creator'}})),like_count:likes.length,liked:mine.length>0,comments_disabled:commentsDisabled});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const post=String(b.post_id||'');if(!uuid.test(post))return json(400,{error:'Choose a valid post.'});
