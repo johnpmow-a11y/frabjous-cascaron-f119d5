@@ -7,6 +7,7 @@ declare v_customer uuid; v_owner uuid; v_liked boolean;
 begin
  select customer_id into v_customer from public.customer_sessions where token=p_token and expires_at>now();
  if v_customer is null then raise exception 'Session expired'; end if;
+ if not exists(select 1 from public.aam_social_profiles where customer_id=v_customer and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older first'; end if;
  select customer_id into v_owner from public.aam_social_posts where id=p_post_id and moderation_status='published';
  if not found then raise exception 'Post is unavailable'; end if;
  if v_owner is not null and v_owner<>v_customer and exists(select 1 from public.aam_social_profiles where customer_id=v_owner and is_private=true) and not exists(select 1 from public.aam_social_follows where follower_id=v_customer and followed_id=v_owner) then raise exception 'This profile is private'; end if;
@@ -31,6 +32,7 @@ declare v_customer uuid; v_owner uuid; v_body text; v_id uuid;
 begin
  select customer_id into v_customer from public.customer_sessions where token=p_token and expires_at>now();
  if v_customer is null then raise exception 'Session expired'; end if;
+ if not exists(select 1 from public.aam_social_profiles where customer_id=v_customer and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older first'; end if;
  v_body=left(trim(coalesce(p_body,'')),2000);
  if length(v_body)=0 then raise exception 'Write a comment first'; end if;
  select customer_id into v_owner from public.aam_social_posts where id=p_post_id and moderation_status='published' and comments_enabled=true;
