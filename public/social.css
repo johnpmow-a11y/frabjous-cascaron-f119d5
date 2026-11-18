@@ -30,3 +30,5 @@
 .aam-social-chat-messages.wallpaper-theme-18{background:linear-gradient(135deg,#fef2f2,#fee2e2);border-radius:14px;padding:12px}
 .aam-social-chat-messages.wallpaper-theme-19{background:linear-gradient(135deg,#f8fafc,#e0f2fe);border-radius:14px;padding:12px}
 .aam-social-chat-messages.wallpaper-theme-20{background:linear-gradient(135deg,#fafaf9,#e7e5e4);border-radius:14px;padding:12px}
+
+.aam-social-message .aam-read{animation:aamReadBlink .4s 3 forwards}@keyframes aamReadBlink{0%,55%{opacity:.15}100%{opacity:1}}
