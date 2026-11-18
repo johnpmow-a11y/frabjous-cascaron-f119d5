@@ -32,10 +32,17 @@ export async function handler(event){
    const d=await r.json().catch(()=>({}));if(!r.ok)return json(502,{error:d.message||'Could not prepare admin media upload.'});
    return json(200,{path,token:d.token});
   }
+  if(b.action==='sign_thumbnail_upload'){
+   const path=`thumbnails/admin/${randomUUID()}.jpg`,u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;
+   const r=await fetch(`${u}/storage/v1/object/upload/sign/aam-social-media/${path}`,{method:'POST',headers:h(k,{'Content-Type':'application/json'}),body:'{}'});
+   const d=await r.json().catch(()=>({}));if(!r.ok)return json(502,{error:d.message||'Could not prepare Professional Video preview.'});
+   return json(200,{path,token:d.token});
+  }
   if(b.action==='publish_post'){
    const path=String(b.media_path||''),mime=String(b.mime_type||''),ext=mimeExt[mime];
-   if(!ext||!path.startsWith('admin/')||path.includes('..'))return json(400,{error:'Invalid administrator media.'});
-   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:null,author_role:'admin',media_type:mime.startsWith('video/')?'video':'image',media_path:path,caption:String(b.caption||'').trim().slice(0,2200),moderation_status:'published'}])});
+   const thumb=String(b.thumbnail_path||'');
+   if(!ext||!path.startsWith('admin/')||path.includes('..')||(thumb&&(!thumb.startsWith('thumbnails/admin/')||thumb.includes('..'))))return json(400,{error:'Invalid administrator media.'});
+   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:null,author_role:'admin',media_type:mime.startsWith('video/')?'video':'image',media_path:path,thumbnail_path:thumb||null,caption:String(b.caption||'').trim().slice(0,2200),moderation_status:'published'}])});
    return json(200,{ok:true,post:rows[0]});
   }
   if(b.action==='delete_post'){
