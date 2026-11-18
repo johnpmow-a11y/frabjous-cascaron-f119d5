@@ -46,3 +46,5 @@
 .aam-social-chat-media{display:block;max-width:min(100%,360px);max-height:420px;width:auto;border-radius:12px;margin:8px 0;object-fit:contain}
 .aam-social-message audio{display:block;max-width:100%;margin:8px 0}
 .aam-social-chat-messages{overflow-y:auto;overscroll-behavior:contain;scroll-behavior:smooth}
+
+#aamAdminSocialLauncher{position:fixed;right:14px;bottom:18px;z-index:9998;box-shadow:0 4px 18px rgba(0,0,0,.2)}
