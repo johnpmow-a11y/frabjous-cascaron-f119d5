@@ -13,7 +13,7 @@ const checks=[
  ['referral code field exists at registration',index.includes('newCustomerReferral')&&index.includes("action:'apply_referral'")],
  ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
  ['locked feed responses omit raw storage paths',feed.includes('media_path,thumbnail_path,customer_id,...publicPost')],
- ['creator discovery omits raw media paths',discover.includes('const {media_path,...publicPost}=post')],
+ ['creator discovery omits raw media paths',discover.includes('const {media_path,...publicPost}=post')&&discover.includes('const {avatar_path,...publicProfile}=p')],
  ['chat responses omit raw media paths',chat.includes('const {media_path,...publicMessage}=m')],
  ['notification preferences filter in-app alerts',notifications.includes('before insert on public.aam_social_notifications')&&notifications.includes('profile_update_notifications')],
  ['profile views count unique viewers',/primary key\s*\(profile_key,viewer_id\)/i.test(notifications)],
