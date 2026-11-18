@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const migration=read('supabase/migrations/20261118090200_social_rewards_and_video_unlocks.sql');
+const professionalVideo=read('supabase/migrations/20261118110000_professional_video_only_coin_unlocks.sql');
 const notifications=read('supabase/migrations/20261118090500_social_notification_preferences_and_profile_views.sql');
 const feed=read('netlify/functions/social-feed.mjs');
 const discover=read('netlify/functions/social-discover.mjs');
@@ -10,6 +11,9 @@ const ui=read('public/social.js');
 const checks=[
  ['video unlock charges exactly one coin',/balance_coins\s*=\s*balance_coins\s*-\s*1/.test(migration)&&/['\"]video_view['\"]\s*,\s*-1/.test(migration)],
  ['video unlocks are per customer and post',/primary key\s*\(customer_id,\s*post_id\)/i.test(migration)],
+ ['only admin Professional Videos require a coin',/v_post\\.author_role\\s*<>\\s*'admin'/i.test(professionalVideo)&&/p\.author_role==='admin'/.test(feed)],
+ ['customer videos are always playable without an unlock',/p\.author_role!=='admin'\\|\\|unlocked\.has\\(p\.id\\)/.test(feed)],
+ ['Professional Video debit is atomic and costs one coin',/balance_coins=balance_coins-1[\\s\\S]*?balance_coins>=1/.test(professionalVideo)&&/coins_charged',1/.test(professionalVideo)],
  ['referral code field exists at registration',index.includes('newCustomerReferral')&&index.includes("action:'apply_referral'")],
  ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
  ['locked feed responses omit raw storage paths',feed.includes('media_path,thumbnail_path,customer_id,...publicPost')],
