@@ -1,5 +1,8 @@
 -- Secure one-to-one social chat primitives. All access is session-verified server-side.
 begin;
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values ('aam-social-voice','aam-social-voice',false,5242880,array['audio/webm','audio/mp4']::text[])
+on conflict (id) do nothing;
 create or replace function public.aam_chat_start(p_token uuid,p_target uuid)
 returns jsonb language plpgsql security definer set search_path = ''
 as $$
