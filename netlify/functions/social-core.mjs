@@ -10,15 +10,18 @@ export async function handler(event){
   if(event.httpMethod==='GET'){
    const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);
    if(!s)return json(401,{error:'Please log in again.'});
-   const [balance,profile]=await Promise.all([
+   const [balance,profile,prefs]=await Promise.all([
     db(`aam_coin_balances?select=balance_coins&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
-    db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`)
+    db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
+    db(`aam_social_preferences?select=notification_sound,chat_wallpaper&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`)
    ]);
-   return json(200,{coin_balance:Number(balance[0]?.balance_coins||0),profile:profile[0]||null});
+   return json(200,{coin_balance:Number(balance[0]?.balance_coins||0),profile:profile[0]||null,preferences:prefs[0]||{notification_sound:1,chat_wallpaper:'default'}});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||'');
   if(!await session(token))return json(401,{error:'Your session has expired. Please log in again.'});
+  if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
+  if(action==='update_preferences')return json(200,await rpc('aam_social_update_preferences',{p_token:token,p_sound:Number(b.notification_sound||1),p_wallpaper:String(b.chat_wallpaper||'default')}));
   if(action==='confirm_age')return json(200,await rpc('aam_social_confirm_age',{p_token:token}));
   if(action==='follow'){
    if(!uuid.test(String(b.target_customer_id||'')))return json(400,{error:'Choose a valid profile.'});
