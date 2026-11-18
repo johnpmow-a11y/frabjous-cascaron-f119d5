@@ -36,6 +36,15 @@ export async function handler(event){
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||''),admin=b.role==='admin';
   const s=await session(token,admin);if(!s)return json(401,{error:'Please log in again.'});
   const customerId=admin?null:s.customer_id;
+  if(action==='sign_wallpaper_upload'){
+   if(admin)return json(403,{error:'Only customer profiles can set a personal wallpaper.'});
+   const mime=String(b.mime_type||''),ext={ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp' }[mime];
+   if(!ext)return json(400,{error:'Choose a JPG, PNG or WebP wallpaper image.'});
+   const path=`wallpapers/${customerId}/${randomUUID()}.${ext}`,u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;
+   const r=await fetch(`${u}/storage/v1/object/upload/sign/aam-social-media/${path}`,{method:'POST',headers:h(k,{'Content-Type':'application/json'}),body:'{}'});
+   const d=await r.json().catch(()=>({}));if(!r.ok)return json(502,{error:d.message||'Could not prepare wallpaper upload.'});
+   return json(200,{path,token:d.token});
+  }
   if(action==='sign_upload'){
    const mime=String(b.mime_type||''),ext=mimeExt[mime];if(!ext)return json(400,{error:'Choose a supported image or video.'});
    if(!admin){const p=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(customerId)}&limit=1`);if(!p[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older before posting.'});}
