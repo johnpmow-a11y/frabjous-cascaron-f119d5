@@ -14,14 +14,19 @@ export async function handler(event){
    if(!s)return json(401,{error:'Please log in again.'});
    const me=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`);
    if(!me[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older to open the social feed.'});
-   const [posts,profiles,follows]=await Promise.all([
+   const [posts,profiles,follows,unlocks]=await Promise.all([
     db('aam_social_posts?select=*&moderation_status=eq.published&order=created_at.desc&limit=60'),
     db('aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private'),
-    db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`)
+    db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
+    db(`aam_social_video_unlocks?select=post_id&customer_id=eq.${encodeURIComponent(s.customer_id)}`)
    ]);
-   const profileMap=new Map(profiles.map(p=>[p.customer_id,p])),following=new Set(follows.map(f=>f.followed_id));
+   const profileMap=new Map(profiles.map(p=>[p.customer_id,p])),following=new Set(follows.map(f=>f.followed_id)),unlocked=new Set(unlocks.map(x=>x.post_id));
    const visible=posts.filter(p=>p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id));
-   const feed=await Promise.all(visible.slice(0,30).map(async p=>{const owner=p.customer_id?profileMap.get(p.customer_id):null;return {...p,creator:{id:p.customer_id||null,name:owner?.display_name||'All Ads Manager Creator',bio:owner?.bio||'',avatar_url:owner?.avatar_path?await signedRead(owner.avatar_path):null},media_url:await signedRead(p.media_path),thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};}));
+   const feed=await Promise.all(visible.slice(0,30).map(async p=>{
+    const owner=p.customer_id?profileMap.get(p.customer_id):null;
+    const canWatch=p.media_type!=='video'||p.customer_id===s.customer_id||unlocked.has(p.id);
+    return {...p,locked_video:p.media_type==='video'&&!canWatch,creator:{id:p.customer_id||null,name:owner?.display_name||'All Ads Manager Creator',bio:owner?.bio||'',avatar_url:owner?.avatar_path?await signedRead(owner.avatar_path):null},media_url:canWatch?await signedRead(p.media_path):null,thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};
+   }));
    return json(200,{posts:feed});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
