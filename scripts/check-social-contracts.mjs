@@ -8,7 +8,7 @@ const chat=read('netlify/functions/social-chat.mjs');
 const index=read('public/index.html');
 const ui=read('public/social.js');
 const checks=[
- ['video unlock charges exactly one coin',/balance_coins\s*=\s*balance_coins\s*-\s*1/.test(migration)&&/['\"]video_view['\"]\\s*,\\s*-1/.test(migration)],
+ ['video unlock charges exactly one coin',/balance_coins\s*=\s*balance_coins\s*-\s*1/.test(migration)&&/['\"]video_view['\"]\s*,\s*-1/.test(migration)],
  ['video unlocks are per customer and post',/primary key\s*\(customer_id,\s*post_id\)/i.test(migration)],
  ['referral code field exists at registration',index.includes('newCustomerReferral')&&index.includes("action:'apply_referral'")],
  ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
