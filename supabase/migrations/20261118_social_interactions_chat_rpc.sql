@@ -64,7 +64,7 @@ begin
  where token=p_token and expires_at>now();
  if v_customer is null then raise exception 'Session expired'; end if;
  v_path=coalesce(p_avatar_path,'');
- if v_path not like v_customer::text||'/avatars/%' or v_path like '%..%' then raise exception 'Invalid profile picture'; end if;
+ if v_path not like 'avatars/'||v_customer::text||'/%' or v_path like '%..%' then raise exception 'Invalid profile picture'; end if;
  insert into public.aam_social_profiles(customer_id,avatar_path)
  values(v_customer,v_path)
  on conflict(customer_id) do update set avatar_path=excluded.avatar_path,updated_at=now();
@@ -106,7 +106,7 @@ begin
  if p_sound is null or p_sound<1 or p_sound>15 then raise exception 'Choose a valid notification sound'; end if;
  v_wallpaper=coalesce(p_wallpaper,'default');v_path=nullif(coalesce(p_custom_wallpaper_path,''),'');
  if v_wallpaper<>'default' and v_wallpaper<>'custom' and v_wallpaper !~ '^theme-(0[1-9]|1[0-9]|20)$' then raise exception 'Choose a valid wallpaper'; end if;
- if v_wallpaper='custom' and (v_path is null or v_path not like v_customer::text||'/wallpapers/%' or v_path like '%..%') then raise exception 'Choose a valid custom wallpaper'; end if;
+ if v_wallpaper='custom' and (v_path is null or v_path not like 'wallpapers/'||v_customer::text||'/%' or v_path like '%..%') then raise exception 'Choose a valid custom wallpaper'; end if;
  insert into public.aam_social_preferences(customer_id,notification_sound,chat_wallpaper,custom_wallpaper_path)
  values(v_customer,p_sound,v_wallpaper,case when v_wallpaper='custom' then v_path else null end)
  on conflict(customer_id) do update set notification_sound=excluded.notification_sound,
