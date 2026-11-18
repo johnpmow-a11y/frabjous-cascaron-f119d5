@@ -18,6 +18,7 @@ begin
  if not exists(select 1 from public.aam_social_profiles where customer_id=v_customer and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older first'; end if;
  select customer_id into v_owner from public.aam_social_posts where id=p_post_id and moderation_status='published';
  if not found then raise exception 'Post is unavailable'; end if;
+ if v_owner is not null and v_owner<>v_customer and exists(select 1 from public.aam_social_profiles where customer_id=v_owner and is_private=true) and not exists(select 1 from public.aam_social_follows where follower_id=v_customer and followed_id=v_owner) then raise exception 'This profile is private'; end if;
  delete from public.aam_social_likes where post_id=p_post_id and customer_id=v_customer;
  get diagnostics v_deleted=row_count;
  if v_deleted=0 then
@@ -45,6 +46,7 @@ begin
  select p.customer_id into v_owner from public.aam_social_posts p
  where p.id=p_post_id and p.moderation_status='published' and p.comments_enabled=true;
  if not found then raise exception 'Comments are unavailable for this post'; end if;
+ if v_owner is not null and v_owner<>v_customer and exists(select 1 from public.aam_social_profiles where customer_id=v_owner and is_private=true) and not exists(select 1 from public.aam_social_follows where follower_id=v_customer and followed_id=v_owner) then raise exception 'This profile is private'; end if;
  if v_owner is not null and exists(select 1 from public.aam_social_profiles where customer_id=v_owner and comments_enabled=false) then raise exception 'This creator has disabled comments'; end if;
  insert into public.aam_social_comments(post_id,customer_id,body)
  values(p_post_id,v_customer,v_body) returning id into v_id;
@@ -124,6 +126,7 @@ begin
  if v_customer is null then raise exception 'Session expired'; end if;
  if not exists(select 1 from public.aam_social_profiles where customer_id=v_customer and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older first'; end if;
  if v_customer=p_target or not exists(select 1 from public.customers where id=p_target) then raise exception 'Choose a valid creator'; end if;
+ if exists(select 1 from public.aam_social_profiles where customer_id=p_target and is_private=true) and not exists(select 1 from public.aam_social_follows where follower_id=v_customer and followed_id=p_target) then raise exception 'Follow this private profile before messaging'; end if;
  perform pg_advisory_xact_lock(hashtextextended(least(v_customer::text,p_target::text)||':'||greatest(v_customer::text,p_target::text),0));
  select a.conversation_id into v_conversation
  from public.aam_chat_participants a join public.aam_chat_participants b
