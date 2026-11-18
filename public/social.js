@@ -127,7 +127,7 @@ async function recordVideoMix(){
   video.muted=true;video.currentTime=0;sourceAudio.currentTime=0;if(music)music.currentTime=0;
   await ctx.resume();
   stream=canvas.captureStream(30);destination.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
-  const types=['video/mp4;codecs=h264,aac','video/mp4','video/webm;codecs=vp9,opus','video/webm'];
+  const types=['video/mp4','video/webm'];
   const type=types.find(t=>MediaRecorder.isTypeSupported(t));
   if(!type)throw new Error('This browser cannot export a mixed video. You can still publish the original.');
   const recorder=new MediaRecorder(stream,{mimeType:type}),chunks=[];
