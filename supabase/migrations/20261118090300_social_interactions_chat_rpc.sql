@@ -163,7 +163,7 @@ begin
  values(p_conversation,v_customer,v_type,v_body,v_path,p_shared_post) returning id into v_id;
  update public.aam_chat_conversations set updated_at=now() where id=p_conversation;
  insert into public.aam_social_notifications(recipient_id,actor_id,event_type,title,body,message_id)
- values(v_other,v_customer,'message','New message',case when v_type='voice' then 'Sent a voice note' when v_type='shared_post' then 'Shared a post' when v_type in ('image','video') then 'Sent media' else left(v_body,180) end,v_id);
+ values(v_other,v_customer,case when v_type='shared_post' then 'share' else 'message' end,'New message',case when v_type='voice' then 'Sent a voice note' when v_type='shared_post' then 'Shared a post' when v_type in ('image','video') then 'Sent media' else left(v_body,180) end,v_id);
  return jsonb_build_object('ok',true,'message_id',v_id);
 end $$;
 
