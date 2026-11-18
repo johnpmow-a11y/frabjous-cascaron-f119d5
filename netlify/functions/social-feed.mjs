@@ -28,7 +28,7 @@ export async function handler(event){
    const feed=await Promise.all(visible.slice(0,30).map(async p=>{
     const owner=p.customer_id?profileMap.get(p.customer_id):null;
     const canWatch=p.media_type!=='video'||p.customer_id===s.customer_id||unlocked.has(p.id);
-    return {...p,like_count:likes.filter(x=>x.post_id===p.id).length,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),locked_video:p.media_type==='video'&&!canWatch,creator:{id:p.customer_id||null,name:owner?.display_name||'All Ads Manager Creator',bio:owner?.bio||'',avatar_url:owner?.avatar_path?await signedRead(owner.avatar_path):null},media_url:canWatch?await signedRead(p.media_path):null,thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};
+    return {...p,comments_enabled:p.comments_enabled!==false,like_count:likes.filter(x=>x.post_id===p.id).length,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),locked_video:p.media_type==='video'&&!canWatch,creator:{id:p.customer_id||null,name:owner?.display_name||'All Ads Manager Creator',bio:owner?.bio||'',avatar_url:owner?.avatar_path?await signedRead(owner.avatar_path):null},media_url:canWatch?await signedRead(p.media_path):null,thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};
    }));
    return json(200,{posts:feed});
   }
