@@ -14,7 +14,7 @@ export async function handler(event){
    if(!s)return json(401,{error:'Please log in again.'});
    const [balance,profile,prefs,followers,following,profileViews]=await Promise.all([
     db(`aam_coin_balances?select=balance_coins&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
-    db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
+    db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_preferences?select=notification_sound,chat_wallpaper,custom_wallpaper_path,profile_view_notifications,follow_notifications,like_notifications,comment_notifications,share_notifications,message_notifications,profile_update_notifications&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_follows?select=follower_id&followed_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
@@ -29,7 +29,6 @@ export async function handler(event){
   if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
   if(action==='update_preferences')return json(200,await rpc('aam_social_update_preferences',{p_token:token,p_sound:Number(b.notification_sound||1),p_wallpaper:String(b.chat_wallpaper||'default'),p_custom_wallpaper_path:b.custom_wallpaper_path||null}));
   if(action==='update_notification_preferences')return json(200,await rpc('aam_social_update_notification_preferences',{p_token:token,p_profile_views:b.profile_view_notifications!==false,p_follows:b.follow_notifications!==false,p_likes:b.like_notifications!==false,p_comments:b.comment_notifications!==false,p_shares:b.share_notifications!==false,p_messages:b.message_notifications!==false,p_profile_updates:b.profile_update_notifications!==false}));
-  if(action==='confirm_age')return json(200,await rpc('aam_social_confirm_age',{p_token:token}));
   if(action==='follow'){
    if(!uuid.test(String(b.target_customer_id||'')))return json(400,{error:'Choose a valid profile.'});
    const result=await rpc('aam_social_follow',{p_token:token,p_target:b.target_customer_id});if(result.new_follow)await sendPush({role:'customer',customerId:b.target_customer_id,title:'New follower',body:'Someone followed your profile.',eventType:'follow'}).catch(()=>{});return json(200,result);
