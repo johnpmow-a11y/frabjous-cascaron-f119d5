@@ -10,6 +10,7 @@ declare v_me uuid; v_conversation uuid;
 begin
  select customer_id into v_me from public.customer_sessions where token=p_token and expires_at>now();
  if v_me is null then raise exception 'Session expired'; end if;
+ if not exists(select 1 from public.aam_social_profiles where customer_id=v_me and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older first'; end if;
  if v_me=p_target then raise exception 'You cannot message yourself'; end if;
  if not exists(select 1 from public.customers where id=p_target) then raise exception 'Profile not found'; end if;
  if exists(select 1 from public.aam_social_profiles where customer_id=p_target and is_private=true)
@@ -37,6 +38,7 @@ declare v_me uuid; v_message uuid; v_type text; v_body text;
 begin
  select customer_id into v_me from public.customer_sessions where token=p_token and expires_at>now();
  if v_me is null then raise exception 'Session expired'; end if;
+ if not exists(select 1 from public.aam_social_profiles where customer_id=v_me and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older first'; end if;
  if not exists(select 1 from public.aam_chat_participants where conversation_id=p_conversation and customer_id=v_me) then raise exception 'Conversation not found'; end if;
  v_type=coalesce(p_type,'text'); v_body=left(trim(coalesce(p_body,'')),5000);
  if v_type not in ('text','image','video','voice','shared_post') then raise exception 'Invalid message type'; end if;
