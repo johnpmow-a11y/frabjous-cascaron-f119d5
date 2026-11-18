@@ -4,6 +4,7 @@ const migration=read('supabase/migrations/20261118090200_social_rewards_and_vide
 const professionalVideo=read('supabase/migrations/20261118110000_professional_video_only_coin_unlocks.sql');
 const notifications=read('supabase/migrations/20261118090500_social_notification_preferences_and_profile_views.sql');
 const feed=read('netlify/functions/social-feed.mjs');
+const admin=read('netlify/functions/social-admin.mjs');
 const discover=read('netlify/functions/social-discover.mjs');
 const chat=read('netlify/functions/social-chat.mjs');
 const index=read('public/index.html');
@@ -17,6 +18,8 @@ const checks=[
  ['referral code field exists at registration',index.includes('newCustomerReferral')&&index.includes("action:'apply_referral'")],
  ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
  ['locked feed responses omit raw storage paths',feed.includes('media_path,thumbnail_path,customer_id,...publicPost')],
+ ['admin Professional Videos receive blurred preview thumbnails',admin.includes("sign_thumbnail_upload")&&admin.includes('thumbnail_path:thumb||null')&&ui.includes('createAdminVideoThumbnail(file)')],
+ ['feed returns signed Professional Video preview images',feed.includes('thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null')],
  ['creator discovery omits raw media paths',discover.includes('{media_path,...publicPost}=post')&&discover.includes('const {avatar_path,...publicProfile}=p')],
  ['chat responses omit raw media paths',chat.includes('const {media_path,...publicMessage}=m')],
  ['notification preferences filter in-app alerts',notifications.includes('before insert on public.aam_social_notifications')&&notifications.includes('profile_update_notifications')],
