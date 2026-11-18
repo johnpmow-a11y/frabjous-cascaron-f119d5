@@ -22,14 +22,14 @@ export async function handler(event){
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||'');
   const currentSession=await session(token);if(!currentSession)return json(401,{error:'Your session has expired. Please log in again.'});
-  if(action==='update_avatar'){const path=String(b.avatar_path||''),followers=await db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(currentSession.customer_id)}`);const result=await rpc('aam_social_update_avatar',{p_token:token,p_avatar_path:path});await Promise.allSettled(followers.map(x=>sendPush({role:'customer',customerId:x.followed_id,title:'Profile picture updated',body:'A creator you follow updated their profile picture.'})));return json(200,result);}
+  if(action==='update_avatar'){const path=String(b.avatar_path||''),followers=await db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(currentSession.customer_id)}`);const result=await rpc('aam_social_update_avatar',{p_token:token,p_avatar_path:path});await Promise.allSettled(followers.map(x=>sendPush({role:'customer',customerId:x.followed_id,title:'Profile picture updated',body:'A creator you follow updated their profile picture.',eventType:'profile_update'})));return json(200,result);}
   if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
   if(action==='update_preferences')return json(200,await rpc('aam_social_update_preferences',{p_token:token,p_sound:Number(b.notification_sound||1),p_wallpaper:String(b.chat_wallpaper||'default'),p_custom_wallpaper_path:b.custom_wallpaper_path||null}));
   if(action==='update_notification_preferences')return json(200,await rpc('aam_social_update_notification_preferences',{p_token:token,p_profile_views:b.profile_view_notifications!==false,p_follows:b.follow_notifications!==false,p_likes:b.like_notifications!==false,p_comments:b.comment_notifications!==false,p_shares:b.share_notifications!==false,p_messages:b.message_notifications!==false}));
   if(action==='confirm_age')return json(200,await rpc('aam_social_confirm_age',{p_token:token}));
   if(action==='follow'){
    if(!uuid.test(String(b.target_customer_id||'')))return json(400,{error:'Choose a valid profile.'});
-   const result=await rpc('aam_social_follow',{p_token:token,p_target:b.target_customer_id});if(result.new_follow)await sendPush({role:'customer',customerId:b.target_customer_id,title:'New follower',body:'Someone followed your profile.'}).catch(()=>{});return json(200,result);
+   const result=await rpc('aam_social_follow',{p_token:token,p_target:b.target_customer_id});if(result.new_follow)await sendPush({role:'customer',customerId:b.target_customer_id,title:'New follower',body:'Someone followed your profile.',eventType:'follow'}).catch(()=>{});return json(200,result);
   }
   if(action==='apply_referral'){
    const code=String(b.referral_code||'').trim().slice(0,32);
