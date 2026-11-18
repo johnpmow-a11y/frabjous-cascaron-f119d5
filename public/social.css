@@ -57,3 +57,6 @@
 .aam-social-feed-avatar{width:42px;height:42px;min-width:42px;border-radius:50%;object-fit:cover;background:#e5e7eb}
 .aam-social-creator{flex-wrap:wrap;justify-content:flex-start}
 .aam-social-creator>strong{flex:1}
+
+.aam-social-message .aam-read{animation:aamReadBlink .35s ease-in-out 3;}
+@keyframes aamReadBlink{0%,100%{opacity:1}50%{opacity:.12}}
