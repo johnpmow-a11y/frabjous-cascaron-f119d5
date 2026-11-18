@@ -38,3 +38,5 @@
 .aam-verified{display:inline-grid;place-items:center;margin-left:5px;width:17px;height:17px;border-radius:50%;background:#2563eb;color:#fff;font-size:11px;font-weight:900;vertical-align:middle}
 
 .aam-social-avatar{width:86px;height:86px;border-radius:50%;object-fit:cover;display:block;margin:0 0 12px;background:#e5e7eb}
+
+.aam-notification-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px}
