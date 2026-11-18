@@ -18,6 +18,7 @@ const checks=[
  ['referral code field exists at registration',index.includes('newCustomerReferral')&&index.includes("action:'apply_referral'")],
  ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
  ['locked feed responses omit raw storage paths',feed.includes('media_path,thumbnail_path,customer_id,...publicPost')],
+ ['coin packages display Nigerian prices without activating checkout',ui.includes('amounts=[100,200,500,1000,2000,5000,10000,20000,50000,100000,200000]')&&ui.includes('type="button" disabled')&&ui.includes('Your existing tools wallet is separate.')],
  ['admin Professional Videos receive blurred preview thumbnails',admin.includes("sign_thumbnail_upload")&&admin.includes('thumbnail_path:thumb||null')&&ui.includes('createAdminVideoThumbnail(file)')],
  ['feed returns signed Professional Video preview images',feed.includes('thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null')],
  ['creator discovery omits raw media paths',discover.includes('{media_path,...publicPost}=post')&&discover.includes('const {avatar_path,...publicProfile}=p')],
