@@ -36,5 +36,5 @@ $$;
 revoke all on function public.aam_social_update_profile(uuid,text,text,boolean,boolean) from public,anon,authenticated;
 revoke all on function public.aam_social_update_preferences(uuid,integer,text,text) from public,anon,authenticated;
 grant execute on function public.aam_social_update_profile(uuid,text,text,boolean,boolean) to service_role;
-grant execute on function public.aam_social_update_preferences(uuid,integer,text) to service_role;
+grant execute on function public.aam_social_update_preferences(uuid,integer,text,text) to service_role;
 commit;
