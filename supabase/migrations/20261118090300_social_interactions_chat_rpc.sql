@@ -71,8 +71,8 @@ begin
  values(v_customer,v_path)
  on conflict(customer_id) do update set avatar_path=excluded.avatar_path,updated_at=now();
  insert into public.aam_social_notifications(recipient_id,actor_id,event_type,title,body)
- select followed_id,v_customer,'profile_update','Profile picture updated','A creator you follow changed their profile picture.'
- from public.aam_social_follows where follower_id=v_customer;
+ select follower_id,v_customer,'profile_update','Profile picture updated','A creator you follow changed their profile picture.'
+ from public.aam_social_follows where followed_id=v_customer;
  return jsonb_build_object('ok',true);
 end $$;
 
