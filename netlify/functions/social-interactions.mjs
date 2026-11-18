@@ -1,3 +1,4 @@
+import {sendPush} from './_push.mjs';
 const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
 const uuid=/^[0-9a-f-]{36}$/i;
 const headers=(key,extra={})=>({apikey:key,...(key.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${key}`}),...extra});
@@ -28,8 +29,9 @@ export async function handler(event){
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const post=String(b.post_id||'');if(!uuid.test(post))return json(400,{error:'Choose a valid post.'});
-  if(b.action==='like')return json(200,await rpc('aam_social_toggle_like',{p_token:token,p_post_id:post}));
-  if(b.action==='comment')return json(200,await rpc('aam_social_add_comment',{p_token:token,p_post_id:post,p_body:String(b.body||'')}));
+  const targetRows=await db(`aam_social_posts?select=customer_id&id=eq.${post}&moderation_status=eq.published&limit=1`),recipient=targetRows[0]?.customer_id;
+  if(b.action==='like'){const result=await rpc('aam_social_toggle_like',{p_token:token,p_post_id:post});if(result.liked&&recipient&&recipient!==s.customer_id)await sendPush({role:'customer',customerId:recipient,title:'New like',body:'Someone liked your post.'}).catch(()=>{});return json(200,result);}
+  if(b.action==='comment'){const result=await rpc('aam_social_add_comment',{p_token:token,p_post_id:post,p_body:String(b.body||'')});if(recipient&&recipient!==s.customer_id)await sendPush({role:'customer',customerId:recipient,title:'New comment',body:'Someone commented on your post.'}).catch(()=>{});return json(200,result);}
   return json(400,{error:'Unsupported social interaction.'});
  }catch(e){return json(/session expired/i.test(e.message)?401:400,{error:e.message||'Could not complete that action.'});}
 }
