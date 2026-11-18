@@ -36,7 +36,7 @@ export async function handler(event){
   if(action==='sign_upload'){
    const mime=String(b.mime_type||''),ext=mimeExt[mime];if(!ext)return json(400,{error:'Choose a supported image or video.'});
    if(!admin){const p=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(customerId)}&limit=1`);if(!p[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older before posting.'});}
-   const path=`${admin?'admin':customerId}/${randomUUID() }.${ext}`;
+   const path=`${admin?'admin':customerId}/${randomUUID()}.${ext}`;
    const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;
    const r=await fetch(`${u}/storage/v1/object/upload/sign/aam-social-media/${path}`,{method:'POST',headers:h(k,{'Content-Type':'application/json'}),body:'{}'});
    const d=await r.json().catch(()=>({}));if(!r.ok)return json(502,{error:d.message||'Could not prepare the upload.'});
