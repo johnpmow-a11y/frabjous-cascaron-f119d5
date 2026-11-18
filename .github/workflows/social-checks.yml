@@ -1,0 +1,26 @@
+name: Social foundation checks
+on:
+  pull_request:
+    paths:
+      - "netlify/functions/social-*.mjs"
+      - "public/social.js"
+      - "public/social.css"
+      - "supabase/migrations/*.sql"
+      - ".github/workflows/social-checks.yml"
+  push:
+    branches:
+      - feature/social-feed-coins-foundation
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Netlify function syntax
+        run: |
+          node --check netlify/functions/social-core.mjs
+          node --check netlify/functions/social-feed.mjs
+          node --check netlify/functions/social-interactions.mjs
+          node --check public/social.js
