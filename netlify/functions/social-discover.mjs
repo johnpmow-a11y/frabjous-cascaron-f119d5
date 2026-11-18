@@ -33,7 +33,7 @@ export async function handler(event){
    const profiles=await db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code&customer_id=eq.${target}&limit=1`);
    if(!profiles.length)return json(404,{error:'Profile not found.'});
    const p=profiles[0],following=await db(`aam_social_follows?select=follower_id&follower_id=eq.${s.customer_id}&followed_id=eq.${target}&limit=1`),isFollowing=following.length>0,allowed=!p.is_private||isFollowing||target===s.customer_id;
-   if(target!==s.customer_id){await db('aam_social_notifications',{method:'POST',body:JSON.stringify([{recipient_id:target,actor_id:s.customer_id,event_type:'profile_view',title:'Profile view',body:'Someone viewed your profile.',eventType:'profile_view'}])});await sendPush({role:'customer',customerId:target,title:'Profile view',body:'Someone viewed your profile.',eventType:'profile_view'}).catch(()=>{});}
+   if(target!==s.customer_id){await db('aam_social_notifications',{method:'POST',body:JSON.stringify([{recipient_id:target,actor_id:s.customer_id,event_type:'profile_view',title:'Profile view',body:'Someone viewed your profile.'}])});await sendPush({role:'customer',customerId:target,title:'Profile view',body:'Someone viewed your profile.',eventType:'profile_view'}).catch(()=>{});}
    const [followers,followingCount,posts,unlocks,profileViews]=await Promise.all([
     db(`aam_social_follows?select=follower_id&followed_id=eq.${target}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${target}`),
