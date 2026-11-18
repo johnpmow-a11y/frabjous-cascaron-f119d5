@@ -67,14 +67,14 @@ async function recordVideoMix(){
  const AudioCtx=window.AudioContext||window.webkitAudioContext;
  if(!AudioCtx)return notice('Audio mixing is not supported in this browser. You can still publish the original video.');
  if(aamAdminMixRecorder&&aamAdminMixRecorder.state!=='inactive')return notice('A video mix is already recording. Stop it before starting another.');
- let ctx=null,mic=null,music=null,musicUrl=null,stream=null,raf=0,oldMuted=video.muted,endedHandler=null,cleaned=false;
+ let ctx=null,mic=null,music=null,musicUrl=null,sourceAudio=null,stream=null,raf=0,oldMuted=video.muted,endedHandler=null,cleaned=false;
  const cleanup=()=>{
   if(cleaned)return;cleaned=true;
   if(raf)cancelAnimationFrame(raf);
   if(endedHandler)video.removeEventListener('ended',endedHandler);
   stream?.getTracks().forEach(t=>t.stop());
   mic?.getTracks().forEach(t=>t.stop());
-  music?.pause();
+  music?.pause();sourceAudio?.pause();
   if(musicUrl)URL.revokeObjectURL(musicUrl);
   video.muted=oldMuted;
   if(ctx&&ctx.state!=='closed')ctx.close().catch(()=>{});
@@ -89,7 +89,7 @@ async function recordVideoMix(){
    video.addEventListener('error',()=>{clearTimeout(timer);reject(new Error('This video could not be opened for editing.'));},{once:true});
   });
   ctx=new AudioCtx();aamAdminMixContext=ctx;
-  const sourceAudio=new Audio(aamAdminSourceUrl);sourceAudio.preload='auto';
+  sourceAudio=new Audio(aamAdminSourceUrl);sourceAudio.preload='auto';
   await new Promise((resolve,reject)=>{
    const timer=setTimeout(()=>reject(new Error('The original video sound could not be prepared.')),12000);
    sourceAudio.addEventListener('canplay',()=>{clearTimeout(timer);resolve();},{once:true});
