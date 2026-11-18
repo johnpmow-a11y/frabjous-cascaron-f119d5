@@ -1,0 +1,25 @@
+const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
+const uuid=/^[0-9a-f-]{36}$/i;
+const headers=(key,extra={})=>({apikey:key,...(key.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${key}`}),...extra});
+async function db(path,options={}){const base=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!base||!key)throw new Error('Notifications are not configured.');const r=await fetch(`${base}/rest/v1/${path}`,{...options,headers:headers(key,{'Content-Type':'application/json',...(options.headers||{})})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.message||data.error||'Notification request failed.');return data;}
+async function session(token){if(!uuid.test(token))return null;const rows=await db(`customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);return rows[0]||null;}
+export async function handler(event){
+ if(event.httpMethod==='OPTIONS')return json(204,{});
+ try{
+  const b=event.httpMethod==='GET'?event.queryStringParameters||{}:JSON.parse(event.body||'{}'),s=await session(String(b.token||''));
+  if(!s)return json(401,{error:'Please log in again.'});
+  if(event.httpMethod==='GET'){
+   const rows=await db(`aam_social_notifications?select=id,actor_id,event_type,post_id,message_id,title,body,read_at,created_at&recipient_id=eq.${s.customer_id}&order=created_at.desc&limit=60`);
+   const ids=[...new Set(rows.map(n=>n.actor_id).filter(Boolean))];
+   const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
+   const map=new Map(profiles.map(p=>[p.customer_id,p]));
+   return json(200,{notifications:rows.map(n=>({...n,actor:map.get(n.actor_id)||null})),unread_count:rows.filter(n=>!n.read_at).length});
+  }
+  if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
+  const ids=Array.isArray(b.ids)?b.ids.filter(x=>uuid.test(String(x))):[];
+  let path=`aam_social_notifications?recipient_id=eq.${s.customer_id}&read_at=is.null`;
+  if(ids.length)path+=`&id=in.(${ids.join(',')})`;
+  const result=await db(path,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({read_at:new Date().toISOString()})});
+  return json(200,{marked_read:result.length});
+ }catch(e){return json(/session expired/i.test(e.message)?401:400,{error:e.message||'Could not load notifications.'});}
+}
