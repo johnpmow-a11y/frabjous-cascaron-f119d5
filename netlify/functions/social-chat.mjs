@@ -25,7 +25,7 @@ export async function handler(event){
     const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
     const pm=new Map(profiles.map(p=>[p.customer_id,p]));
     await rpc('aam_chat_mark_read',{p_token:token,p_conversation:conv});
-    return json(200,{messages:await Promise.all(messages.map(async m=>({...m,media_url:m.media_path?await signedRead(m.media_path):null,creator:pm.get(m.sender_id)||{display_name:'Creator'},read_by:reads.filter(r=>r.message_id===m.id)})))});
+    return json(200,{messages:await Promise.all(messages.map(async m=>{const {media_path,...publicMessage}=m;return {...publicMessage,media_url:media_path?await signedRead(media_path):null,creator:pm.get(m.sender_id)||{display_name:'Creator'},read_by:reads.filter(r=>r.message_id===m.id)}}))});
    }
    const parts=await db(`aam_chat_participants?select=conversation_id,last_seen_at&customer_id=eq.${s.customer_id}`);
    if(!parts.length)return json(200,{conversations:[]});
