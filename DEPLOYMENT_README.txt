@@ -59,6 +59,13 @@ The social feed, 18+ confirmation, profiles, follows, coins, paid-video unlocks,
 14. supabase/migrations/20261119160000_manager_promotion_campaigns.sql
 The 20261119130000 migration restores the explicit 18+ confirmation timestamp/RPC, separates free and purchased viewing coins, and creates the current one-time paid-video unlock and earnings accounting. The final 20261119160000 migration creates Manager Promotion campaign records and Money-Coin-only campaign payment. It must run after the preceding social migrations. Promotion submissions remain under review; no external advertising provider is automatically called, and payment is unavailable until the administrator sets a campaign price after provider pricing/approval is confirmed. The earlier age-gate-removal migration is retained in the ordered history; the final migration restores the current 18+ confirmation mechanism. Do not apply only the final migration to a database missing the earlier social foundation.
 
+LIVEKIT AUDIO AND VIDEO CALLING
+The calling system uses LiveKit for real-time audio/video rooms and the existing customer/admin sessions for authorization. Apply these migrations in order after the customer/account foundation:
+1. supabase/migrations/20261119100000_livekit_call_tables.sql
+2. supabase/migrations/20261119190000_admin_livekit_call_identity.sql
+3. supabase/migrations/20261119200000_livekit_one_active_call_per_customer.sql
+The final migration repairs terminal-call participant rows and enforces one active call per customer at the database level, including concurrent call attempts. Keep LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET in Netlify server environment variables only. Do not expose them in browser code. The source checks do not replace real two-device testing of microphone, camera, incoming-call notifications, iPhone audio playback and reconnection.
+
 PASSWORD RECOVERY
 Customer login remains username plus four-digit code. If a customer forgets the code, they enter their username and request a six-digit code sent to the email address saved on that customer's account. The code expires after 10 minutes and is limited to five attempts. The customer enters the emailed code and chooses a new four-digit code. The customer controls this process. The administrator has NO reset button or reset RPC. Existing Gmail sending environment variables GMAIL_USER and GMAIL_APP_PASSWORD are preserved and must be configured for the reset email to send.
 
