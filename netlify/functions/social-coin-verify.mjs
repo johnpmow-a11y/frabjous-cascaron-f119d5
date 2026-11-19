@@ -20,7 +20,7 @@ export async function handler(event){
   if(!response.ok||!verified.status||tx?.status!=='success')return json(200,{status:'pending',message:'Payment is not confirmed yet.'});
   if(Number(tx.amount)!==Number(payments[0].amount_kobo)||String(tx.currency).toUpperCase()!=='NGN')return json(400,{error:'Paystack amount or currency mismatch.'});
   const credited=await db('rpc/aam_social_credit_coin_purchase',{method:'POST',body:JSON.stringify({p_reference:reference,p_transaction_id:String(tx.id),p_channel:String(tx.channel||''),p_paid_at:tx.paid_at||tx.paidAt||new Date().toISOString(),p_amount_kobo:Number(tx.amount),p_currency:String(tx.currency||'')})});
-  await sendPush({role:'customer',customerId:sessions[0].customer_id,title:'Coins purchased successfully',body:`${payments[0].coin_amount.toLocaleString('en-NG')} viewing coins have been added to your purchased balance.`,url:'/'}).catch(()=>{});
+  if(credited?.credited)await sendPush({role:'customer',customerId:sessions[0].customer_id,title:'Coins purchased successfully',body:`${payments[0].coin_amount.toLocaleString('en-NG')} viewing coins have been added to your purchased balance.`,url:'/'}).catch(()=>{});
   return json(200,{status:'success',coins:payments[0].coin_amount,credited});
  }catch(e){return json(500,{error:e.message||'Could not verify coin payment.'});}
 }
