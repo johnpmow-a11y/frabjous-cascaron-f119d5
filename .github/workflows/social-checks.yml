@@ -50,5 +50,6 @@ jobs:
           node --check netlify/functions/social-coin-create.mjs
           node --check netlify/functions/social-coin-verify.mjs
           node --check netlify/functions/social-promotions.mjs
+          node --check netlify/functions/social-promotion-admin.mjs
           node --check netlify/functions/paystack-webhook.mjs
           node --check public/social.js
