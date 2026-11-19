@@ -102,8 +102,9 @@ export async function createAamVoiceChanger({ room, LK, mode = 'natural' }) {
         if (originalUnpublished && restoreMic && room.state !== 'disconnected' && originalTrack.mediaStreamTrack?.readyState !== 'ended') {
           originalTrack.mediaStreamTrack.enabled = !muted;
           await room.localParticipant.publishTrack(originalTrack, { source: LK.Track.Source.Microphone }).catch(async () => {
-            await room.localParticipant.setMicrophoneEnabled(true).catch(() => {});
+            await room.localParticipant.setMicrophoneEnabled(!muted).catch(() => {});
           });
+          await room.localParticipant.setMicrophoneEnabled(!muted).catch(() => {});
         } else if (originalUnpublished && originalTrack.mediaStreamTrack?.readyState !== 'ended') {
           originalTrack.stop();
         }
