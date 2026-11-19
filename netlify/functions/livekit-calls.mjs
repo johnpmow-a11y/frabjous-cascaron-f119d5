@@ -35,8 +35,11 @@ export async function handler(event) {
       // Invitations expire after 45 seconds. Mark the call missed and close its
       // outstanding invitation so stale ringing calls cannot remain active forever.
       const cutoff = new Date(Date.now() - 45_000).toISOString();
-      const stale = await db(`aam_call_participants?select=call_id,call:aam_calls!inner(id,created_at,status)&customer_id=eq.${encodeURIComponent(customerId)}&status=eq.invited&call.status=eq.active&call.created_at=lt.${encodeURIComponent(cutoff)}`);
-      const staleIds = [...new Set(stale.map(row => row.call_id).filter(id => uuid.test(id)))];
+      const [staleIncoming, staleOutgoing] = await Promise.all([
+        db(`aam_call_participants?select=call_id,call:aam_calls!inner(id,created_at,status)&customer_id=eq.${encodeURIComponent(customerId)}&status=eq.invited&call.status=eq.active&call.created_at=lt.${encodeURIComponent(cutoff)}`),
+        db(`aam_calls?select=id&caller_id=eq.${encodeURIComponent(customerId)}&status=eq.active&created_at=lt.${encodeURIComponent(cutoff)}`)
+      ]);
+      const staleIds = [...new Set([...staleIncoming.map(row => row.call_id), ...staleOutgoing.map(row => row.id)].filter(id => uuid.test(id)))];
       if (staleIds.length) {
         await db(`aam_calls?id=in.(${staleIds.join(',')})&status=eq.active`, {
           method: 'PATCH',
