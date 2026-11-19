@@ -14,7 +14,12 @@ async function db(path, options = {}) {
   if (!base || !key) throw new Error('Supabase server configuration is missing.');
   const response = await fetch(`${base}/rest/v1/${path}`, { ...options, headers: headers(key, options.headers || {}) });
   const data = await response.json().catch(() => []);
-  if (!response.ok) throw new Error(data.message || data.error || 'Call request failed.');
+  if (!response.ok) {
+    const error = new Error(data.message || data.error || 'Call request failed.');
+    error.code = data.code || '';
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 async function currentCustomer(token) {
@@ -155,6 +160,10 @@ export async function handler(event) {
     }
     return json(400, { error: 'Unsupported call action.' });
   } catch (error) {
+    // The unique active-call index is the final authority during simultaneous
+    // calls/answers from multiple devices. Present its conflict as a normal
+    // busy response rather than an unexplained server error.
+    if (error.code === '23505') return json(409, { error: 'You or this customer is already in another call. End the current call before trying again.' });
     return json(500, { error: error.message || 'Call service failed.' });
   }
 }
