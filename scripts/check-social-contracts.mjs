@@ -25,6 +25,8 @@ const promotions=read('netlify/functions/social-promotions.mjs');
 const promotionAdmin=read('netlify/functions/social-promotion-admin.mjs');
 const liveCalls=read('netlify/functions/livekit-calls.mjs');
 const liveToken=read('netlify/functions/livekit-token.mjs');
+const adminLiveCalls=read('netlify/functions/admin-livekit-calls.mjs');
+const adminCallMigration=read('supabase/migrations/20261119190000_admin_livekit_call_identity.sql');
 const liveMigration=read('supabase/migrations/20261119100000_livekit_call_tables.sql');
 const checks=[
  ['coin balances are split into free and purchased',/free_coins bigint/.test(migration)&&/purchased_coins bigint/.test(migration)&&/balance_coins = free_coins \+ purchased_coins/.test(migration)],
@@ -95,7 +97,9 @@ const checks=[
  ['LiveKit call creation requires two 18+ confirmed customers and an existing direct chat',/adult_confirmed_at/.test(liveCalls)&&/conversation_type=eq\.direct/.test(liveCalls)&&/You can only call someone you have a private chat with/.test(liveCalls)],
  ['LiveKit room tokens are issued only to accepted active call participants',/status=eq\.accepted/.test(liveToken)&&/call\.status=eq\.active/.test(liveToken)&&/LIVEKIT_URL must be a secure WebSocket URL/.test(liveToken)],
  ['LiveKit call records are protected by RLS and service-role-only access',/enable row level security/.test(liveMigration)&&/revoke all on public\.aam_calls from anon, authenticated/.test(liveMigration)&&/grant all on public\.aam_call_participants to service_role/.test(liveMigration)],
- ['customer private chat exposes audio/video call controls and incoming-call polling',/function callPanelHtml\(\)/.test(ui)&&/AAMSocial\.startCall/.test(ui)&&/AAMSocial\.acceptCall/.test(ui)&&/livekit-calls/.test(ui)&&/livekit-token/.test(ui)]
+ ['customer private chat exposes audio/video call controls and incoming-call polling',/function callPanelHtml\(\)/.test(ui)&&/AAMSocial\.startCall/.test(ui)&&/AAMSocial\.acceptCall/.test(ui)&&/livekit-calls/.test(ui)&&/livekit-token/.test(ui)],
+ ['administrator calls use a separate verified admin identity, not a customer impersonation',/caller_id uuid/.test(adminCallMigration)&&/caller_role text not null default 'customer'/.test(adminCallMigration)&&/admin_session_hash/.test(adminCallMigration)&&/caller_id is null/.test(adminCallMigration)&&/admin_sessions/.test(adminLiveCalls)&&/admin_session_hash/.test(liveToken)],
+ ['administrator can start and end audio/video calls from customer management',/AAMSocial\.startAdminCall/.test(index)&&/startAdminCall\(customerId/.test(ui)&&/admin-livekit-calls/.test(ui)&&/action==='end'/.test(adminLiveCalls)]
 ];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
