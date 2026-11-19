@@ -73,7 +73,7 @@ alter table public.aam_social_video_unlocks enable row level security;
 revoke all on public.aam_social_video_unlocks from public,anon,authenticated;
 grant all on public.aam_social_video_unlocks to service_role;
 
--- Every new customer starts with 10 FREE viewing coins.
+-- Every new customer starts with 30 FREE viewing coins.
 create or replace function public.aam_social_initialize_customer()
 returns trigger language plpgsql security definer set search_path=''
 as $$
@@ -81,10 +81,10 @@ begin
   insert into public.aam_social_profiles(customer_id,display_name)
   values(new.id,new.name) on conflict(customer_id) do nothing;
   insert into public.aam_coin_balances(customer_id,balance_coins,free_coins,purchased_coins)
-  values(new.id,10,10,0)
+  values(new.id,30,30,0)
   on conflict(customer_id) do nothing;
   insert into public.aam_coin_transactions(customer_id,reference,transaction_type,amount_coins,description)
-  values(new.id,'signup:'||new.id::text,'admin_adjustment',10,'10 free starter viewing coins')
+  values(new.id,'signup:'||new.id::text,'admin_adjustment',10,'30 free starter viewing coins')
   on conflict(reference) do nothing;
   return new;
 end;
@@ -233,8 +233,8 @@ begin
 end;
 $$;
 
--- A locked video costs one coin once per customer. Spend FREE coins first.
--- Only when a purchased coin is spent is ₦1 added to the admin video-earnings ledger.
+-- A locked video costs one coin once per customer. Spend MONEY coins first, then FREE coins.
+-- Only when a Money Coin is spent is ₦1 added to the admin video-earnings ledger.
 create or replace function public.aam_social_unlock_video(p_token uuid,p_post_id uuid)
 returns jsonb language plpgsql security definer set search_path=''
 as $$
@@ -273,19 +273,19 @@ begin
    delete from public.aam_social_video_unlocks where customer_id=v_customer and post_id=p_post_id;
    raise exception 'Insufficient coins';
  end if;
- if coalesce(v_free,0)>0 then
-   update public.aam_coin_balances set free_coins=free_coins-1,
+ if coalesce(v_paid,0)>0 then
+   v_paid_spent:=1;
+   update public.aam_coin_balances set purchased_coins=purchased_coins-1,
      balance_coins=balance_coins-1,updated_at=now()
    where customer_id=v_customer;
  else
-   v_paid_spent:=1;
-   update public.aam_coin_balances set purchased_coins=purchased_coins-1,
+   update public.aam_coin_balances set free_coins=free_coins-1,
      balance_coins=balance_coins-1,updated_at=now()
    where customer_id=v_customer;
  end if;
  insert into public.aam_coin_transactions(customer_id,reference,transaction_type,amount_coins,description,related_post_id)
  values(v_customer,'video:'||v_customer::text||':'||p_post_id::text,'video_view',-1,
-   case when v_paid_spent=1 then 'Unlocked locked video with purchased coin' else 'Unlocked locked video with free coin' end,p_post_id)
+   case when v_paid_spent=1 then 'Unlocked locked video with Money Coin' else 'Unlocked locked video with Free Coin' end,p_post_id)
  returning id into v_tx;
  update public.aam_social_video_unlocks set coin_transaction_id=v_tx
  where customer_id=v_customer and post_id=p_post_id;
@@ -296,7 +296,7 @@ begin
  end if;
  select balance_coins into v_total from public.aam_coin_balances where customer_id=v_customer;
  return jsonb_build_object('unlocked',true,'coin_balance',v_total,
-   'free_coin_spent',1-v_paid_spent,'purchased_coin_spent',v_paid_spent,
+   'free_coin_spent',1-v_paid_spent,'money_coin_spent',v_paid_spent,
    'admin_earnings_naira',v_paid_spent);
 end;
 $$;
