@@ -168,7 +168,7 @@ function poseTargets(points) {
   };
 }
 
-export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 'sarah', mediaElement, trackBody = true }) {
+export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharacter = null, bodyStyle = 'sarah', mediaElement, trackBody = true }) {
   if (!room || !LK || (!photoFile && !savedCharacter)) throw new Error('A video call and a photograph or saved avatar are required.');
   if (photoFile && !photoFile.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
   if (photoFile && photoFile.size > 12 * 1024 * 1024) throw new Error('Choose a photograph smaller than 12 MB.');
