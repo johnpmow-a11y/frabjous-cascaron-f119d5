@@ -1,3 +1,4 @@
+import { sendPush } from './_push.mjs';
 const json = (statusCode, body) => ({
   statusCode,
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -73,6 +74,16 @@ export async function handler(event) {
         await db(`aam_calls?id=eq.${encodeURIComponent(call.id)}`, { method: 'PATCH', body: JSON.stringify({ status: 'ended', ended_at: new Date().toISOString() }) }).catch(() => {});
         throw error;
       }
+      // Alert the invited customer even when they are outside the private-chat screen.
+      // Push delivery is best-effort: a missing/disabled push subscription must not cancel a valid call.
+      await sendPush({
+        role: 'customer',
+        customerId: targetId,
+        title: callType === 'video' ? 'Incoming video call' : 'Incoming voice call',
+        body: 'Open All Ads Manager and enter your private chat to answer.',
+        url: '/',
+        eventType: null
+      }).catch(error => console.warn('Incoming-call push could not be sent:', error.message));
       return json(201, { call_id: call.id, call_type: callType, status: 'ringing' });
     }
 
