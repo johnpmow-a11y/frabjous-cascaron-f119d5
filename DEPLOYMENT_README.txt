@@ -92,3 +92,10 @@ Customer menu labels include TikTok Dollar Funding and NextPlace Login. The Next
 
 BUILD AND VERIFICATION
 The GitHub Actions workflow .github/workflows/verify-package.yml checks JavaScript syntax for Netlify functions and the inline browser application, then packages the complete repository as All-Ads-Manager-Complete.zip. A successful source build does not prove the live Netlify, Supabase, Paystack, Gmail or supplier systems are working; those require deployment and real environment checks.
+
+PIPEBOARD — MANAGER PROMOTION PROVIDER CONNECTION
+The customer-facing Manager Promotion feature accepts advert pictures and descriptions and queues submissions for administrator review. It does not start campaigns or deduct Money Coins until the provider connection is genuinely ready.
+Pipeboard documents two different credential paths:
+- A standard Pipeboard API token can call the MCP tools for advertising accounts already connected to that Pipeboard account, subject to the token's write permissions and account scope.
+- The Partner API key is specifically required to provision a separate Pipeboard user for each All Ads Manager customer and generate that customer's OAuth connection link. The partner flow uses POST /api/v1/partners/users and POST /api/v1/partners/oauth/start.
+Do not treat a standard API token as a Partner API key. If All Ads Manager uses one shared advertiser account, the standard token may be sufficient after the account is connected and granted full write access. If each All Ads Manager customer must connect and own a separate advertiser account, Pipeboard Partner API approval/key is required. Until the intended account model and provider connection are verified, campaign pricing/payment remains disabled and promotions cannot go live.
