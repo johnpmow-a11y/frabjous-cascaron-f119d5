@@ -32,6 +32,23 @@ export async function handler(event) {
     if (!customerId) return json(401, { error: 'Please log in again.' });
 
     if (event.httpMethod === 'GET') {
+      // Invitations expire after 45 seconds. Mark the call missed and close its
+      // outstanding invitation so stale ringing calls cannot remain active forever.
+      const cutoff = new Date(Date.now() - 45_000).toISOString();
+      const stale = await db(`aam_call_participants?select=call_id,call:aam_calls!inner(id,created_at,status)&customer_id=eq.${encodeURIComponent(customerId)}&status=eq.invited&call.status=eq.active&call.created_at=lt.${encodeURIComponent(cutoff)}`);
+      const staleIds = [...new Set(stale.map(row => row.call_id).filter(id => uuid.test(id)))];
+      if (staleIds.length) {
+        await db(`aam_calls?id=in.(${staleIds.join(',')})&status=eq.active`, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'missed', ended_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        });
+        await db(`aam_call_participants?call_id=in.(${staleIds.join(',')})&status=eq.invited`, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'ended' })
+        });
+      }
       const participants = await db(`aam_call_participants?select=call_id,role,status,invited_at,call:aam_calls!inner(id,caller_id,call_type,status,created_at)&customer_id=eq.${encodeURIComponent(customerId)}&status=in.(invited,accepted)&call.status=eq.active&order=invited_at.desc&limit=20`);
       return json(200, { calls: participants });
     }
