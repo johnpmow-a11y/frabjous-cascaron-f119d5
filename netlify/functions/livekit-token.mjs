@@ -65,17 +65,30 @@ export async function handler(event) {
       return json(400, { error: 'A valid login session and call ID are required.' });
     }
 
+    const nowIso = new Date().toISOString();
     const sessions = await supabase(
-      `customer_sessions?select=customer_id&token=eq.${encodeURIComponent(sessionToken)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`
+      `customer_sessions?select=customer_id&token=eq.${encodeURIComponent(sessionToken)}&expires_at=gt.${encodeURIComponent(nowIso)}&limit=1`
     );
     const session = sessions[0];
-    if (!session?.customer_id) return json(401, { error: 'Please log in again.' });
-
-    // A participant must be explicitly invited/accepted before a room token is issued.
-    const participants = await supabase(
-      `aam_call_participants?select=call_id,customer_id,status,call:aam_calls!inner(id,status)&call_id=eq.${encodeURIComponent(callId)}&customer_id=eq.${encodeURIComponent(session.customer_id)}&status=eq.accepted&call.status=eq.active&limit=1`
-    );
-    if (!participants.length) return json(403, { error: 'You are not an active participant in this call.' });
+    let identity = session?.customer_id || '';
+    if (!identity) {
+      const admins = await supabase(
+        `admin_sessions?select=token&token=eq.${encodeURIComponent(sessionToken)}&expires_at=gt.${encodeURIComponent(nowIso)}&limit=1`
+      );
+      if (!admins.length) return json(401, { error: 'Please log in again.' });
+      const adminHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
+      const adminCalls = await supabase(
+        `aam_calls?select=id,caller_role,admin_session_hash,status&id=eq.${encodeURIComponent(callId)}&caller_role=eq.admin&admin_session_hash=eq.${adminHash}&status=eq.active&limit=1`
+      );
+      if (!adminCalls.length) return json(403, { error: 'This administrator session is not authorised for the call.' });
+      identity = `admin-${adminHash.slice(0, 24)}`;
+    } else {
+      // A customer must be explicitly accepted before a room token is issued.
+      const participants = await supabase(
+        `aam_call_participants?select=call_id,customer_id,status,call:aam_calls!inner(id,status)&call_id=eq.${encodeURIComponent(callId)}&customer_id=eq.${encodeURIComponent(identity)}&status=eq.accepted&call.status=eq.active&limit=1`
+      );
+      if (!participants.length) return json(403, { error: 'You are not an active participant in this call.' });
+    }
 
     const apiKey = process.env.LIVEKIT_API_KEY;
     const apiSecret = process.env.LIVEKIT_API_SECRET;
@@ -88,7 +101,7 @@ export async function handler(event) {
     }
 
     const roomName = `aam-call-${callId}`;
-    const accessToken = signLiveKitToken(apiKey, apiSecret, session.customer_id, roomName);
+    const accessToken = signLiveKitToken(apiKey, apiSecret, identity, roomName);
     return json(200, { token: accessToken, url: livekitUrl, room_name: roomName, expires_in: 600 });
   } catch (error) {
     return json(500, { error: error.message || 'Could not create a call access token.' });
