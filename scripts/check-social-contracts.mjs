@@ -31,6 +31,7 @@ const checks=[
  ['admin UI displays verified coin sales and paid-video earnings',/coin_accounting/.test(admin)&&/video_earnings_naira/.test(ui)],
  ['optional referral code is applied after signup',/newCustomerReferral/.test(index)&&/action:'apply_referral'/.test(index)],
  ['customer signup requires and saves an email address',/id="newCustomerEmail"/.test(index)&&/bt_customer_set_email/.test(index)&&/bt_customer_email_get/.test(index)],
+ ['customer history is redesigned and shows the saved account email',/YOUR ACCOUNT ACTIVITY/.test(index)&&/esc\(c\.email\|\|"Email not available"\)/.test(index)&&/aam-history-item/.test(index)],
  ['social coins remain separate from tools wallet',/Your tools wallet is separate/.test(ui)]
 ];
 let failed=0;
