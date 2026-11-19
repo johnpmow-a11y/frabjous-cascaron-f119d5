@@ -84,7 +84,7 @@ begin
   values(new.id,30,30,0)
   on conflict(customer_id) do nothing;
   insert into public.aam_coin_transactions(customer_id,reference,transaction_type,amount_coins,description)
-  values(new.id,'signup:'||new.id::text,'admin_adjustment',10,'30 free starter viewing coins')
+  values(new.id,'signup:'||new.id::text,'admin_adjustment',30,'30 free starter viewing coins')
   on conflict(reference) do nothing;
   return new;
 end;
