@@ -13,14 +13,14 @@ export async function handler(event){
    const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);
    if(!s)return json(401,{error:'Please log in again.'});
    const [balance,profile,prefs,followers,following,profileViews]=await Promise.all([
-    db(`aam_coin_balances?select=balance_coins&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
+    db(`aam_coin_balances?select=free_coins,purchased_coins&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_preferences?select=notification_sound,chat_wallpaper,custom_wallpaper_path,profile_view_notifications,follow_notifications,like_notifications,comment_notifications,share_notifications,message_notifications,profile_update_notifications&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_follows?select=follower_id&followed_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${encodeURIComponent(s.customer_id)}`)
    ]);
-   const preferences=prefs[0]||{notification_sound:1,chat_wallpaper:'default'};if(preferences.custom_wallpaper_path)preferences.custom_wallpaper_url=await signedRead(preferences.custom_wallpaper_path);const currentProfile=profile[0]||null;if(currentProfile?.avatar_path)currentProfile.avatar_url=await signedRead(currentProfile.avatar_path);return json(200,{coin_balance:Number(balance[0]?.balance_coins||0),followers:followers.length,following:following.length,profile_views:profileViews.length,profile:currentProfile,preferences});
+   const preferences=prefs[0]||{notification_sound:1,chat_wallpaper:'default'};if(preferences.custom_wallpaper_path)preferences.custom_wallpaper_url=await signedRead(preferences.custom_wallpaper_path);const currentProfile=profile[0]||null;if(currentProfile?.avatar_path)currentProfile.avatar_url=await signedRead(currentProfile.avatar_path);return json(200,{coin_balance:Number(balance[0]?.free_coins||0)+Number(balance[0]?.purchased_coins||0),free_coin_balance:Number(balance[0]?.free_coins||0),purchased_coin_balance:Number(balance[0]?.purchased_coins||0),followers:followers.length,following:following.length,profile_views:profileViews.length,profile:currentProfile,preferences});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||'');
