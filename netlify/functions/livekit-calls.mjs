@@ -25,13 +25,14 @@ async function currentCustomer(token) {
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') return json(204, {});
-  if (!['GET','POST'].includes(event.httpMethod)) return json(405, { error: 'Method not allowed.' });
+  if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed.' });
   try {
-    const body = event.httpMethod === 'GET' ? (event.queryStringParameters || {}) : JSON.parse(event.body || '{}');
+    const body = JSON.parse(event.body || '{}');
     const customerId = await currentCustomer(String(body.token || ''));
     if (!customerId) return json(401, { error: 'Please log in again.' });
+    const action = String(body.action || '');
 
-    if (event.httpMethod === 'GET') {
+    if (action === 'list') {
       // Invitations expire after 45 seconds. Mark the call missed and close its
       // outstanding invitation so stale ringing calls cannot remain active forever.
       const cutoff = new Date(Date.now() - 45_000).toISOString();
@@ -56,7 +57,6 @@ export async function handler(event) {
       return json(200, { calls: participants });
     }
 
-    const action = String(body.action || '');
     const callId = String(body.call_id || '');
 
     if (action === 'create') {
