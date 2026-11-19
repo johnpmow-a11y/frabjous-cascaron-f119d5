@@ -6,7 +6,7 @@
 
 BEGIN;
 
-DO $aam_prereq$
+DO $aam$
 BEGIN
   IF to_regclass('public.customers') IS NULL OR to_regclass('public.customer_sessions') IS NULL OR to_regclass('public.admin_sessions') IS NULL THEN
     RAISE EXCEPTION 'The existing All Ads Manager customer and session tables must be present before this setup.';
@@ -17,7 +17,7 @@ BEGIN
     RAISE EXCEPTION 'The existing All Ads Manager customer/session schema is incomplete. No changes were committed.';
   END IF;
 END;
-$aam_prereq$;
+$aam$;
 
 -- ===== supabase/migrations/20261118090000_social_feed_coins_foundation.sql =====
 -- All Ads Manager social feed, profiles, follows, coins and chat foundation.
