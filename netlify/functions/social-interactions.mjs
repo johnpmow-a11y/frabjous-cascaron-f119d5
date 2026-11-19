@@ -4,12 +4,13 @@ const uuid=/^[0-9a-f-]{36}$/i;
 const headers=(key,extra={})=>({apikey:key,...(key.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${key}`}),...extra});
 async function db(path,options={}){const base=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!base||!key)throw new Error('Social service is not configured.');const r=await fetch(`${base}/rest/v1/${path}`,{...options,headers:headers(key,{'Content-Type':'application/json',...(options.headers||{})})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.message||data.error||'Social request failed.');return data;}
 async function session(token){if(!uuid.test(token))return null;const rows=await db(`customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);return rows[0]||null;}
+async function adultConfirmed(customerId){const rows=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(customerId)}&limit=1`);return !!rows[0]?.adult_confirmed_at;}
 async function rpc(name,args){return db(`rpc/${name}`,{method:'POST',body:JSON.stringify(args)});}
 export async function handler(event){
  if(event.httpMethod==='OPTIONS')return json(204,{});
  try{
   const b=event.httpMethod==='GET'?event.queryStringParameters||{}:JSON.parse(event.body||'{}');
-  const token=String(b.token||''),s=await session(token);if(!s)return json(401,{error:'Please log in again.'});
+  const token=String(b.token||''),s=await session(token);if(!s)return json(401,{error:'Please log in again.'});if(!await adultConfirmed(s.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
   if(event.httpMethod==='GET'){
    const post=String(b.post_id||'');if(!uuid.test(post))return json(400,{error:'Choose a valid post.'});
    const postRows=await db(`aam_social_posts?select=customer_id,comments_enabled&id=eq.${post}&moderation_status=eq.published&limit=1`);

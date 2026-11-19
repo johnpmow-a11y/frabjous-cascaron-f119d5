@@ -3,14 +3,24 @@ on:
   pull_request:
     paths:
       - "netlify/functions/social-*.mjs"
+      - "netlify/functions/support.mjs"
+      - "netlify/functions/customer-media-messages.mjs"
+      - "netlify/functions/admin-customer-message.mjs"
+      - "netlify/functions/delivery-orders.mjs"
+      - "netlify/functions/media-edit-orders.mjs"
+      - "netlify/functions/consignment.mjs"
       - "netlify/functions/_push.mjs"
       - "public/social.js"
       - "public/social.css"
+      - "public/index.html"
+      - "public/coin-payment-return.html"
+      - "scripts/check-social-contracts.mjs"
       - "supabase/migrations/*.sql"
       - ".github/workflows/social-checks.yml"
   push:
     branches:
       - feature/social-feed-coins-foundation
+      - feature/aam-separated-coins-and-ads-readiness
 jobs:
   syntax:
     runs-on: ubuntu-latest
@@ -31,5 +41,15 @@ jobs:
           node --check netlify/functions/social-discover.mjs
           node --check netlify/functions/social-admin.mjs
           node --check netlify/functions/social-notifications.mjs
-          node --check netlify/functions/social-chat.mjs
+          node --check netlify/functions/support.mjs
+          node --check netlify/functions/customer-media-messages.mjs
+          node --check netlify/functions/admin-customer-message.mjs
+          node --check netlify/functions/delivery-orders.mjs
+          node --check netlify/functions/media-edit-orders.mjs
+          node --check netlify/functions/consignment.mjs
+          node --check netlify/functions/social-coin-create.mjs
+          node --check netlify/functions/social-coin-verify.mjs
+          node --check netlify/functions/social-promotions.mjs
+          node --check netlify/functions/social-promotion-admin.mjs
+          node --check netlify/functions/paystack-webhook.mjs
           node --check public/social.js

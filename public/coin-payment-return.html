@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827"><title>Coin payment · All Ads Manager</title>
+<style>
+body{margin:0;background:#f3f5f9;color:#182033;font:16px system-ui,-apple-system,sans-serif;display:grid;min-height:100vh;place-items:center;padding:20px;box-sizing:border-box}
+main{background:white;width:min(100%,440px);padding:26px;border-radius:18px;box-shadow:0 12px 40px #10182818;text-align:center}
+h1{font-size:23px}.status{padding:14px;background:#f1f5f9;border-radius:12px;line-height:1.5}
+button,a{display:block;width:100%;box-sizing:border-box;margin-top:14px;padding:13px;border:0;border-radius:10px;background:#1456d8;color:white;text-decoration:none;font-weight:700}
+button{cursor:pointer}.secondary{background:#e8edf5;color:#172033}
+</style></head>
+<body><main><h1>All Ads Manager</h1><h2>Coin payment</h2><p id="status" class="status">Checking your Paystack payment…</p><button id="retry" hidden onclick="verify()">Check payment again</button><a class="secondary" href="/">Return to All Ads Manager</a></main>
+<script>
+const statusBox=document.getElementById('status'),retry=document.getElementById('retry');
+const reference=new URLSearchParams(location.search).get('reference')||'';
+async function verify(){
+ retry.hidden=true;
+ const token=sessionStorage.getItem('btToken')||'';
+ if(!reference){statusBox.textContent='Payment reference is missing. Return to the app and contact support if you were charged.';return;}
+ if(!token){statusBox.textContent='Please return to All Ads Manager and log in with the account used to buy the coins. Then reopen this payment result.';return;}
+ statusBox.textContent='Verifying payment securely with Paystack…';
+ try{
+  const r=await fetch('/.netlify/functions/social-coin-verify?reference='+encodeURIComponent(reference)+'&token='+encodeURIComponent(token),{cache:'no-store'});
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.error||'Payment verification failed.');
+  if(d.status==='success'){statusBox.textContent='Payment confirmed. '+Number(d.coins||0).toLocaleString()+' purchased coins have been credited to your purchased coin balance.';return;}
+  statusBox.textContent=d.message||'Payment is not confirmed yet. Wait a moment and check again.';
+  retry.hidden=false;
+ }catch(e){statusBox.textContent=e.message||'Could not verify payment.';retry.hidden=false;}
+}
+verify();
+</script></body></html>

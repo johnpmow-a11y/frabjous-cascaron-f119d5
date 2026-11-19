@@ -1,49 +1,95 @@
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const foundation=read('supabase/migrations/20261118090000_social_feed_coins_foundation.sql');
-const policy=read('supabase/migrations/20261118120000_remove_age_gate_and_promotion_coins.sql');
-const videoLocks=read('supabase/migrations/20261118130000_admin_selective_video_locking.sql');
-const notifications=read('supabase/migrations/20261118090500_social_notification_preferences_and_profile_views.sql');
-const community=read('supabase/migrations/20261118100000_community_group_chat.sql');
-const direct=read('supabase/migrations/20261118100100_direct_chat_group_separation.sql');
-const feed=read('netlify/functions/social-feed.mjs');
+const migration=read('supabase/migrations/20261119130000_separate_social_coin_balances_and_earnings.sql');
 const core=read('netlify/functions/social-core.mjs');
-const socialChat=read('netlify/functions/social-chat.mjs');
-const socialDiscover=read('netlify/functions/social-discover.mjs');
-const socialInteractions=read('netlify/functions/social-interactions.mjs');
-const admin=read('netlify/functions/social-admin.mjs');
+const feed=read('netlify/functions/social-feed.mjs');
 const discover=read('netlify/functions/social-discover.mjs');
+const admin=read('netlify/functions/social-admin.mjs');
 const chat=read('netlify/functions/social-chat.mjs');
-const index=read('public/index.html');
+const notifications=read('netlify/functions/social-notifications.mjs');
+const create=read('netlify/functions/social-coin-create.mjs');
+const verify=read('netlify/functions/social-coin-verify.mjs');
+const coinCreate=create;
+const coinVerify=verify;
+const webhook=read('netlify/functions/paystack-webhook.mjs');
 const ui=read('public/social.js');
+const index=read('public/index.html');
+const support=read('netlify/functions/support.mjs');
+const media=read('netlify/functions/customer-media-messages.mjs');
+const adminMessage=read('netlify/functions/admin-customer-message.mjs');
+const consignment=read('netlify/functions/consignment.mjs');
+const editing=read('netlify/functions/media-edit-orders.mjs');
+const delivery=read('netlify/functions/delivery-orders.mjs');
+const promotionMigration=read('supabase/migrations/20261119160000_manager_promotion_campaigns.sql');
+const promotions=read('netlify/functions/social-promotions.mjs');
+const promotionAdmin=read('netlify/functions/social-promotion-admin.mjs');
 const checks=[
- ['no 18+ gate remains in feed, uploads, or customer UI',!feed.includes('18 or older')&&!feed.includes('adult_confirmed_at')&&!ui.includes('ensureAge')&&!index.includes('18 or older')],
- ['age confirmation field and RPC are removed by migration',policy.includes('drop column if exists adult_confirmed_at')&&policy.includes('drop function if exists public.aam_social_confirm_age')],
- ['admin can choose which videos are locked; other videos and pictures remain free',videoLocks.includes('add column if not exists is_locked')&&feed.includes("p.is_locked===true")&&feed.includes('media_url:locked?null:await signedRead(p.media_path)')&&admin.includes('is_locked:mime.startsWith(\'video/\')&&b.is_locked===true')],
- ['locked admin videos cost one Promotion Coin once per customer',videoLocks.includes("'video_view',-1")&&videoLocks.includes('balance_coins>=1')&&videoLocks.includes('aam_social_video_unlocks')&&ui.includes('Unlock with 1 Promotion Coin')],
- ['video unlock action is server-side and exposed to logged-in customers',core.includes("action==='unlock_video'")&&core.includes("rpc('aam_social_unlock_video'")&&ui.includes('AAMSocial.unlockVideo')],
- ['Promotion Coins can be used for promotion and locked-video unlocks',ui.includes('promote your posts and profiles, and unlock videos')&&ui.includes('unlock videos marked Locked by the administrator')],
- ['Promotion Coin packages show Nigerian values and stay disabled until payment approval',ui.includes('amounts=[100,200,500,1000,2000,5000,10000,20000,50000,100000,200000]')&&ui.includes('type="button" disabled')&&ui.includes('Your existing tools wallet is separate.')],
- ['follow and referral actions cannot mint Promotion Coins',policy.includes("'promotion_coins_earned',0")&&policy.includes('promotion_coins_are_purchase_only')],
- ['admin video editor supports original sound mute/keep, voice-over and background music',ui.includes('Keep original video sound')&&ui.includes('Record my voice over the video')&&ui.includes('Background music volume')&&ui.includes('recordVideoMix')],
- ['admin can choose lock or free before publishing a video',ui.includes('Lock this video (customers pay 1 Promotion Coin to unlock)')&&ui.includes('is_locked:file.type.startsWith(\'video/\')')],
- ['voice and background music have independent volume controls',ui.includes('aamVoiceVolume')&&ui.includes('aamMusicVolume')],
- ['admin video mix can be previewed before publishing',ui.includes('aamAdminMixedPreview')&&ui.includes('Finished mix ready. Play the preview, then publish.')],
- ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
- ['locked feed responses omit raw storage paths',feed.includes('media_path,thumbnail_path,customer_id,...publicPost')],
- ['admin profile also respects free versus locked video setting',socialDiscover.includes('created_at,is_locked&author_role=eq.admin')&&socialDiscover.includes("p.is_locked===true&&!unlocked.has(p.id)")&&socialDiscover.includes('media_url:locked?null:await signedRead(media_path)')],
- ['customer profile videos remain free',socialDiscover.includes('locked_video:false,media_url:await signedRead(media_path)')],
- ['creator discovery omits raw media paths',discover.includes('{media_path,...publicPost}=post')&&discover.includes('const {avatar_path,...publicProfile}=p')],
- ['chat responses omit raw media paths',chat.includes('const {media_path,...publicMessage}=m')],
- ['notification preferences filter in-app alerts',notifications.includes('before insert on public.aam_social_notifications')&&notifications.includes('profile_update_notifications')],
- ['profile views count unique viewers',/primary key\s*\(profile_key,viewer_id\)/i.test(notifications)],
- ['admin social controls are linked from dashboard',index.includes('adminSocialPanel()')],
- ['Promotion Coin balance remains separate from existing tools wallet',/create table if not exists public\.aam_coin_balances/.test(foundation)&&ui.includes('Your existing tools wallet is separate.')],
- ['community group auto-provisions existing and new customers',/aam_chat_provision_community_member/.test(community)&&/after insert on public\.customers/.test(community)],
- ['community group roles are separate from platform admin',/aam_chat_group_members/.test(community)&&/group_set_admin/.test(admin)],
- ['direct chats exclude the shared group',/conversation_type='direct'/.test(direct)],
- ['community group appears in customer chat list',/is_group:true/.test(chat)&&/Community/.test(ui)]
+ ['coin balances are split into free and purchased',/free_coins bigint/.test(migration)&&/purchased_coins bigint/.test(migration)&&/balance_coins = free_coins \+ purchased_coins/.test(migration)],
+ ['new customers receive 30 free coins',migration.includes('values(new.id,30,30,0)')&&migration.includes('30 free starter viewing coins')],
+ ['one-time video unlock spends Money Coins before Free Coins',migration.includes('if coalesce(v_paid,0)>0 then')&&migration.indexOf('if coalesce(v_paid,0)>0 then')<migration.indexOf('else',migration.indexOf('if coalesce(v_paid,0)>0 then'))&&migration.includes('purchased_coins=purchased_coins-1')&&migration.includes('free_coins=free_coins-1')],
+ ['legacy balances are preserved as free, not treated as cash',/Legacy combined balances are preserved as FREE coins/.test(migration)&&/purchased_coins = 0/.test(migration)],
+ ['all existing customers receive a zeroed coin balance row when missing',/insert into public\.aam_coin_balances\(customer_id,balance_coins,free_coins,purchased_coins\)[\s\S]*?select c\.id,0,0,0 from public\.customers c[\s\S]*?on conflict\(customer_id\) do nothing/.test(migration)],
+ ['follow rewards are 35 and 60 free coins',/free_coins=public\.aam_coin_balances\.free_coins\+35/.test(migration)&&/free_coins=public\.aam_coin_balances\.free_coins\+60/.test(migration)],
+ ['referral reward is 500 free coins',/free_coins=public\.aam_coin_balances\.free_coins\+500/.test(migration)],
+ ['Paystack-verified purchases credit purchased coins only',/aam_social_credit_coin_purchase/.test(migration)&&/purchased_coins=purchased_coins\+v_payment\.coin_amount/.test(migration)],
+ ['coin credit RPC rejects failed or initialization-failed payment rows',/v_payment\.status<>'pending'/.test(migration)&&/Coin payment is not pending and cannot be credited/.test(migration)],
+ ['admin earnings are created only when a purchased coin is spent',/if v_paid_spent=1 then/.test(migration)&&/insert into public\.aam_social_video_earnings/.test(migration)],
+ ['only administrator-marked videos are paid; API and customer videos are free',/p\.media_type==='video'&&p\.is_locked===true&&!unlocked\.has\(p\.id\)/.test(feed)&&/is_locked:admin&&type==='video'/.test(feed)&&/coalesce\(v_post\.author_role,'customer'\) <> 'admin' or not coalesce\(v_post\.is_locked,false\) then/.test(migration)],
+ ['signup referral is retained until after 18+ confirmation',/setItem\('aamPendingReferral',referral\)/.test(index)&&/getItem\('aamPendingReferral'\);if\(pending\)/.test(ui)&&/action:'apply_referral'/.test(ui)],
+ ['social feed, discovery, chat, notifications and coin checkout enforce server-side 18+ confirmation',/if\(!await adultConfirmed\(s\.customer_id\)\)return json\(403/.test(feed)&&/adultConfirmed\(s\.customer_id\)/.test(discover)&&/adultConfirmed\(s\.customer_id\)/.test(chat)&&/adultConfirmed\(s\.customer_id\)/.test(notifications)&&/adultConfirmed\(sessions\[0\]\.customer_id\)/.test(coinCreate)&&/adultConfirmed\(sessions\[0\]\.customer_id\)/.test(coinVerify)&&/action!=='confirm_age'&&!await adultConfirmed/.test(core)],
+ ['public creator identity replaces admin-role display names with the app brand',/function publicAdminName\(value\)/.test(feed)&&/function publicAdminName\(value\)/.test(discover)&&/name:p\.author_role==='admin'\?publicAdminName\(admin\.display_name\)/.test(feed)&&/name:publicAdminName\(admin\.display_name\)/.test(discover)&&/display_name:publicAdminName\(admin\.display_name\)/.test(discover)],
+ ['customer-facing social posting guidance does not expose admin wording for paid videos',!/administrator videos|admin videos/i.test(ui)],
+ ['admin creator profile displays real likes from its loaded posts instead of a fabricated count',/likes:likes\.length/.test(discover)&&/\+formatCount\(d\.likes\|\|0\)\+' likes on recent posts/.test(ui)&&!/3\.5K likes/.test(ui)],
+ ['admin coin accounting paginates all sales, earnings and customer balances beyond 1000 rows',/async function dbAll\(path,pageSize=1000\)/.test(admin)&&/Range:`\$\{offset\}-\$\{offset\+pageSize-1\}`/.test(admin)&&/dbAll\('aam_social_coin_payments/.test(admin)&&/dbAll\('aam_social_video_earnings/.test(admin)&&/dbAll\('aam_coin_balances/.test(admin)],
+ ['18+ confirmation RPC uses valid paired PostgreSQL dollar quotes',/create or replace function public\.aam_social_confirm_age\(p_token uuid\)[\s\S]*?as \$\$\s+declare v_customer uuid;[\s\S]*?return jsonb_build_object\('confirmed',true\);\s+end;\s+\$\$;/.test(migration)],
+ ['18+ screen loads before requesting the protected social feed',/const d=await api\('\/\.netlify\/functions\/social-core'\)/.test(ui)&&/const f=await api\('\/\.netlify\/functions\/social-feed'\)/.test(ui)&&ui.indexOf('if\(!d\.profile\?\.adult_confirmed_at\)')<ui.indexOf("const f=await api('/.netlify/functions/social-feed')")],
+ ['customer can explicitly confirm 18+ before social features',/action==='confirm_age'/.test(core)&&/aam_social_confirm_age/.test(core)&&/create or replace function public\.aam_social_confirm_age[\s\S]*?as \$\$[\s\S]*?end;\s*\$\$;/.test(migration)&&/AAMSocial\.confirmAdult/.test(ui)&&/I confirm I am 18 or older/.test(ui)],
+ ['follow, referral and paid-video unlock require adult confirmation',/Confirm that you are 18 or older first/.test(migration)&&/Confirm that you are 18 or older to continue/.test(migration)],
+ ['only administrator-authored videos can ever be paid',/coalesce\(v_post\.author_role,'customer'\) <> 'admin' or not coalesce\(v_post\.is_locked,false\)/.test(migration)],
+ ['feed only marks admin-authored videos as paid',/p\.author_role==='admin'&&p\.media_type==='video'&&p\.is_locked===true/.test(feed)],
+ ['paid administrator videos appear as paid cards inside the normal Home feed and unlock in place',/const visible=posts\.filter\(p=>p\.author_role==='admin'/.test(feed)&&/\.map\(postCard\)\.join\(''\)/.test(ui)&&/Paid video/.test(ui)&&!/Paid administrator video|Paid admin video|Administrator video/.test(ui)&&/Watch for 1 coin \(₦1\)/.test(ui)&&/notice\(d\.already_unlocked\?/.test(ui)&&/home\(\);\}catch\(e\)/.test(ui)],
+ ['only administrator videos explicitly marked paid are locked',admin.includes("is_locked:mime.startsWith('video/')&&b.is_locked===true")&&/Pictures, API-sourced videos and friends’ uploaded videos are free to view/.test(ui)],
+ ['admin and customer profiles respect the paid-video flag',/post\.is_locked===true/.test(discover)&&/media_url:locked\?null/.test(discover)],
+ ['customer API returns Free Coins and Money Coins separately',/free_coin_balance/.test(core)&&/money_coin_balance/.test(core)],
+ ['coin purchase starts only at ₦500 and requires live Paystack',/amount<500/.test(create)&&/sk_live_/.test(create)&&/transaction\/initialize/.test(create)],
+ ['coin verification confirms amount and currency before credit',/transaction\/verify/.test(verify)&&/status!=='success'/.test(verify)&&/p_amount_kobo/.test(verify)],
+ ['Paystack webhook handles coin purchases idempotently',/aam_social_coin_payments/.test(webhook)&&/aam_social_credit_coin_purchase/.test(webhook)],
+ ['Paystack webhook verifies the returned transaction reference',/String\(tx\?\.reference \|\| ''\) !== String\(reference\)/.test(webhook)],
+ ['customer UI offers enabled coin packages from 500',/amounts=\[500,1000,2000/.test(ui)&&/AAMSocial\.buyCoins\(/.test(ui)&&!ui.includes('Coming soon')],
+ ['customer UI displays Free Coins and Money Coins separately',/Free coins:/.test(ui)&&/Money Coins:/.test(ui)],
+ ['admin UI displays verified coin sales and paid-video earnings',/coin_accounting/.test(admin)&&/video_earnings_naira/.test(ui)],
+ ['optional referral code is applied after signup',/newCustomerReferral/.test(index)&&/setItem\('aamPendingReferral',referral\)/.test(index)&&/action:'apply_referral'/.test(ui)],
+ ['customer signup requires and saves an email address',/id="newCustomerEmail"/.test(index)&&/bt_customer_set_email/.test(index)&&/bt_customer_email_get/.test(index)],
+ ['customer history is redesigned and shows the saved account email',/YOUR ACCOUNT ACTIVITY/.test(index)&&/esc\(c\.email\|\|"Email not available"\)/.test(index)&&/aam-history-item/.test(index)],
+ ['customer History shows sender names without admin or customer role labels',/sender_name/.test(index)&&!/Customer History|Support team message|Your support request|Account update\\b|administrator confirmation/i.test(index.slice(index.indexOf('async function historyPage(){'),index.indexOf('async function requestNetflixCode',index.indexOf('async function historyPage(){'))))],
+ ['social discovery uses friend language for people',/Find friends/.test(ui)&&/No friends found/.test(ui)&&/View friend/.test(ui)],
+ ['customer support and History avoid admin/customer role labels',/send it to our support team/.test(index)&&/Your code request was sent\./.test(index)&&/Awaiting verification/.test(index)&&/sender_name/.test(index)&&!/send it to the administrator|Awaiting administrator verification|Customer History|Support team message/.test(index.slice(index.indexOf('function supportPage(){'),index.indexOf('function adminSupportInbox(){'))+index.slice(index.indexOf('async function historyPage(){'),index.indexOf('async function requestNetflixCode',index.indexOf('async function historyPage(){'))))],
+ ['social customer screens identify people as friends',/Find friends/.test(ui)&&/No friends found/.test(ui)&&/View friend/.test(ui)&&!/another creator|creator profile/i.test(ui)],
+ ['message APIs provide display names instead of role labels',/sender_name:m.sender_role==='admin'\?'All Ads Manager':myName/.test(support)&&/sender_name:'All Ads Manager'/.test(media)],
+ ['private text messages email the saved customer address using existing Gmail settings',/emailCustomer\(customerId,message\)/.test(read('netlify/functions/admin-customer-message.mjs'))&&/GMAIL_USER/.test(read('netlify/functions/admin-customer-message.mjs'))&&/customer_contact_emails/.test(read('netlify/functions/admin-customer-message.mjs'))],
+ ['order status updates attempt customer email without changing email configuration',/Order-status email failed/.test(support)&&/customer_contact_emails/.test(support)&&/GMAIL_USER/.test(support)],
+ ['social coins remain separate from tools wallet',/Your tools wallet is separate/.test(ui)],
+ ['private messages email the saved customer address',/emailCustomer\(customerId,message\)/.test(adminMessage)&&/customer_contact_emails/.test(adminMessage)&&/GMAIL_APP_PASSWORD/.test(adminMessage)],
+ ['consignment video completion emails the customer',/emailCustomer\(row.customer_id/.test(consignment)&&/GMAIL_APP_PASSWORD/.test(consignment)],
+ ['media editing status emails the customer',/Editing-order status email failed/.test(editing)&&/customer_contact_emails/.test(editing)],
+ ['delivery status emails the customer',/Delivery-status email failed/.test(delivery)&&/customer_contact_emails/.test(delivery)],
+ ['Facebook and TikTok open provider-gated campaign workspaces instead of old fixed-price forms',/adCampaignWorkspace\('facebook'\)/.test(index)&&/adCampaignWorkspace\('tiktok'\)/.test(index)&&/Partner connection pending/.test(index)&&/CAMPAIGN CREATION NOT AVAILABLE YET/.test(index)],
+ ['Snapchat has a separate clearly unconnected campaign workspace',/adCampaignWorkspace\('snapchat'\)/.test(index)&&/Provider connection not confirmed/.test(index)],
+ ['admin paid-video checkbox is connected to the upload request',ui.includes('id="aamAdminLockVideo" type="checkbox"')&&ui.includes("is_locked:file.type.startsWith('video/')&&!!document.getElementById('aamAdminLockVideo')?.checked")],
+ ['API-sourced and customer-uploaded videos are clearly free',/Pictures, API-sourced videos and friends’ uploaded videos are free to view/.test(ui)&&/Only videos marked as paid cost 1 coin/.test(ui)],
+ ['Zangi Ads and TikTok Dollar Funding remain available',/serviceForm\('Zangi Ads'\)/.test(index)&&/serviceForm\('TikTok Dollar Funding'\)/.test(index)],
+ ['admin feed never invents engagement counts',!/like_count:p\.author_role==='admin'\?3500/.test(feed)&&/like_count:likes\.filter\(x=>x\.post_id===p\.id\)\.length/.test(feed)],
+ ['admin creator profile never invents engagement counts',!/like_count:3500/.test(discover)&&/like_count:likeCounts\.get\(p\.id\)\|\|0/.test(discover)],
+ ['support replies are saved to History before best-effort email notification',support.indexOf("const rows=await db('ads_manager_support_messages'")<support.indexOf("await mail(original[0].customer_email,'ALL ADS MANAGER — Support Reply'")&&/Support reply email failed/.test(support)&&/Reply saved to customer History/.test(support)],
+ ['Manager Promotion has its own campaign records and review states',/create table if not exists public\.aam_social_promotions/.test(promotionMigration)&&/pending_review/.test(promotionMigration)&&/awaiting_payment/.test(promotionMigration)],
+ ['Manager Promotion payments deduct purchased Money Coins only',/select purchased_coins into v_money/.test(promotionMigration)&&/purchased_coins=purchased_coins-v_p\.price_coins/.test(promotionMigration)&&/Free Coins cannot be used for promotion/.test(promotionMigration)],
+ ['Manager Promotion submission does not debit coins before approved pricing',/No coins have been deducted/.test(promotionMigration)&&/status<>'awaiting_payment'/.test(promotionMigration)],
+ ['Manager Promotion API validates customer sessions and secures image uploads',/customerSession\(token\)/.test(promotions)&&/promotions\/\$\{s\.customer_id\}/.test(promotions)&&/aam_social_promotion_create/.test(promotions)&&/aam_social_promotion_pay/.test(promotions)],
+ ['Manager Promotion admin pricing requires an authenticated admin session',/adminSession\(String\(b\.token/.test(promotionAdmin)&&/action==='set_price'/.test(promotionAdmin)&&/status:'awaiting_payment'/.test(promotionAdmin)&&/action==='reject'/.test(promotionAdmin)],
+ ['customer profile exposes Manager Promotion and its Money-Coin-only balance',/AAMSocial\.openPromotion\(\)/.test(ui)&&/Promotion Balance/.test(ui)&&/Free Coins are not accepted/.test(ui)],
+ ['administrator dashboard exposes promotion review and approval is provider-gated',/AAMSocial\.openAdminPromotions\(\)/.test(ui)&&/provider_status==='ready'/.test(ui)&&/provider_status=eq\.ready/.test(promotionAdmin)],
+ ['promotion payment cannot proceed before provider readiness',/v_p\.provider_status<>'ready'/.test(promotionMigration)&&/Free Coins cannot be used for promotion/.test(promotionMigration)]
 ];
 let failed=0;
-for(const [name,ok] of checks){console.log((ok?'PASS':'FAIL')+' '+name);if(!ok)failed++;}
+for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
 if(failed)process.exitCode=1;
