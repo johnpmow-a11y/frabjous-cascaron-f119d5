@@ -17,6 +17,12 @@ set free_coins = balance_coins,
     purchased_coins = 0
 where free_coins = 0 and purchased_coins = 0 and balance_coins > 0;
 
+-- Ensure every existing customer has a coin row, including accounts created
+-- before the social coin feature was enabled.
+insert into public.aam_coin_balances(customer_id,balance_coins,free_coins,purchased_coins)
+select c.id,0,0,0 from public.customers c
+on conflict(customer_id) do nothing;
+
 alter table public.aam_coin_balances
   drop constraint if exists aam_coin_balances_split_check;
 alter table public.aam_coin_balances
