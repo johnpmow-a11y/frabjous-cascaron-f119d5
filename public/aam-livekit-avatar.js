@@ -380,7 +380,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
           await preview.play().catch(() => {});
         }
       } catch (error) {
-        if (cameraLocalTrack && room.state !== 'disconnected') {
+        if (cameraLocalTrack && cameraUnpublished && room.state !== 'disconnected') {
           if (cameraLocalTrack.mediaStreamTrack?.readyState !== 'ended') {
             await room.localParticipant.publishTrack(cameraLocalTrack, { source: LK.Track.Source.Camera }).then(() => { cameraUnpublished = false; }).catch(async () => { await room.localParticipant.setCameraEnabled(true).catch(() => {}); });
           } else { await room.localParticipant.setCameraEnabled(true).catch(() => {}); cameraUnpublished = false; }
