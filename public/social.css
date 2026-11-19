@@ -79,3 +79,5 @@
 .aam-social-incoming strong{width:100%}
 
 .aam-social-call-media video.aam-social-local-preview{outline:2px solid #2563eb;outline-offset:2px}
+
+.aam-social-loading{min-height:42vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#334155;text-align:center}.aam-social-loading strong{font-size:14px;font-weight:700}.aam-social-loading-spinner{width:34px;height:34px;border:3px solid #dbe5e8;border-top-color:#0f766e;border-radius:50%;animation:aamSocialSpin .7s linear infinite}@keyframes aamSocialSpin{to{transform:rotate(360deg)}}
