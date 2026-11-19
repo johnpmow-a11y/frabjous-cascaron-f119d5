@@ -14,6 +14,7 @@ export async function handler(event){
   if(event.httpMethod==='GET'){
    const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);
    if(!s)return json(401,{error:'Please log in again.'});
+   if(!await adultConfirmed(s.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
    const [posts,profiles,follows,unlocks,likes,comments,mineLikes,adminProfile]=await Promise.all([
     db('aam_social_posts?select=*&moderation_status=eq.published&order=created_at.desc&limit=60'),
     db('aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled'),
