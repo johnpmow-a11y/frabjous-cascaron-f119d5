@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - "netlify/functions/social-*.mjs"
+      - "netlify/functions/support.mjs"
+      - "netlify/functions/customer-media-messages.mjs"
       - "netlify/functions/_push.mjs"
       - "public/social.js"
       - "public/social.css"
@@ -35,6 +37,8 @@ jobs:
           node --check netlify/functions/social-discover.mjs
           node --check netlify/functions/social-admin.mjs
           node --check netlify/functions/social-notifications.mjs
+          node --check netlify/functions/support.mjs
+          node --check netlify/functions/customer-media-messages.mjs
           node --check netlify/functions/social-coin-create.mjs
           node --check netlify/functions/social-coin-verify.mjs
           node --check netlify/functions/paystack-webhook.mjs
