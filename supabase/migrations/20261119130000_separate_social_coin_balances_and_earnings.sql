@@ -257,7 +257,7 @@ begin
    raise exception 'This profile is private';
  end if;
  -- API-sourced and customer-published videos are free. Only administrator-marked videos are paid.
- if v_post.author_role <> 'admin' or not coalesce(v_post.is_locked,false) then
+ if coalesce(v_post.author_role,'customer') <> 'admin' or not coalesce(v_post.is_locked,false) then
    return jsonb_build_object('unlocked',true,'free_video',true,'coins_charged',0);
  end if;
  -- A locked administrator video costs one coin once per customer/video.
