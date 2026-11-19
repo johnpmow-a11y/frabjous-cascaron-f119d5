@@ -113,6 +113,7 @@ const checks=[
  ['customer call API rejects calls when either person already has an active invitation or call',/existingCall = await db/.test(liveCalls)&&/customer_id=in\.\(\$\{encodeURIComponent\(customerId\)\},\$\{encodeURIComponent\(targetId\)\}\)/.test(liveCalls)&&/This customer is already in another call/.test(liveCalls)],
  ['administrator call API prevents overlapping admin calls and calls to busy customers',/existingAdminCall=await db/.test(adminLiveCalls)&&/existingCustomerCall=await db/.test(adminLiveCalls)],
  ['customer and administrator call buttons block rapid duplicate call creation',/aamCallStarting=false/.test(ui)&&/if\(aamCallStarting\|\|aamCurrentCallId\)return notice\('End the current call before starting another\.'\)/.test(ui)&&/finally\{aamCallStarting=false;\}/.test(ui)]];
+ ['database active-call uniqueness conflicts return HTTP 409 instead of server errors',/error\.code = data\.code \|\| ''/.test(liveCalls)&&/error\.code === '23505'\) return json\(409/.test(liveCalls)],
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
 if(failed)process.exitCode=1;
