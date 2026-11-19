@@ -12,6 +12,10 @@ const ui=read('public/social.js');
 const index=read('public/index.html');
 const support=read('netlify/functions/support.mjs');
 const media=read('netlify/functions/customer-media-messages.mjs');
+const adminMessage=read('netlify/functions/admin-customer-message.mjs');
+const consignment=read('netlify/functions/consignment.mjs');
+const editing=read('netlify/functions/media-edit-orders.mjs');
+const delivery=read('netlify/functions/delivery-orders.mjs');
 const checks=[
  ['coin balances are split into free and purchased',/free_coins bigint/.test(migration)&&/purchased_coins bigint/.test(migration)&&/balance_coins = free_coins \+ purchased_coins/.test(migration)],
  ['new customers receive 10 free coins',/values\(new\.id,10,10,0\)/.test(migration)&&/10 free starter viewing coins/.test(migration)],
@@ -41,7 +45,11 @@ const checks=[
  ['message APIs provide display names instead of role labels',/sender_name:m.sender_role==='admin'\?'All Ads Manager':myName/.test(support)&&/sender_name:'All Ads Manager'/.test(media)],
  ['private text messages email the saved customer address using existing Gmail settings',/emailCustomer\(customerId,message\)/.test(read('netlify/functions/admin-customer-message.mjs'))&&/GMAIL_USER/.test(read('netlify/functions/admin-customer-message.mjs'))&&/customer_contact_emails/.test(read('netlify/functions/admin-customer-message.mjs'))],
  ['order status updates attempt customer email without changing email configuration',/Order-status email failed/.test(support)&&/customer_contact_emails/.test(support)&&/GMAIL_USER/.test(support)],
- ['social coins remain separate from tools wallet',/Your tools wallet is separate/.test(ui)]
+ ['social coins remain separate from tools wallet',/Your tools wallet is separate/.test(ui)],
+ ['private messages email the saved customer address',/emailCustomer\(customerId,message\)/.test(adminMessage)&&/customer_contact_emails/.test(adminMessage)&&/GMAIL_APP_PASSWORD/.test(adminMessage)],
+ ['consignment video completion emails the customer',/emailCustomer\(row.customer_id/.test(consignment)&&/GMAIL_APP_PASSWORD/.test(consignment)],
+ ['media editing status emails the customer',/Editing-order status email failed/.test(editing)&&/customer_contact_emails/.test(editing)],
+ ['delivery status emails the customer',/Delivery-status email failed/.test(delivery)&&/customer_contact_emails/.test(delivery)]
 ];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
