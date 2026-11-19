@@ -14,6 +14,8 @@ const coinVerify=verify;
 const webhook=read('netlify/functions/paystack-webhook.mjs');
 const ui=read('public/social.js');
 const avatarLab=read('public/avatar-lab.js');
+const liveAvatar=read('public/aam-livekit-avatar.js');
+const avatarChargeMigration=read('supabase/migrations/20261119220000_livekit_photo_avatar_coin_charge.sql');
 const avatarLabHtml=read('public/avatar-lab.html');
 const index=read('public/index.html');
 const support=read('netlify/functions/support.mjs');
@@ -122,9 +124,14 @@ const checks=[
  ['administrator calls have a database-enforced one-active-call limit and friendly conflict response',/aam_calls_one_active_call_per_admin_idx/.test(adminActiveCallMigration)&&/error\.code=d\.code\|\|''/.test(adminLiveCalls)&&/e\.code==='23505'\)return json\(409/.test(adminLiveCalls)],
  ['incoming call answers are protected against rapid duplicate taps and overlapping calls',/async function acceptCall\(id,type='audio'\)\{if\(aamCallStarting\|\|aamCallConnecting\|\|aamCurrentCallId\)return notice\('End the current call before answering another\.'\)/.test(ui)&&/finally\{aamCallStarting=false;\}\}/.test(ui)],
  ['one-run Supabase call setup bundles all four migrations in dependency order',callSetupBundle.indexOf('create table if not exists public.aam_calls')<callSetupBundle.indexOf('caller_identity_check')&&callSetupBundle.includes('aam_call_participants_one_active_call_per_customer_idx')&&callSetupBundle.includes('aam_calls_one_active_call_per_admin_idx')&&(callSetupBundle.match(/\bbegin;/gi)||[]).length===1&&(callSetupBundle.match(/\bcommit;/gi)||[]).length===1],
- ['Wireface avatar lab creates a local photo face and applies it to a full-body character',avatarLab.includes('createCharacter(file')&&avatarLab.includes('figure.face.useCharacter(character')&&avatarLab.includes('buildCharacter(bodyStyle')&&avatarLab.includes("'/wireface/mediapipe/vision_bundle.mjs'")],
+ ['Wireface avatar lab creates a local photo face and applies it to a full-body character',avatarLab.includes('createCharacter(file')&&avatarLab.includes('figure.face.useCharacter(character')&&avatarLab.includes('buildCharacter(bodyStyle')&&avatarLab.includes('vision_bundle.mjs')&&avatarLab.includes('face_landmarker.task')],
  ['Wireface avatar lab uses live microphone audio for lip sync and voice-reactive body gestures',avatarLab.includes('figure.face.listenTo(audioContext, micStream)')&&avatarLab.includes('figure?.update(dt, elapsed)')&&avatarLabHtml.includes('does not yet mirror your real-world body or hand poses')],
- ['Wireface avatar lab saves and reloads multiple photo characters locally',avatarLab.includes('indexedDB.open(DB_NAME, 1)')&&avatarLab.includes('exportCharacter(character)')&&avatarLab.includes('loadCharacter(row.character)')&&avatarLabHtml.includes('Saved avatars on this device')]];
+ ['Wireface avatar lab saves and reloads multiple photo characters locally',avatarLab.includes('indexedDB.open(DB_NAME, 1)')&&avatarLab.includes('exportCharacter(character)')&&avatarLab.includes('loadCharacter(row.character)')&&avatarLabHtml.includes('Saved avatars on this device')],
+ ['customer photo avatars require 1,500 purchased Money Coins and never spend Free Coins',avatarChargeMigration.includes('purchased_coins')&&avatarChargeMigration.includes('< 1500')&&avatarChargeMigration.includes('purchased_coins = purchased_coins - 1500')&&avatarChargeMigration.includes('call_avatar_purchase')&&avatarChargeMigration.includes('unique(call_id, customer_id)')],
+ ['photo avatar charges are limited to an accepted participant in an active video call',/c\.status = 'active'/.test(avatarChargeMigration)&&/c\.call_type = 'video'/.test(avatarChargeMigration)&&/p\.status = 'accepted'/.test(avatarChargeMigration)&&/p\.customer_id = v_customer/.test(avatarChargeMigration)],
+ ['LiveKit avatar payment endpoint requires an authenticated customer session',/action === 'avatar_payment'/.test(liveCalls)&&/rpc\/aam_social_charge_call_avatar/.test(liveCalls)&&/currentCustomer\(String\(body\.token/.test(liveCalls)],
+ ['LiveKit photo avatars use the Wireface 3D body kit and voice-driven mouth and gesture animation',liveAvatar.includes('buildCharacter(bodyStyle')&&liveAvatar.includes('figure.face.useCharacter(photoCharacter')&&liveAvatar.includes('figure.face.listenTo(audioContext, micStream)')&&liveAvatar.includes('figure?.update(dt, elapsed)')&&liveAvatar.includes('publishTrack(videoTrack')],
+ ['customer photo avatar is charged once per call, administrator avatar is free, and photos can be switched',/!aamAdminCallMode&&aamCallAvatarPaidCallId!==aamCurrentCallId/.test(ui)&&/aamCallAvatarController\.setPhoto\(file\)/.test(ui)&&/Add photo avatar · Free/.test(ui)&&/aamCallAvatarPaidCallId=null/.test(ui)]];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
 if(failed)process.exitCode=1;
