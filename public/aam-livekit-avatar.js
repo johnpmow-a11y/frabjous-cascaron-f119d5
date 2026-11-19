@@ -107,7 +107,7 @@ function poseTargets(points) {
   };
 }
 
-export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 'sarah', mediaElement }) {
+export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 'sarah', mediaElement, trackBody = true }) {
   if (!room || !LK || !photoFile) throw new Error('A video call and a photograph are required.');
   if (!photoFile.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
   if (photoFile.size > 12 * 1024 * 1024) throw new Error('Choose a photograph smaller than 12 MB.');
@@ -190,7 +190,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
     const cameraPublication = [...room.localParticipant.videoTrackPublications.values()]
       .find(publication => publication.source === LK.Track.Source.Camera && publication.track?.mediaStreamTrack);
     cameraLocalTrack = cameraPublication?.track || null;
-    if (cameraLocalTrack) {
+    if (cameraLocalTrack && trackBody) {
       cameraVideo = document.createElement('video');
       cameraVideo.muted = true;
       cameraVideo.autoplay = true;
