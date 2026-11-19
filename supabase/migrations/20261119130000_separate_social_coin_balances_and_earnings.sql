@@ -224,7 +224,11 @@ begin
    and not exists(select 1 from public.aam_social_follows where follower_id=v_customer and followed_id=v_post.customer_id) then
    raise exception 'This profile is private';
  end if;
- -- Every video view is charged once per customer/video, regardless of publisher.
+ -- API-sourced and customer-published videos are free. Only administrator-marked videos are paid.
+ if not coalesce(v_post.is_locked,false) then
+   return jsonb_build_object('unlocked',true,'free_video',true,'coins_charged',0);
+ end if;
+ -- A locked administrator video costs one coin once per customer/video.
  insert into public.aam_social_video_unlocks(customer_id,post_id)
  values(v_customer,p_post_id) on conflict do nothing returning * into v_unlock;
  if v_unlock.customer_id is null then
