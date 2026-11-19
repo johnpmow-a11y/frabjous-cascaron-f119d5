@@ -73,7 +73,7 @@ export async function handler(event) {
 
     // A participant must be explicitly invited/accepted before a room token is issued.
     const participants = await supabase(
-      `aam_call_participants?select=call_id,customer_id,status,call:aam_calls!inner(id,status)&call_id=eq.${encodeURIComponent(callId)}&customer_id=eq.${encodeURIComponent(session.customer_id)}&status=in.(invited,accepted)&call.status=eq.active&limit=1`
+      `aam_call_participants?select=call_id,customer_id,status,call:aam_calls!inner(id,status)&call_id=eq.${encodeURIComponent(callId)}&customer_id=eq.${encodeURIComponent(session.customer_id)}&status=eq.accepted&call.status=eq.active&limit=1`
     );
     if (!participants.length) return json(403, { error: 'You are not an active participant in this call.' });
 
