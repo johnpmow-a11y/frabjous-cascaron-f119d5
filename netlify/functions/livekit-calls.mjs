@@ -114,10 +114,24 @@ export async function handler(event) {
 
     if (action === 'accept') {
       if (participant.status !== 'invited') return json(409, { error: 'This call is no longer waiting for your answer.' });
-      await db(`aam_call_participants?call_id=eq.${encodeURIComponent(callId)}&customer_id=eq.${encodeURIComponent(customerId)}`, {
-        method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      const activeCall = await db(`aam_calls?select=id,status,created_at& id=eq.${encodeURIComponent(callId)}&status=eq.active&limit=1`.replace('& id=', '&id='));
+      if (!activeCall.length) return json(409, { error: 'This call has already ended.' });
+      if (Date.now() - new Date(activeCall[0].created_at).getTime() > 45_000) {
+        await db(`aam_calls?id=eq.${encodeURIComponent(callId)}&status=eq.active`, {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'missed', ended_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        });
+        await db(`aam_call_participants?call_id=eq.${encodeURIComponent(callId)}&status=eq.invited`, {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'ended' })
+        });
+        return json(409, { error: 'This call expired. You can call again.' });
+      }
+      const accepted = await db(`aam_call_participants?call_id=eq.${encodeURIComponent(callId)}&customer_id=eq.${encodeURIComponent(customerId)}&status=eq.invited`, {
+        method: 'PATCH', headers: { Prefer: 'return=representation' },
         body: JSON.stringify({ status: 'accepted', joined_at: new Date().toISOString() })
       });
+      if (!accepted.length) return json(409, { error: 'This invitation was already answered.' });
       return json(200, { status: 'accepted', call_id: callId });
     }
     if (action === 'decline' || action === 'end') {
