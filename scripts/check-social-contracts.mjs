@@ -52,6 +52,8 @@ const checks=[
  ['delivery status emails the customer',/Delivery-status email failed/.test(delivery)&&/customer_contact_emails/.test(delivery)],
  ['Facebook and TikTok open provider-gated campaign workspaces instead of old fixed-price forms',/adCampaignWorkspace\('facebook'\)/.test(index)&&/adCampaignWorkspace\('tiktok'\)/.test(index)&&/Partner connection pending/.test(index)&&/CAMPAIGN CREATION NOT AVAILABLE YET/.test(index)],
  ['Snapchat has a separate clearly unconnected campaign workspace',/adCampaignWorkspace\('snapchat'\)/.test(index)&&/Provider connection not confirmed/.test(index)],
+ ['admin can mark an uploaded video as paid',/id="aamAdminLockVideo" type="checkbox"/.test(ui)&&/is_locked:file\.type\.startsWith\('video/'\)&&!!document\.getElementById\('aamAdminLockVideo'\)\?\.checked/.test(ui)],
+ ['API-sourced and customer-uploaded videos are clearly free',/API-sourced videos, customer-uploaded videos and all pictures are always free/.test(ui)&&/Only administrator videos specifically marked as paid cost 1 coin/.test(ui)]
  ['Zangi Ads and TikTok Dollar Funding remain available',/serviceForm\('Zangi Ads'\)/.test(index)&&/serviceForm\('TikTok Dollar Funding'\)/.test(index)]
 ];
 let failed=0;
