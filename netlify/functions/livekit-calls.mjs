@@ -65,6 +65,8 @@ export async function handler(event) {
       if (!uuid.test(targetId) || targetId === customerId) return json(400, { error: 'Choose a valid person to call.' });
       if (!['audio','video'].includes(callType)) return json(400, { error: 'Choose audio or video calling.' });
 
+      const existingCall = await db(`aam_call_participants?select=call_id,call:aam_calls!inner(status)&customer_id=eq.${encodeURIComponent(customerId)}&status=in.(invited,accepted)&call.status=eq.active&limit=1`);
+      if (existingCall.length) return json(409, { error: 'You already have an active call. End it before starting another.' });
       const profiles = await db(`aam_social_profiles?select=customer_id,adult_confirmed_at&customer_id=in.(${customerId},${targetId})`);
       if (profiles.length !== 2 || profiles.some(p => !p.adult_confirmed_at)) return json(403, { error: 'Both customers must have confirmed they are 18 or older.' });
 
