@@ -11,9 +11,13 @@ BEGIN
   IF to_regclass('public.customers') IS NULL OR to_regclass('public.customer_sessions') IS NULL OR to_regclass('public.admin_sessions') IS NULL THEN
     RAISE EXCEPTION 'The existing All Ads Manager customer and session tables must be present before this setup.';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='customers' AND column_name='name' AND data_type='text')
-     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='customer_sessions' AND column_name='token')
-     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='customer_sessions' AND column_name='expires_at') THEN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='customers' AND column_name='id' AND data_type='uuid')
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='customers' AND column_name='name' AND data_type='text')
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='customer_sessions' AND column_name='token' AND data_type='uuid')
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='customer_sessions' AND column_name='customer_id' AND data_type='uuid')
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='customer_sessions' AND column_name='expires_at' AND data_type='timestamp with time zone')
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='admin_sessions' AND column_name='token')
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='admin_sessions' AND column_name='expires_at') THEN
     RAISE EXCEPTION 'The existing All Ads Manager customer/session schema is incomplete. No changes were committed.';
   END IF;
 END;
