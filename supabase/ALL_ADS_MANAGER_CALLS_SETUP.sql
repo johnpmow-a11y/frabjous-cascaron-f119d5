@@ -6,7 +6,7 @@
 begin;
 
 -- Required dependency check: the social coin migrations must already be applied.
-DO $
+DO $aam$
 BEGIN
   IF to_regclass('public.aam_coin_balances') IS NULL
      OR to_regclass('public.aam_coin_transactions') IS NULL
@@ -17,7 +17,7 @@ BEGIN
     RAISE EXCEPTION 'Apply the All Ads Manager social coin-balance migrations before running this calling setup.';
   END IF;
 END;
-$;
+$aam$;
 
 -- SECTION 1: supabase/migrations/20261119100000_livekit_call_tables.sql
 -- Call records used to authorize LiveKit room tokens and track invitations.
