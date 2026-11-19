@@ -41,7 +41,7 @@ set search_path = public
 as $$
 declare v_customer_id text;
 begin
-  if p_email is null or length(trim(p_email)) < 6 or trim(p_email) !~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+[.][A-Z]{2,} then
+  if p_email is null or length(trim(p_email)) < 6 or trim(p_email) !~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+[.][A-Z]{2,}$' then
     raise exception 'Enter a valid email address.';
   end if;
   select customer_id::text into v_customer_id
