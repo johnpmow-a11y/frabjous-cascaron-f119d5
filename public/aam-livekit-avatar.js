@@ -232,7 +232,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
   let currentBodyStyle = bodyStyle === 'walter' ? 'walter' : 'sarah';
   let fingerRigs = [], legRigs = [], audioContext, stopLipSync, micStream, videoTrack, preview;
   let published = false, stopped = false, trackingAvailable = false, cameraUnpublished = false;
-  let lastFrame = 0, elapsed = 0, lastDetection = 0, lastFaceDetection = 0, lastVideoTime = -1, latestHands = null, targetPose = null, currentFaceMood = 'neutral';
+  let lastFrame = 0, elapsed = 0, lastDetection = 0, lastFaceDetection = 0, lastVideoTime = -1, lastFaceVideoTime = -1, latestHands = null, targetPose = null, currentFaceMood = 'neutral';
 
   const makePhotoCharacter = file => createCharacter(file, {
     kind: '3d', detector: 'local',
@@ -307,8 +307,9 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
           targetPose = poseTargets(poseResult.landmarks?.[0] || null);
           if (handLandmarker) latestHands = handLandmarker.detectForVideo(cameraVideo, now);
         } catch (_) {}
-        if (faceLandmarker && cameraVideo?.readyState >= 2 && now - lastFaceDetection > 220 && cameraVideo.currentTime !== lastVideoTime) {
+        if (faceLandmarker && cameraVideo?.readyState >= 2 && now - lastFaceDetection > 220 && cameraVideo.currentTime !== lastFaceVideoTime) {
           lastFaceDetection = now;
+          lastFaceVideoTime = cameraVideo.currentTime;
           try {
             const faceResult = faceLandmarker.detectForVideo(cameraVideo, now);
             const nextMood = faceMoodFromBlendshapes(faceResult.faceBlendshapes?.[0]?.categories);
