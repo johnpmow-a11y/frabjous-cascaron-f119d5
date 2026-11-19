@@ -78,7 +78,7 @@ function ensureCallVoiceControls(){
   if(select&&!actions.contains(select)){select.remove();select=null;}
   if(!select){
     select=document.createElement('select');select.id='aamCallVoiceStyle';select.className='aam-social-btn secondary';
-    select.innerHTML='<option value="natural">Original voice</option><option value="female">Female voice effect</option><option value="male">Male voice effect</option><option value="echo">Echo effect</option><option value="robot">Robot effect</option>';
+    select.title='Pitch effects change pitch only; they do not change vocal identity.';select.setAttribute('aria-label','Call voice pitch and effects');select.innerHTML='<option value="natural">Original voice</option><option value="female">Female-style pitch (higher)</option><option value="male">Male-style pitch (lower)</option><option value="echo">Echo effect</option><option value="robot">Robot effect</option>';
     select.addEventListener('change',()=>setCallVoiceMode(select.value));
     const end=actions.querySelector('#aamEndCallBtn');if(end)actions.insertBefore(select,end);else actions.appendChild(select);
   }
