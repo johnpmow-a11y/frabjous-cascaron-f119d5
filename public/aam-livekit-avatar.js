@@ -57,6 +57,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
   let lastFrame = 0;
   let elapsed = 0;
   let currentPhotoCharacter = null;
+  let currentBodyStyle = bodyStyle === 'walter' ? 'walter' : 'sarah';
   const makePhotoCharacter = file => createCharacter(file, {
     kind: '3d',
     detector: 'local',
@@ -70,7 +71,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
   try {
     const photoCharacter = await makePhotoCharacter(photoFile);
     currentPhotoCharacter = photoCharacter;
-    figure = buildCharacter(bodyStyle === 'walter' ? 'walter' : 'sarah', { shadows: true });
+    figure = buildCharacter(currentBodyStyle, { shadows: true });
     await figure.face.useCharacter(photoCharacter, { transition: 0 });
     figure.gazeAt(camera);
     scene.add(figure.root);
@@ -106,6 +107,19 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
   }
 
   return {
+    async setBodyStyle(style) {
+      if (stopped) throw new Error('This avatar has already been closed.');
+      const nextStyle = style === 'walter' ? 'walter' : 'sarah';
+      if (nextStyle === currentBodyStyle) return;
+      const nextFigure = buildCharacter(nextStyle, { shadows: true });
+      await nextFigure.face.useCharacter(currentPhotoCharacter, { transition: 0 });
+      nextFigure.gazeAt(camera);
+      scene.remove(figure.root);
+      figure.dispose();
+      figure = nextFigure;
+      currentBodyStyle = nextStyle;
+      scene.add(figure.root);
+    },
     async setPhoto(file) {
       if (stopped) throw new Error('This avatar has already been closed.');
       if (!file?.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
