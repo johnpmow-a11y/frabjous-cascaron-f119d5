@@ -398,7 +398,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
     async publish() {
       if (stopped) throw new Error('This avatar preview has already been closed.');
       if (published) return;
-      if (cameraLocalTrack) { await room.localParticipant.unpublishTrack(cameraLocalTrack, !trackBody); cameraUnpublished = true; }
+      if (cameraLocalTrack) { await room.localParticipant.unpublishTrack(cameraLocalTrack, !trackingAvailable); cameraUnpublished = true; }
       else if (wasCameraEnabled) await room.localParticipant.setCameraEnabled(false);
       try {
         await room.localParticipant.publishTrack(videoTrack, {
