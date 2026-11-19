@@ -47,7 +47,7 @@ export async function handler(event) {
           headers: { Prefer: 'return=minimal' },
           body: JSON.stringify({ status: 'missed', ended_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         });
-        await db(`aam_call_participants?call_id=in.(${staleIds.join(',')})&status=eq.invited`, {
+        await db(`aam_call_participants?call_id=in.(${staleIds.join(',')})&status=in.(invited,accepted)`, {
           method: 'PATCH',
           headers: { Prefer: 'return=minimal' },
           body: JSON.stringify({ status: 'ended' })
@@ -123,7 +123,7 @@ export async function handler(event) {
           method: 'PATCH', headers: { Prefer: 'return=minimal' },
           body: JSON.stringify({ status: 'missed', ended_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         });
-        await db(`aam_call_participants?call_id=eq.${encodeURIComponent(callId)}&status=eq.invited`, {
+        await db(`aam_call_participants?call_id=eq.${encodeURIComponent(callId)}&status=in.(invited,accepted)`, {
           method: 'PATCH', headers: { Prefer: 'return=minimal' },
           body: JSON.stringify({ status: 'ended' })
         });
@@ -140,6 +140,12 @@ export async function handler(event) {
       await db(`aam_call_participants?call_id=eq.${encodeURIComponent(callId)}&customer_id=eq.${encodeURIComponent(customerId)}`, {
         method: 'PATCH', headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({ status: action === 'decline' ? 'declined' : 'ended' })
+      });
+      // Close the other participant's active row too, otherwise accepted callers
+      // can remain stuck as active after the call itself has ended.
+      await db(`aam_call_participants?call_id=eq.${encodeURIComponent(callId)}&status=in.(invited,accepted)`, {
+        method: 'PATCH', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'ended' })
       });
       await db(`aam_calls?id=eq.${encodeURIComponent(callId)}&status=eq.active`, {
         method: 'PATCH', headers: { Prefer: 'return=minimal' },
