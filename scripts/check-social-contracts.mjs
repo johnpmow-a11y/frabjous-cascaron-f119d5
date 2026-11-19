@@ -10,6 +10,8 @@ const verify=read('netlify/functions/social-coin-verify.mjs');
 const webhook=read('netlify/functions/paystack-webhook.mjs');
 const ui=read('public/social.js');
 const index=read('public/index.html');
+const support=read('netlify/functions/support.mjs');
+const media=read('netlify/functions/customer-media-messages.mjs');
 const checks=[
  ['coin balances are split into free and purchased',/free_coins bigint/.test(migration)&&/purchased_coins bigint/.test(migration)&&/balance_coins = free_coins \+ purchased_coins/.test(migration)],
  ['new customers receive 10 free coins',/values\(new\.id,10,10,0\)/.test(migration)&&/10 free starter viewing coins/.test(migration)],
