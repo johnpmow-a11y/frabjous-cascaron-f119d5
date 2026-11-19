@@ -22,7 +22,8 @@ export async function handler(event){
     const messages=await db(`aam_chat_messages?select=id,sender_id,message_type,body,media_path,shared_post_id,created_at&conversation_id=eq.${conv}&order=created_at.desc&limit=100`);
     messages.reverse();
     const reads=messages.length?await db(`aam_chat_message_reads?select=message_id,customer_id,read_at&message_id=in.(${messages.map(m=>m.id).join(',')})`):[];
-    const otherParticipants=conversationRows[0]?.conversation_type==='direct'?await db(`aam_chat_participants?select=customer_id&conversation_id=eq.${encodeURIComponent(conv)}&customer_id=neq.${encodeURIComponent(s.customer_id)}&limit=1`):[];\n    const ids=[...new Set(messages.map(m=>m.sender_id))];
+    const otherParticipants=conversationRows[0]?.conversation_type==='direct'?await db(`aam_chat_participants?select=customer_id&conversation_id=eq.${encodeURIComponent(conv)}&customer_id=neq.${encodeURIComponent(s.customer_id)}&limit=1`):[];
+    const ids=[...new Set(messages.map(m=>m.sender_id))];
     const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
     const senderNames=new Map(profiles.map(p=>[p.customer_id,p]));
     const pm=new Map(profiles.map(p=>[p.customer_id,p]));
