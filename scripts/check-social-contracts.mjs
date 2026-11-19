@@ -29,6 +29,7 @@ const adminLiveCalls=read('netlify/functions/admin-livekit-calls.mjs');
 const adminCallMigration=read('supabase/migrations/20261119190000_admin_livekit_call_identity.sql');
 const liveMigration=read('supabase/migrations/20261119100000_livekit_call_tables.sql');
 const activeCallMigration=read('supabase/migrations/20261119200000_livekit_one_active_call_per_customer.sql');
+const adminActiveCallMigration=read('supabase/migrations/20261119210000_livekit_one_active_call_per_admin.sql');
 const checks=[
  ['coin balances are split into free and purchased',/free_coins bigint/.test(migration)&&/purchased_coins bigint/.test(migration)&&/balance_coins = free_coins \+ purchased_coins/.test(migration)],
  ['new customers receive 30 free coins',migration.includes('values(new.id,30,30,0)')&&migration.includes('30 free starter viewing coins')],
