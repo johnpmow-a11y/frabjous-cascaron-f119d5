@@ -53,8 +53,9 @@ const checks=[
  ['Facebook and TikTok open provider-gated campaign workspaces instead of old fixed-price forms',/adCampaignWorkspace\('facebook'\)/.test(index)&&/adCampaignWorkspace\('tiktok'\)/.test(index)&&/Partner connection pending/.test(index)&&/CAMPAIGN CREATION NOT AVAILABLE YET/.test(index)],
  ['Snapchat has a separate clearly unconnected campaign workspace',/adCampaignWorkspace\('snapchat'\)/.test(index)&&/Provider connection not confirmed/.test(index)],
  ['admin paid-video checkbox is connected to the upload request',ui.includes('id="aamAdminLockVideo" type="checkbox"')&&ui.includes("is_locked:file.type.startsWith('video/')&&!!document.getElementById('aamAdminLockVideo')?.checked")],
- ['API-sourced and customer-uploaded videos are clearly free',/API-sourced videos, customer-uploaded videos and all pictures are always free/.test(ui)&&/Only administrator videos specifically marked as paid cost 1 coin/.test(ui)]
- ['Zangi Ads and TikTok Dollar Funding remain available',/serviceForm\('Zangi Ads'\)/.test(index)&&/serviceForm\('TikTok Dollar Funding'\)/.test(index)]
+ ['API-sourced and customer-uploaded videos are clearly free',/API-sourced videos, customer-uploaded videos and all pictures are always free/.test(ui)&&/Only administrator videos specifically marked as paid cost 1 coin/.test(ui)],
+ ['Zangi Ads and TikTok Dollar Funding remain available',/serviceForm\('Zangi Ads'\)/.test(index)&&/serviceForm\('TikTok Dollar Funding'\)/.test(index)],
+ ['admin feed never invents engagement counts',!/like_count:p\.author_role==='admin'\?3500/.test(feed)&&/like_count:likes\.filter\(x=>x\.post_id===p\.id\)\.length/.test(feed)]
 ];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
