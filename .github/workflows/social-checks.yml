@@ -18,6 +18,7 @@ on:
       - "public/coin-payment-return.html"
       - "scripts/check-social-contracts.mjs"
       - "supabase/migrations/*.sql"
+      - "supabase/ALL_ADS_MANAGER_CALLS_SETUP.sql"
       - ".github/workflows/social-checks.yml"
   push:
     branches:
