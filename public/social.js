@@ -156,7 +156,7 @@ async function recordVideoMix(){
     aamAdminMixUrl=URL.createObjectURL(blob);
     const preview=document.getElementById('aamAdminMixedPreview');
     preview.src=aamAdminMixUrl;preview.hidden=false;preview.load();
-    if(status)status.textContent='Mix ready. Play the preview and check the sound before publishing.';
+    if(status)status.textContent='Finished mix ready. Play the preview, then publish.';
    }else if(status)status.textContent='No mixed video was recorded. You can publish the original video.';
   };
   endedHandler=()=>stopVideoMix();video.addEventListener('ended',endedHandler,{once:true});
