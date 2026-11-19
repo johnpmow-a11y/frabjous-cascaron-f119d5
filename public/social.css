@@ -78,3 +78,5 @@
 .aam-social-call-media audio{width:100%;max-width:360px}
 .aam-social-incoming{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px;border-radius:12px;background:#dbeafe;color:#1e3a8a}
 .aam-social-incoming strong{width:100%}
+
+.aam-social-call-media video.aam-social-local-preview{outline:2px solid #2563eb;outline-offset:2px}
