@@ -44,7 +44,7 @@ export async function handler(event) {
     const verifyResponse = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, { headers: { Authorization: `Bearer ${secret}` } });
     const verified = await verifyResponse.json();
     const tx = verified.data;
-    if (!verifyResponse.ok || !verified.status || tx?.status !== 'success') return reply(400, 'transaction not successful');
+    if (!verifyResponse.ok || !verified.status || tx?.status !== 'success' || String(tx?.reference || '') !== String(reference)) return reply(400, 'transaction not successful or reference mismatch');
     const headers = { apikey: service, ...(service.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${service}` }), 'Content-Type': 'application/json' };
     // Service payments use their own table and must never be sent to the wallet-credit RPC.
     // Social coin purchases are separate from the normal tools wallet.
