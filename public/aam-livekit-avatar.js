@@ -279,6 +279,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
       await cameraVideo.play().catch(() => {});
       if (cameraVideo.readyState < 2) await new Promise(resolve => { cameraVideo.addEventListener('loadeddata', resolve, { once: true }); setTimeout(resolve, 2500); });
       try {
+        if (cameraVideo.readyState < 2) throw new Error('Camera video did not become ready for tracking.');
         const visionModule = await import(VISION_BASE + '/vision_bundle.mjs');
         const vision = await visionModule.FilesetResolver.forVisionTasks(VISION_BASE + '/wasm');
         poseLandmarker = await makeLandmarker(visionModule.PoseLandmarker, vision, POSE_MODEL, { numPoses: 1, minPoseDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
