@@ -3,6 +3,7 @@ const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module
 const VISION_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3';
 const POSE_MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const smooth = (current, target, amount = 0.28) => current + (target - current) * amount;
@@ -140,6 +141,20 @@ function applyHandResults(result, fingerRigs, figure) {
   });
 }
 
+function faceMoodFromBlendshapes(categories) {
+  const values = Object.fromEntries((categories || []).map(item => [item.categoryName, item.score || 0]));
+  const smile = Math.max(values.mouthSmileLeft || 0, values.mouthSmileRight || 0);
+  const frown = Math.max(values.mouthFrownLeft || 0, values.mouthFrownRight || 0);
+  const browUp = values.browInnerUp || 0;
+  const browDown = Math.max(values.browDownLeft || 0, values.browDownRight || 0);
+  const eyesWide = Math.max(values.eyeWideLeft || 0, values.eyeWideRight || 0);
+  if (smile > 0.48) return { mood: 'happy', intensity: clamp(smile, 0.25, 0.9) };
+  if (eyesWide > 0.48 && browUp > 0.22) return { mood: 'surprised', intensity: clamp(eyesWide, 0.3, 0.85) };
+  if (frown > 0.38 && browUp > 0.18) return { mood: 'sad', intensity: clamp(frown, 0.25, 0.8) };
+  if (browDown > 0.48) return { mood: 'frustrated', intensity: clamp(browDown, 0.25, 0.8) };
+  return { mood: 'neutral', intensity: 0.25 };
+}
+
 function poseTargets(points) {
   if (!points || points.length < 29) return null;
   const visible = index => (points[index]?.visibility ?? 1) > 0.35;
@@ -213,11 +228,11 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
   scene.add(floor);
 
   const wasCameraEnabled = !!room.localParticipant.isCameraEnabled;
-  let figure, currentPhotoCharacter, cameraLocalTrack, cameraVideo, poseLandmarker, handLandmarker;
+  let figure, currentPhotoCharacter, cameraLocalTrack, cameraVideo, poseLandmarker, handLandmarker, faceLandmarker;
   let currentBodyStyle = bodyStyle === 'walter' ? 'walter' : 'sarah';
   let fingerRigs = [], legRigs = [], audioContext, stopLipSync, micStream, videoTrack, preview;
   let published = false, stopped = false, trackingAvailable = false, cameraUnpublished = false;
-  let lastFrame = 0, elapsed = 0, lastDetection = 0, lastVideoTime = -1, latestHands = null, targetPose = null;
+  let lastFrame = 0, elapsed = 0, lastDetection = 0, lastFaceDetection = 0, lastVideoTime = -1, latestHands = null, targetPose = null, currentFaceMood = 'neutral';
 
   const makePhotoCharacter = file => createCharacter(file, {
     kind: '3d', detector: 'local',
@@ -268,6 +283,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
         const vision = await visionModule.FilesetResolver.forVisionTasks(VISION_BASE + '/wasm');
         poseLandmarker = await makeLandmarker(visionModule.PoseLandmarker, vision, POSE_MODEL, { numPoses: 1, minPoseDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         try { handLandmarker = await makeLandmarker(visionModule.HandLandmarker, vision, HAND_MODEL, { numHands: 2, minHandDetectionConfidence: 0.5, minTrackingConfidence: 0.5 }); } catch (_) { handLandmarker = null; }
+        try { faceLandmarker = await makeLandmarker(visionModule.FaceLandmarker, vision, FACE_MODEL, { numFaces: 1, outputFaceBlendshapes: true }); } catch (_) { faceLandmarker = null; }
         trackingAvailable = !!poseLandmarker;
       } catch (_) {
         trackingAvailable = false;
@@ -291,6 +307,17 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
           targetPose = poseTargets(poseResult.landmarks?.[0] || null);
           if (handLandmarker) latestHands = handLandmarker.detectForVideo(cameraVideo, now);
         } catch (_) {}
+        if (faceLandmarker && cameraVideo?.readyState >= 2 && now - lastFaceDetection > 220 && cameraVideo.currentTime !== lastVideoTime) {
+          lastFaceDetection = now;
+          try {
+            const faceResult = faceLandmarker.detectForVideo(cameraVideo, now);
+            const nextMood = faceMoodFromBlendshapes(faceResult.faceBlendshapes?.[0]?.categories);
+            if (nextMood.mood !== currentFaceMood) {
+              currentFaceMood = nextMood.mood;
+              figure?.face?.mood(currentFaceMood, nextMood.intensity);
+            }
+          } catch (_) {}
+        }
       }
       figure?.update(dt, elapsed);
       if (targetPose && figure) {
@@ -329,6 +356,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
     if (audioContext && audioContext.state !== 'closed') await audioContext.close().catch(() => {});
     poseLandmarker?.close?.();
     handLandmarker?.close?.();
+    faceLandmarker?.close?.();
     if (cameraVideo) { cameraVideo.pause(); cameraVideo.srcObject = null; cameraVideo.remove(); }
     figure?.dispose();
     renderer.dispose();
@@ -410,6 +438,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
       if (audioContext && audioContext.state !== 'closed') await audioContext.close().catch(() => {});
       await poseLandmarker?.close?.();
       await handLandmarker?.close?.();
+      await faceLandmarker?.close?.();
       if (cameraVideo) { cameraVideo.pause(); cameraVideo.srcObject = null; cameraVideo.remove(); }
       figure?.dispose();
       renderer.dispose();
