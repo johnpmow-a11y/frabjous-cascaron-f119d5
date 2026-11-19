@@ -117,9 +117,9 @@ async function createFromPhoto(file) {
     kind: '3d',
     detector: 'local',
     mediapipe: {
-      bundle: '/wireface/mediapipe/vision_bundle.mjs',
-      wasm: '/wireface/mediapipe/wasm',
-      model: '/wireface/mediapipe/face_landmarker.task',
+      bundle: 'https://cdn.jsdelivr.net/gh/compsmart/wireface-sdk@8bb0b00649eb65013e7785859c4b9b59169e1178/assets/mediapipe/vision_bundle.mjs',
+      wasm: 'https://cdn.jsdelivr.net/gh/compsmart/wireface-sdk@8bb0b00649eb65013e7785859c4b9b59169e1178/assets/mediapipe/wasm',
+      model: 'https://cdn.jsdelivr.net/gh/compsmart/wireface-sdk@8bb0b00649eb65013e7785859c4b9b59169e1178/assets/mediapipe/face_landmarker.task',
     },
   });
   await figure.face.useCharacter(character, { transition: 0 });
