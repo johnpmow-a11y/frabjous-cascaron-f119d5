@@ -98,6 +98,7 @@ begin
  select customer_id into v_follower from public.customer_sessions
  where token=p_token and expires_at>now();
  if v_follower is null then raise exception 'Session expired'; end if;
+ if not exists(select 1 from public.aam_social_profiles where customer_id=v_follower and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older first'; end if;
  if v_follower=p_target then raise exception 'You cannot follow your own profile'; end if;
  if not exists(select 1 from public.customers where id=p_target) then raise exception 'Friend not found'; end if;
  insert into public.aam_social_profiles(customer_id) values(v_follower),(p_target) on conflict(customer_id) do nothing;
@@ -140,6 +141,7 @@ begin
  select customer_id into v_customer from public.customer_sessions
  where token=p_token and expires_at>now();
  if v_customer is null then raise exception 'Session expired'; end if;
+ if not exists(select 1 from public.aam_social_profiles where customer_id=v_customer and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older first'; end if;
  v_code=upper(trim(coalesce(p_referral_code,'')));
  if v_code='' then return jsonb_build_object('applied',false,'reason','no_code'); end if;
  select customer_id into v_referrer from public.aam_social_profiles where referral_code=v_code;
@@ -213,6 +215,7 @@ begin
  select customer_id into v_customer from public.customer_sessions
  where token=p_token and expires_at>now();
  if v_customer is null then raise exception 'Session expired'; end if;
+ if not exists(select 1 from public.aam_social_profiles where customer_id=v_customer and adult_confirmed_at is not null) then raise exception 'Confirm that you are 18 or older to continue'; end if;
  select * into v_post from public.aam_social_posts
  where id=p_post_id and media_type='video' and moderation_status='published';
  if v_post.id is null then raise exception 'Video is unavailable'; end if;
@@ -225,7 +228,7 @@ begin
    raise exception 'This profile is private';
  end if;
  -- API-sourced and customer-published videos are free. Only administrator-marked videos are paid.
- if not coalesce(v_post.is_locked,false) then
+ if v_post.author_role <> 'admin' or not coalesce(v_post.is_locked,false) then
    return jsonb_build_object('unlocked',true,'free_video',true,'coins_charged',0);
  end if;
  -- A locked administrator video costs one coin once per customer/video.
