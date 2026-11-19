@@ -28,7 +28,7 @@ const checks=[
  ['admin video editor supports original sound mute/keep, voice-over and background music',ui.includes('Keep original video sound')&&ui.includes('Record my voice over the video')&&ui.includes('Background music volume')&&ui.includes('recordVideoMix')],
  ['new accounts receive 10 free coins and legacy balances are not treated as cash',read('supabase/migrations/20261119130000_two_balance_coin_accounting.sql').includes('values(new.id,10,0)')&&read('supabase/migrations/20261119130000_two_balance_coin_accounting.sql').includes('purchased_coins = 0')],
  ['voice and background music have independent volume controls',ui.includes('aamVoiceVolume')&&ui.includes('aamMusicVolume')],
- ['admin video mix can be previewed before publishing',ui.includes('aamAdminMixedPreview')&&ui.includes('Finished mix ready. Play the preview, then publish.')],
+ ['admin video mix can be previewed before publishing',ui.includes('aamAdminMixedPreview')&&ui.includes('Mix ready. Play the preview and check the sound before publishing.')],
  ['social dock has exactly four destinations',/\['home'.*\['upload'.*\['chat'.*\['profile'/s.test(ui)],
  ['locked feed responses omit raw storage paths',feed.includes('media_path,thumbnail_path,customer_id,...publicPost')],
  ['admin creator profile videos require a coin until unlocked',socialDiscover.includes("p.media_type==='video'&&!unlocked.has(p.id)")&&socialDiscover.includes('media_url:locked?null:await signedRead(media_path)')],
