@@ -5,6 +5,7 @@ function headers(key,extra={}){return {apikey:key,...(key.startsWith('sb_secret_
 async function db(path,options={}){const base=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!base||!key)throw new Error('Social service is not configured.');const r=await fetch(`${base}/rest/v1/${path}`,{...options,headers:headers(key,{'Content-Type':'application/json',...(options.headers||{})})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.message||data.error||'Social request failed.');return data;}
 async function signedRead(path){const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;const r=await fetch(`${u}/storage/v1/object/sign/aam-social-media/${path}`,{method:'POST',headers:headers(k,{'Content-Type':'application/json'}),body:JSON.stringify({expiresIn:1800})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||'Could not load custom wallpaper.');const p=d.signedURL||d.signedUrl||'';return /^https?:\/\//i.test(p)?p:u+(p.startsWith('/storage/v1/')?p:'/storage/v1'+(p.startsWith('/')?p:'/'));}
 async function session(token){if(!uuid.test(token))return null;const rows=await db(`customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);return rows[0]||null;}
+async function adultConfirmed(customerId){const rows=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(customerId)}&limit=1`);return !!rows[0]?.adult_confirmed_at;}
 async function rpc(name,args){return db(`rpc/${name}`,{method:'POST',body:JSON.stringify(args)});}
 export async function handler(event){
  if(event.httpMethod==='OPTIONS')return json(204,{});
@@ -25,6 +26,7 @@ export async function handler(event){
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||'');
   const currentSession=await session(token);if(!currentSession)return json(401,{error:'Your session has expired. Please log in again.'});
+  if(action!=='confirm_age'&&!await adultConfirmed(currentSession.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
   if(action==='confirm_age')return json(200,await rpc('aam_social_confirm_age',{p_token:token}));
   if(action==='update_avatar'){const path=String(b.avatar_path||''),followers=await db(`aam_social_follows?select=follower_id&followed_id=eq.${encodeURIComponent(currentSession.customer_id)}`);const result=await rpc('aam_social_update_avatar',{p_token:token,p_avatar_path:path});await Promise.allSettled(followers.map(x=>sendPush({role:'customer',customerId:x.follower_id,title:'Profile picture updated',body:'A creator you follow updated their profile picture.',eventType:'profile_update'})));return json(200,result);}
   if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
