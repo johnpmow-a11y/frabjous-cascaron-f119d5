@@ -23,6 +23,9 @@ const delivery=read('netlify/functions/delivery-orders.mjs');
 const promotionMigration=read('supabase/migrations/20261119160000_manager_promotion_campaigns.sql');
 const promotions=read('netlify/functions/social-promotions.mjs');
 const promotionAdmin=read('netlify/functions/social-promotion-admin.mjs');
+const liveCalls=read('netlify/functions/livekit-calls.mjs');
+const liveToken=read('netlify/functions/livekit-token.mjs');
+const liveMigration=read('supabase/migrations/20261119100000_livekit_call_tables.sql');
 const checks=[
  ['coin balances are split into free and purchased',/free_coins bigint/.test(migration)&&/purchased_coins bigint/.test(migration)&&/balance_coins = free_coins \+ purchased_coins/.test(migration)],
  ['new customers receive 30 free coins',migration.includes('values(new.id,30,30,0)')&&migration.includes('30 free starter viewing coins')],
@@ -88,7 +91,11 @@ const checks=[
  ['Manager Promotion admin pricing requires an authenticated admin session',/adminSession\(String\(b\.token/.test(promotionAdmin)&&/action==='set_price'/.test(promotionAdmin)&&/status:'awaiting_payment'/.test(promotionAdmin)&&/action==='reject'/.test(promotionAdmin)],
  ['customer profile exposes Manager Promotion and its Money-Coin-only balance',/AAMSocial\.openPromotion\(\)/.test(ui)&&/Promotion Balance/.test(ui)&&/Free Coins are not accepted/.test(ui)],
  ['administrator dashboard exposes promotion review and approval is provider-gated',/AAMSocial\.openAdminPromotions\(\)/.test(ui)&&/provider_status==='ready'/.test(ui)&&/provider_status=eq\.ready/.test(promotionAdmin)],
- ['promotion payment cannot proceed before provider readiness',/v_p\.provider_status<>'ready'/.test(promotionMigration)&&/Free Coins cannot be used for promotion/.test(promotionMigration)]
+ ['promotion payment cannot proceed before provider readiness',/v_p\.provider_status<>'ready'/.test(promotionMigration)&&/Free Coins cannot be used for promotion/.test(promotionMigration)],
+ ['LiveKit call creation requires two 18+ confirmed customers and an existing direct chat',/adult_confirmed_at/.test(liveCalls)&&/conversation_type=eq\.direct/.test(liveCalls)&&/You can only call someone you have a private chat with/.test(liveCalls)],
+ ['LiveKit room tokens are issued only to accepted active call participants',/status=eq\.accepted/.test(liveToken)&&/call\.status=eq\.active/.test(liveToken)&&/LIVEKIT_URL must be a secure WebSocket URL/.test(liveToken)],
+ ['LiveKit call records are protected by RLS and service-role-only access',/enable row level security/.test(liveMigration)&&/revoke all on public\.aam_calls from anon, authenticated/.test(liveMigration)&&/grant all on public\.aam_call_participants to service_role/.test(liveMigration)],
+ ['customer private chat exposes audio/video call controls and incoming-call polling',/function callPanelHtml\(\)/.test(ui)&&/AAMSocial\.startCall/.test(ui)&&/AAMSocial\.acceptCall/.test(ui)&&/livekit-calls/.test(ui)&&/livekit-token/.test(ui)]
 ];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
