@@ -22,6 +22,7 @@ const editing=read('netlify/functions/media-edit-orders.mjs');
 const delivery=read('netlify/functions/delivery-orders.mjs');
 const promotionMigration=read('supabase/migrations/20261119160000_manager_promotion_campaigns.sql');
 const promotions=read('netlify/functions/social-promotions.mjs');
+const promotionAdmin=read('netlify/functions/social-promotion-admin.mjs');
 const checks=[
  ['coin balances are split into free and purchased',/free_coins bigint/.test(migration)&&/purchased_coins bigint/.test(migration)&&/balance_coins = free_coins \+ purchased_coins/.test(migration)],
  ['new customers receive 30 free coins',migration.includes('values(new.id,30,30,0)')&&migration.includes('30 free starter viewing coins')],
@@ -83,7 +84,8 @@ const checks=[
  ['Manager Promotion has its own campaign records and review states',/create table if not exists public\.aam_social_promotions/.test(promotionMigration)&&/pending_review/.test(promotionMigration)&&/awaiting_payment/.test(promotionMigration)],
  ['Manager Promotion payments deduct purchased Money Coins only',/select purchased_coins into v_money/.test(promotionMigration)&&/purchased_coins=purchased_coins-v_p\.price_coins/.test(promotionMigration)&&/Free Coins cannot be used for promotion/.test(promotionMigration)],
  ['Manager Promotion submission does not debit coins before approved pricing',/No coins have been deducted/.test(promotionMigration)&&/status<>'awaiting_payment'/.test(promotionMigration)],
- ['Manager Promotion API validates customer sessions and secures image uploads',/customerSession\(token\)/.test(promotions)&&/promotions\/\$\{s\.customer_id\}/.test(promotions)&&/aam_social_promotion_create/.test(promotions)&&/aam_social_promotion_pay/.test(promotions)]
+ ['Manager Promotion API validates customer sessions and secures image uploads',/customerSession\(token\)/.test(promotions)&&/promotions\/\$\{s\.customer_id\}/.test(promotions)&&/aam_social_promotion_create/.test(promotions)&&/aam_social_promotion_pay/.test(promotions)],
+ ['Manager Promotion admin pricing requires an authenticated admin session',/adminSession\(String\(b\.token/.test(promotionAdmin)&&/action==='set_price'/.test(promotionAdmin)&&/status:'awaiting_payment'/.test(promotionAdmin)&&/action==='reject'/.test(promotionAdmin)]
 ];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
