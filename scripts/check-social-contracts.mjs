@@ -15,6 +15,7 @@ const webhook=read('netlify/functions/paystack-webhook.mjs');
 const ui=read('public/social.js');
 const avatarLab=read('public/avatar-lab.js');
 const liveAvatar=read('public/aam-livekit-avatar.js');
+const voiceChanger=read('public/aam-livekit-voice.js');
 const avatarChargeMigration=read('supabase/migrations/20261119220000_livekit_photo_avatar_coin_charge.sql');
 const avatarNotices=read('public/third-party-notices.html');
 const avatarLabHtml=read('public/avatar-lab.html');
