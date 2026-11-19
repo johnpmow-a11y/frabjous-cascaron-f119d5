@@ -27,6 +27,7 @@ const checks=[
  ['follow rewards are 35 and 60 free coins',/free_coins=public\.aam_coin_balances\.free_coins\+35/.test(migration)&&/free_coins=public\.aam_coin_balances\.free_coins\+60/.test(migration)],
  ['referral reward is 500 free coins',/free_coins=public\.aam_coin_balances\.free_coins\+500/.test(migration)],
  ['Paystack-verified purchases credit purchased coins only',/aam_social_credit_coin_purchase/.test(migration)&&/purchased_coins=purchased_coins\+v_payment\.coin_amount/.test(migration)],
+ ['coin credit RPC rejects failed or initialization-failed payment rows',/v_payment\.status<>'pending'/.test(migration)&&/Coin payment is not pending and cannot be credited/.test(migration)],
  ['one-time video unlock spends free coins before purchased coins',/if coalesce\(v_free,0\)>0 then/.test(migration)&&/purchased_coins=purchased_coins-1/.test(migration)],
  ['admin earnings are created only when a purchased coin is spent',/if v_paid_spent=1 then/.test(migration)&&/insert into public\.aam_social_video_earnings/.test(migration)],
  ['only administrator-marked videos are paid; API and customer videos are free',/p\.media_type==='video'&&p\.is_locked===true&&!unlocked\.has\(p\.id\)/.test(feed)&&/is_locked:admin&&type==='video'/.test(feed)&&/v_post\.author_role <> 'admin' or not coalesce\(v_post\.is_locked,false\) then/.test(migration)],
