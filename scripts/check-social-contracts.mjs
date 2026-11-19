@@ -30,6 +30,7 @@ const adminCallMigration=read('supabase/migrations/20261119190000_admin_livekit_
 const liveMigration=read('supabase/migrations/20261119100000_livekit_call_tables.sql');
 const activeCallMigration=read('supabase/migrations/20261119200000_livekit_one_active_call_per_customer.sql');
 const adminActiveCallMigration=read('supabase/migrations/20261119210000_livekit_one_active_call_per_admin.sql');
+const callSetupBundle=read('supabase/ALL_ADS_MANAGER_CALLS_SETUP.sql');
 const checks=[
  ['coin balances are split into free and purchased',/free_coins bigint/.test(migration)&&/purchased_coins bigint/.test(migration)&&/balance_coins = free_coins \+ purchased_coins/.test(migration)],
  ['new customers receive 30 free coins',migration.includes('values(new.id,30,30,0)')&&migration.includes('30 free starter viewing coins')],
@@ -117,7 +118,8 @@ const checks=[
  ['database active-call uniqueness conflicts return HTTP 409 instead of server errors',/error\.code = data\.code \|\| ''/.test(liveCalls)&&/error\.code === '23505'\) return json\(409/.test(liveCalls)],
  ['unexpected LiveKit disconnect closes the server-side call for both customers and admins',/RoomEvent\.Disconnected,\(\)=>\{if\(aamCurrentCallId===callId\)/.test(ui)&&/if\(authToken\)adminCallAction\('end',callId\)/.test(ui)&&/else callAction\('end',callId\)/.test(ui)&&/async function endCall\(\)\{const id=aamCurrentCallId;aamCurrentCallId=null;/.test(ui)],
  ['administrator calls have a database-enforced one-active-call limit and friendly conflict response',/aam_calls_one_active_call_per_admin_idx/.test(adminActiveCallMigration)&&/error\.code=d\.code\|\|''/.test(adminLiveCalls)&&/e\.code==='23505'\)return json\(409/.test(adminLiveCalls)],
- ['incoming call answers are protected against rapid duplicate taps and overlapping calls',/async function acceptCall\(id,type='audio'\)\{if\(aamCallStarting\|\|aamCallConnecting\|\|aamCurrentCallId\)return notice\('End the current call before answering another\.'\)/.test(ui)&&/finally\{aamCallStarting=false;\}\}/.test(ui)]];
+ ['incoming call answers are protected against rapid duplicate taps and overlapping calls',/async function acceptCall\(id,type='audio'\)\{if\(aamCallStarting\|\|aamCallConnecting\|\|aamCurrentCallId\)return notice\('End the current call before answering another\.'\)/.test(ui)&&/finally\{aamCallStarting=false;\}\}/.test(ui)],
+ ['one-run Supabase call setup bundles all four migrations in dependency order',callSetupBundle.indexOf('create table if not exists public.aam_calls')<callSetupBundle.indexOf('caller_identity_check')&&callSetupBundle.includes('aam_call_participants_one_active_call_per_customer_idx')&&callSetupBundle.includes('aam_calls_one_active_call_per_admin_idx')&&(callSetupBundle.match(/\\bbegin;/gi)||[]).length===1&&(callSetupBundle.match(/\\bcommit;/gi)||[]).length===1]];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
 if(failed)process.exitCode=1;
