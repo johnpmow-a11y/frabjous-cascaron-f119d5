@@ -1383,7 +1383,7 @@ create table if not exists public.aam_social_coin_payments (
   paystack_transaction_id text unique,
   paystack_channel text,
   paid_at timestamptz,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
   constraint aam_social_coin_payments_amount_matches_coins check (amount_kobo = coin_amount * 100)
 );
 create unique index if not exists aam_social_coin_payments_paystack_txn_uidx
