@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "netlify/functions/social-*.mjs"
+      - "netlify/functions/livekit-*.mjs"
       - "netlify/functions/support.mjs"
       - "netlify/functions/customer-media-messages.mjs"
       - "netlify/functions/admin-customer-message.mjs"
@@ -34,6 +35,8 @@ jobs:
       - name: Check Netlify function syntax
         run: |
           node --check netlify/functions/_push.mjs
+          node --check netlify/functions/livekit-calls.mjs
+          node --check netlify/functions/livekit-token.mjs
           node --check netlify/functions/social-core.mjs
           node --check netlify/functions/social-feed.mjs
           node --check netlify/functions/social-interactions.mjs
