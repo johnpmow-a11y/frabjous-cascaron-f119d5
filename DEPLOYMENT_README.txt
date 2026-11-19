@@ -41,6 +41,23 @@ The consolidated customer-only recovery migration replaces the older separate cu
 
 Do NOT apply supabase/migrations/20261113_wallet_withdrawals.sql. If it was applied previously, migration 2 above disables its withdrawal functions. Do not rerun historical migrations or reset the database.
 
+SOCIAL APPLICATION DATABASE MIGRATIONS
+The social feed, 18+ confirmation, profiles, follows, coins, paid-video unlocks, chats, notifications and admin social dashboard also require the following migrations, applied in this exact timestamp order after the customer/account foundation above. Apply each only if it has not already been applied; do not skip an earlier dependency:
+1. supabase/migrations/20261118090000_social_feed_coins_foundation.sql
+2. supabase/migrations/20261118090100_social_customer_init.sql
+3. supabase/migrations/20261118090200_social_rewards_and_video_unlocks.sql
+4. supabase/migrations/20261118090300_social_interactions_chat_rpc.sql
+5. supabase/migrations/20261118090400_social_notification_preferences.sql
+6. supabase/migrations/20261118090500_social_notification_preferences_and_profile_views.sql
+7. supabase/migrations/20261118100000_community_group_chat.sql
+8. supabase/migrations/20261118100100_direct_chat_group_separation.sql
+9. supabase/migrations/20261118110000_professional_video_only_coin_unlocks.sql
+10. supabase/migrations/20261118120000_remove_age_gate_and_promotion_coins.sql
+11. supabase/migrations/20261118130000_admin_selective_video_locking.sql
+12. supabase/migrations/20261118150000_one_time_video_earnings_ledger.sql
+13. supabase/migrations/20261119130000_separate_social_coin_balances_and_earnings.sql
+The last migration restores the explicit 18+ confirmation timestamp/RPC, separates free and purchased viewing coins, and creates the current one-time paid-video unlock and earnings accounting. It must run after the preceding social migrations. The earlier age-gate-removal migration is retained in the ordered history; the final migration restores the current 18+ confirmation mechanism. Do not apply only the final migration to a database missing the earlier social foundation.
+
 PASSWORD RECOVERY
 Customer login remains username plus four-digit code. If a customer forgets the code, they enter their username and request a six-digit code sent to the email address saved on that customer's account. The code expires after 10 minutes and is limited to five attempts. The customer enters the emailed code and chooses a new four-digit code. The customer controls this process. The administrator has NO reset button or reset RPC. Existing Gmail sending environment variables GMAIL_USER and GMAIL_APP_PASSWORD are preserved and must be configured for the reset email to send.
 
