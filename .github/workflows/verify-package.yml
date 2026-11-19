@@ -31,7 +31,9 @@ jobs:
                   self.current = []
               def handle_starttag(self, tag, attrs):
                   if tag == 'script':
-                      self.inline = not any(k.lower() == 'src' for k, _ in attrs)
+                      attributes = {k.lower(): v for k, v in attrs}
+                      script_type = (attributes.get('type') or '').lower()
+                      self.inline = not attributes.get('src') and script_type not in ('importmap', 'application/json', 'application/ld+json')
                       self.current = []
               def handle_data(self, data):
                   if self.inline:
