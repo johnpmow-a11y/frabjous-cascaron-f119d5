@@ -71,7 +71,7 @@ export async function handler(event){
    const path=String(b.media_path||''),mime=String(b.mime_type||''),ext=mimeExt[mime],prefix=admin?'admin/':customerId+'/';
    const thumb=String(b.thumbnail_path||'');if(!ext||!path.startsWith(prefix)||path.includes('..')||(thumb&&(!thumb.startsWith('thumbnails/'+customerId+'/')||thumb.includes('..'))))return json(400,{error:'Invalid uploaded media.'});
    const caption=String(b.caption||'').trim().slice(0,2200),type=mime.startsWith('video/')?'video':'image';
-   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:customerId,author_role:admin?'admin':'customer',media_type:type,media_path:path,thumbnail_path:thumb||null,caption,moderation_status:'published',is_locked:admin&&type==='video'}])});
+   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:customerId,author_role:admin?'admin':'customer',media_type:type,media_path:path,thumbnail_path:thumb||null,caption,moderation_status:'published',is_locked:admin&&type==='video'&&b.is_locked===true}])});
    return json(200,{ok:true,post:rows[0]});
   }
   return json(400,{error:'Unsupported feed action.'});
