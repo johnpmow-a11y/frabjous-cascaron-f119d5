@@ -38,6 +38,11 @@ create table if not exists public.aam_social_promotion_transactions (
 );
 
 alter table public.aam_social_promotions enable row level security;
+
+-- Extend the existing immutable coin ledger with a distinct promotion debit.
+alter table public.aam_coin_transactions drop constraint if exists aam_coin_transactions_transaction_type_check;
+alter table public.aam_coin_transactions add constraint aam_coin_transactions_transaction_type_check
+  check (transaction_type in ('follow_reward_sent','follow_reward_received','referral_reward','video_view','coin_purchase','admin_adjustment','promotion_payment'));
 alter table public.aam_social_promotion_transactions enable row level security;
 revoke all on public.aam_social_promotions,public.aam_social_promotion_transactions from public,anon,authenticated;
 grant all on public.aam_social_promotions,public.aam_social_promotion_transactions to service_role;
@@ -89,7 +94,7 @@ begin
  select * into v_p from public.aam_social_promotions
  where id=p_promotion_id and customer_id=v_customer for update;
  if v_p.id is null then raise exception 'Promotion not found'; end if;
- if v_p.status<>'awaiting_payment' or v_p.price_coins is null or v_p.price_coins<1 then
+ if v_p.status<>'awaiting_payment' or v_p.provider_status<>'ready' or v_p.price_coins is null or v_p.price_coins<1 then
    raise exception 'This promotion is not priced and ready for payment yet';
  end if;
  if exists(select 1 from public.aam_social_promotion_transactions where promotion_id=v_p.id) then
@@ -106,13 +111,13 @@ begin
  where customer_id=v_customer;
  insert into public.aam_social_promotion_transactions(promotion_id,customer_id,money_coins_spent,amount_naira)
  values(v_p.id,v_customer,v_p.price_coins,v_p.price_coins);
- update public.aam_social_promotions set status='paid_provider_pending',
-   paid_at=now(),updated_at=now()
- where id=v_p.id;
  insert into public.aam_coin_transactions(customer_id,reference,transaction_type,amount_coins,description)
  values(v_customer,'promotion:'||v_p.id::text,'promotion_payment',-v_p.price_coins,
    'Manager Promotion payment with Money Coins')
  on conflict(reference) do nothing;
+ update public.aam_social_promotions set status='paid_provider_pending',
+   paid_at=now(),updated_at=now()
+ where id=v_p.id;
  return jsonb_build_object('paid',true,'money_coins_spent',v_p.price_coins,
    'naira_spent',v_p.price_coins,'status','paid_provider_pending',
    'message','Payment recorded. Promotion will not run until provider access and campaign approval are complete.');
