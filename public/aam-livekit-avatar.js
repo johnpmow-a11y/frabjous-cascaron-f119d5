@@ -245,6 +245,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
   const buildFigure = async style => {
     const next = buildCharacter(style === 'walter' ? 'walter' : 'sarah', { shadows: true });
     await next.face.useCharacter(currentPhotoCharacter, { transition: 0 });
+    if (currentFaceMood !== 'neutral') next.face.mood(currentFaceMood, 0.5);
     next.gazeAt(camera);
     fingerRigs = addFingerRigs(THREE, next);
     legRigs = addLegRigs(THREE, next);
