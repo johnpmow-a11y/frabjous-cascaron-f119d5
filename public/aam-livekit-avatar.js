@@ -7,19 +7,12 @@ const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmar
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const smooth = (current, target, amount = 0.28) => current + (target - current) * amount;
 
-async function makeLandmarker(Landmarker, vision, modelAssetPath) {
-  const base = { modelAssetPath };
-  try {
-    return await Landmarker.createFromOptions(vision, {
-      baseOptions: { ...base, delegate: 'GPU' }, runningMode: 'VIDEO',
-      numPoses: 1, numHands: 2, minPoseDetectionConfidence: 0.5, minTrackingConfidence: 0.5,
-    });
-  } catch (_) {
-    return Landmarker.createFromOptions(vision, {
-      baseOptions: { ...base, delegate: 'CPU' }, runningMode: 'VIDEO',
-      numPoses: 1, numHands: 2, minPoseDetectionConfidence: 0.5, minTrackingConfidence: 0.5,
-    });
-  }
+async function makeLandmarker(Landmarker, vision, modelAssetPath, taskOptions = {}) {
+  const create = delegate => Landmarker.createFromOptions(vision, {
+    baseOptions: { modelAssetPath, delegate }, runningMode: 'VIDEO', ...taskOptions,
+  });
+  try { return await create('GPU'); }
+  catch (_) { return create('CPU'); }
 }
 
 function addFingerRigs(THREE, figure) {
@@ -209,8 +202,8 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
       try {
         const visionModule = await import(VISION_BASE + '/vision_bundle.mjs');
         const vision = await visionModule.FilesetResolver.forVisionTasks(VISION_BASE + '/wasm');
-        poseLandmarker = await makeLandmarker(visionModule.PoseLandmarker, vision, POSE_MODEL);
-        try { handLandmarker = await makeLandmarker(visionModule.HandLandmarker, vision, HAND_MODEL); } catch (_) { handLandmarker = null; }
+        poseLandmarker = await makeLandmarker(visionModule.PoseLandmarker, vision, POSE_MODEL, { numPoses: 1, minPoseDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+        try { handLandmarker = await makeLandmarker(visionModule.HandLandmarker, vision, HAND_MODEL, { numHands: 2, minHandDetectionConfidence: 0.5, minTrackingConfidence: 0.5 }); } catch (_) { handLandmarker = null; }
         trackingAvailable = !!poseLandmarker;
       } catch (_) {
         trackingAvailable = false;
