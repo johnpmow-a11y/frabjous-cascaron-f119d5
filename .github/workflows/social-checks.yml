@@ -6,11 +6,15 @@ on:
       - "netlify/functions/_push.mjs"
       - "public/social.js"
       - "public/social.css"
+      - "public/index.html"
+      - "public/coin-payment-return.html"
+      - "scripts/check-social-contracts.mjs"
       - "supabase/migrations/*.sql"
       - ".github/workflows/social-checks.yml"
   push:
     branches:
       - feature/social-feed-coins-foundation
+      - feature/aam-separated-coins-and-ads-readiness
 jobs:
   syntax:
     runs-on: ubuntu-latest
