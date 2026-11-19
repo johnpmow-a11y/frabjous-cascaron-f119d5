@@ -169,9 +169,9 @@ function poseTargets(points) {
 }
 
 export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 'sarah', mediaElement, trackBody = true }) {
-  if (!room || !LK || !photoFile) throw new Error('A video call and a photograph are required.');
-  if (!photoFile.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
-  if (photoFile.size > 12 * 1024 * 1024) throw new Error('Choose a photograph smaller than 12 MB.');
+  if (!room || !LK || (!photoFile && !savedCharacter)) throw new Error('A video call and a photograph or saved avatar are required.');
+  if (photoFile && !photoFile.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
+  if (photoFile && photoFile.size > 12 * 1024 * 1024) throw new Error('Choose a photograph smaller than 12 MB.');
   if (!HTMLCanvasElement.prototype.captureStream) throw new Error('This browser cannot publish an animated avatar video.');
 
   const [THREE, createModule, threeModule, characterModule] = await Promise.all([
@@ -181,7 +181,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
     import(WIREFACE_BASE + '/dist/three-characters.js'),
   ]);
   const { createCharacter } = createModule;
-  const { exportCharacter } = threeModule;
+  const { exportCharacter, loadCharacter } = threeModule;
   const { buildCharacter } = characterModule;
   if (!createCharacter || !buildCharacter || !exportCharacter) throw new Error('The avatar engine could not be loaded.');
 
@@ -237,7 +237,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
   };
 
   try {
-    currentPhotoCharacter = await makePhotoCharacter(photoFile);
+    currentPhotoCharacter = savedCharacter ? await loadCharacter(savedCharacter) : await makePhotoCharacter(photoFile);
     figure = await buildFigure(currentBodyStyle);
     scene.add(figure.root);
 
@@ -343,6 +343,13 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
       if (!file?.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
       if (file.size > 12 * 1024 * 1024) throw new Error('Choose a photograph smaller than 12 MB.');
       const next = await makePhotoCharacter(file);
+      await figure.face.useCharacter(next, { transition: 0 });
+      currentPhotoCharacter = next;
+    },
+    async setSavedCharacter(data) {
+      if (stopped) throw new Error('This avatar has already been closed.');
+      if (!data) throw new Error('The saved avatar is not available on this device.');
+      const next = await loadCharacter(data);
       await figure.face.useCharacter(next, { transition: 0 });
       currentPhotoCharacter = next;
     },
