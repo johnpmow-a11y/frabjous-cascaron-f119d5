@@ -23,7 +23,7 @@ export async function handler(event){
     db('aam_social_video_unlocks?select=post_id&customer_id=eq.'+s.customer_id+'&post_id='+inList)
    ]):[[],[],[],[]];
    const liked=new Set(mine.map(x=>x.post_id)),unlocked=new Set(unlocks.map(x=>x.post_id));
-   const resultPosts=await Promise.all(posts.map(async p=>{const locked=p.media_type==='video'&&p.is_locked===true&&!unlocked.has(p.id),{media_path,thumbnail_path,...publicPost}=p;return {...publicPost,like_count:3500,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),follower_count:Number(admin.follower_count||0),following_count:0,verified:!!admin.is_verified,locked_video:locked,media_url:locked?null:await signedRead(media_path),thumbnail_url:thumbnail_path?await signedRead(thumbnail_path):null,creator:{id:null,name:admin.display_name||'All Ads Manager',avatar_url:admin.avatar_path?await signedRead(admin.avatar_path):null}};}));
+   const resultPosts=await Promise.all(posts.map(async p=>{const locked=p.media_type==='video'&&!unlocked.has(p.id),{media_path,thumbnail_path,...publicPost}=p;return {...publicPost,like_count:3500,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),follower_count:Number(admin.follower_count||0),following_count:0,verified:!!admin.is_verified,locked_video:locked,media_url:locked?null:await signedRead(media_path),thumbnail_url:thumbnail_path?await signedRead(thumbnail_path):null,creator:{id:null,name:admin.display_name||'All Ads Manager',avatar_url:admin.avatar_path?await signedRead(admin.avatar_path):null}};}));
    const profileViews=await db('aam_social_profile_views?select=viewer_id&profile_key=eq.admin');
    return json(200,{profile:{display_name:admin.display_name||'All Ads Manager',avatar_url:admin.avatar_path?await signedRead(admin.avatar_path):null,is_verified:!!admin.is_verified},followers:Number(admin.follower_count||0),following:0,profile_views:profileViews.length,posts:resultPosts});
   }
@@ -37,12 +37,12 @@ export async function handler(event){
    const [followers,followingCount,posts,unlocks,profileViews]=await Promise.all([
     db(`aam_social_follows?select=follower_id&followed_id=eq.${target}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${target}`),
-    allowed?db(`aam_social_posts?select=id,customer_id,media_type,media_path,caption,comments_enabled,created_at&customer_id=eq.${target}&moderation_status=eq.published&order=created_at.desc&limit=30`):Promise.resolve([]),
+    allowed?db(`aam_social_posts?select=id,customer_id,media_type,media_path,thumbnail_path,caption,comments_enabled,created_at&customer_id=eq.${target}&moderation_status=eq.published&order=created_at.desc&limit=30`):Promise.resolve([]),
     db(`aam_social_video_unlocks?select=post_id&customer_id=eq.${s.customer_id}`),
     db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${target}`)
    ]);
    const unlocked=new Set(unlocks.map(x=>x.post_id));
-   const resultPosts=await Promise.all(posts.map(async post=>{const {media_path,...publicPost}=post;return {...publicPost,locked_video:false,media_url:await signedRead(media_path)};}));
+   const resultPosts=await Promise.all(posts.map(async post=>{const {media_path,thumbnail_path,...publicPost}=post;const locked=post.media_type==='video'&&post.customer_id!==s.customer_id&&!unlocked.has(post.id);return {...publicPost,locked_video:locked,media_url:locked?null:await signedRead(media_path),thumbnail_url:thumbnail_path?await signedRead(thumbnail_path):null};}));
    const {avatar_path,...publicProfile}=p;
    return json(200,{profile:{...publicProfile,avatar_url:avatar_path?await signedRead(avatar_path):null},is_following:isFollowing,followers:followers.length,following:followingCount.length,profile_views:profileViews.length,posts:resultPosts,private_locked:!allowed});
   }
