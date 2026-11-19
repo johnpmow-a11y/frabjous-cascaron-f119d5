@@ -1572,7 +1572,7 @@ begin
 end;
 $$;
 
--- A locked video costs one coin once per customer. Spend MONEY coins first, then FREE coins.
+-- Every other customer's published video costs one coin once per viewer. Spend MONEY coins first, then FREE coins.
 -- Only when a Money Coin is spent is ₦1 added to the admin video-earnings ledger.
 create or replace function public.aam_social_unlock_video(p_token uuid,p_post_id uuid)
 returns jsonb language plpgsql security definer set search_path=''
@@ -1781,7 +1781,7 @@ grant execute on function public.aam_social_promotion_pay(uuid,uuid) to service_
 -- Consolidated, reviewed migration set; existing login, session, wallet and email sender setup remain intact.
 -- It includes one-active-call safeguards and the 1,500 purchased-Money-Coin photo-avatar charge.
 
--- Required dependency check: the social coin migrations must already be applied.
+-- Dependency check: the social coin tables above must exist in this same transaction.
 DO $aam$
 BEGIN
   IF to_regclass('public.aam_coin_balances') IS NULL
