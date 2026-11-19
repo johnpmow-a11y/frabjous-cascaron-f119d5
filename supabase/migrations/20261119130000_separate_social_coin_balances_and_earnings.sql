@@ -198,6 +198,9 @@ begin
  if v_payment.status='paid' then
    return jsonb_build_object('credited',false,'already_credited',true);
  end if;
+ if v_payment.status<>'pending' then
+   raise exception 'Coin payment is not pending and cannot be credited';
+ end if;
  if p_amount_kobo<>v_payment.amount_kobo or upper(coalesce(p_currency,''))<>'NGN'
    or p_transaction_id is null or p_transaction_id='' then
    raise exception 'Paystack amount or currency does not match this coin order';
