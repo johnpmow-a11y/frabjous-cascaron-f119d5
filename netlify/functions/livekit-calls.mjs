@@ -37,7 +37,7 @@ export async function handler(event) {
       const cutoff = new Date(Date.now() - 45_000).toISOString();
       const [staleIncoming, staleOutgoing] = await Promise.all([
         db(`aam_call_participants?select=call_id,call:aam_calls!inner(id,created_at,status)&customer_id=eq.${encodeURIComponent(customerId)}&status=eq.invited&call.status=eq.active&call.created_at=lt.${encodeURIComponent(cutoff)}`),
-        db(`aam_calls?select=id&caller_id=eq.${encodeURIComponent(customerId)}&status=eq.active&created_at=lt.${encodeURIComponent(cutoff)}`)
+        db(`aam_calls?select=id,participants:aam_call_participants!inner(status)&caller_id=eq.${encodeURIComponent(customerId)}&status=eq.active&created_at=lt.${encodeURIComponent(cutoff)}&participants.status=eq.invited`)
       ]);
       const staleIds = [...new Set([...staleIncoming.map(row => row.call_id), ...staleOutgoing.map(row => row.id)].filter(id => uuid.test(id)))];
       if (staleIds.length) {
