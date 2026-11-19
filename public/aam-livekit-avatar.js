@@ -44,6 +44,62 @@ function addFingerRigs(THREE, figure) {
   });
 }
 
+function addLegRigs(THREE, figure) {
+  const body = figure.body;
+  const legs = body.children.filter(child => child.name === 'leg').sort((a, b) => a.position.x - b.position.x);
+  const shoes = body.children.filter(child => child.name === 'shoe').sort((a, b) => a.position.x - b.position.x);
+  return legs.map((leg, index) => {
+    const shoe = shoes[index];
+    const parameters = leg.geometry?.parameters || {};
+    const radius = parameters.radius || 0.052;
+    const totalLength = (parameters.length || 0.2) + radius * 2;
+    const topY = leg.position.y + totalLength / 2;
+    const footY = shoe?.position.y ?? 0.035;
+    const legLength = Math.max(0.22, topY - footY);
+    const upperLength = legLength * 0.52;
+    const lowerLength = legLength - upperLength;
+    const hip = new THREE.Group();
+    hip.name = index === 0 ? 'aam-right-leg-hip' : 'aam-left-leg-hip';
+    hip.position.set(leg.position.x, topY, leg.position.z);
+    const upper = new THREE.Mesh(
+      new THREE.CapsuleGeometry(radius, Math.max(0.01, upperLength - radius * 2), 4, 8),
+      leg.material
+    );
+    upper.position.y = -upperLength / 2;
+    hip.add(upper);
+    const knee = new THREE.Group();
+    knee.name = 'aam-knee-joint';
+    knee.position.y = -upperLength;
+    hip.add(knee);
+    const lowerRadius = radius * 0.94;
+    const lower = new THREE.Mesh(
+      new THREE.CapsuleGeometry(lowerRadius, Math.max(0.01, lowerLength - lowerRadius * 2), 4, 8),
+      leg.material
+    );
+    lower.position.y = -lowerLength / 2;
+    knee.add(lower);
+    if (shoe) {
+      body.remove(shoe);
+      shoe.position.set(shoe.position.x - leg.position.x, shoe.position.y - (topY - upperLength), shoe.position.z - leg.position.z);
+      knee.add(shoe);
+    }
+    body.remove(leg);
+    leg.geometry?.dispose();
+    body.add(hip);
+    return { hip, knee };
+  });
+}
+
+function kneeFlex(hip, knee, ankle) {
+  if (!hip || !knee || !ankle) return 0;
+  const a = [hip.x - knee.x, hip.y - knee.y];
+  const b = [ankle.x - knee.x, ankle.y - knee.y];
+  const dot = a[0] * b[0] + a[1] * b[1];
+  const angle = Math.acos(clamp(dot / ((Math.hypot(...a) || 1) * (Math.hypot(...b) || 1)), -1, 1));
+  const cross = a[0] * b[1] - a[1] * b[0];
+  return clamp((Math.PI - angle) * (Math.sign(cross) || 1), -1.65, 1.65);
+}
+
 function fingerFlex(points, ids) {
   const a = points[ids[0]], b = points[ids[1]], c = points[ids[2]], d = points[ids[3]];
   if (!a || !b || !c || !d) return 0;
@@ -97,9 +153,14 @@ function poseTargets(points) {
   const hipX = (points[23].x + points[24].x) / 2;
   const hipY = (points[23].y + points[24].y) / 2;
   const earTilt = points[7] && points[8] ? clamp(Math.atan2(points[8].y - points[7].y, points[8].x - points[7].x), -0.45, 0.45) : 0;
+  const legsVisible = [25, 26, 27, 28].every(visible);
   return {
     leftArm: armAngle(points[11], points[13]),
     rightArm: armAngle(points[12], points[14]),
+    leftLeg: legsVisible ? armAngle(points[23], points[25]) : null,
+    rightLeg: legsVisible ? armAngle(points[24], points[26]) : null,
+    leftKnee: legsVisible ? kneeFlex(points[23], points[25], points[27]) : null,
+    rightKnee: legsVisible ? kneeFlex(points[24], points[26], points[28]) : null,
     torsoZ: clamp((shoulderX - hipX) * 1.7, -0.35, 0.35),
     torsoX: clamp((shoulderY - hipY + 0.2) * 0.35, -0.18, 0.18),
     headZ: earTilt,
@@ -153,7 +214,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
 
   let figure, currentPhotoCharacter, cameraLocalTrack, cameraVideo, poseLandmarker, handLandmarker;
   let currentBodyStyle = bodyStyle === 'walter' ? 'walter' : 'sarah';
-  let fingerRigs = [], audioContext, stopLipSync, micStream, videoTrack, preview;
+  let fingerRigs = [], legRigs = [], audioContext, stopLipSync, micStream, videoTrack, preview;
   let published = false, stopped = false, trackingAvailable = false;
   let lastFrame = 0, elapsed = 0, lastDetection = 0, lastVideoTime = -1, latestHands = null, targetPose = null;
 
@@ -170,6 +231,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
     await next.face.useCharacter(currentPhotoCharacter, { transition: 0 });
     next.gazeAt(camera);
     fingerRigs = addFingerRigs(THREE, next);
+    legRigs = addLegRigs(THREE, next);
     return next;
   };
 
@@ -244,6 +306,16 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
           figure.body.rotation.x = smooth(figure.body.rotation.x, targetPose.torsoX, 0.18);
         }
         if (figure.head) figure.head.rotation.z = smooth(figure.head.rotation.z, targetPose.headZ, 0.22);
+        if (targetPose.leftLeg && legRigs[1]) {
+          legRigs[1].hip.rotation.z = smooth(legRigs[1].hip.rotation.z, targetPose.leftLeg.z);
+          legRigs[1].hip.rotation.x = smooth(legRigs[1].hip.rotation.x, targetPose.leftLeg.x);
+          legRigs[1].knee.rotation.z = smooth(legRigs[1].knee.rotation.z, targetPose.leftKnee);
+        }
+        if (targetPose.rightLeg && legRigs[0]) {
+          legRigs[0].hip.rotation.z = smooth(legRigs[0].hip.rotation.z, targetPose.rightLeg.z);
+          legRigs[0].hip.rotation.x = smooth(legRigs[0].hip.rotation.x, targetPose.rightLeg.x);
+          legRigs[0].knee.rotation.z = smooth(legRigs[0].knee.rotation.z, targetPose.rightKnee);
+        }
         figure.root.position.x = smooth(figure.root.position.x, targetPose.rootX, 0.15);
       }
       if (latestHands && fingerRigs.length) applyHandResults(latestHands, fingerRigs, figure);
