@@ -26,7 +26,7 @@ export async function handler(event){
    const visible=posts.filter(p=>p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id));
    const feed=await Promise.all(visible.slice(0,30).map(async p=>{
     const owner=p.customer_id?profileMap.get(p.customer_id):null,admin=adminProfile[0]||{};
-    const locked=p.media_type==='video'&&p.customer_id!==s.customer_id&&!unlocked.has(p.id);
+    const locked=p.media_type==='video'&&p.is_locked===true&&!unlocked.has(p.id);
     const {author_role,media_path,thumbnail_path,customer_id,...publicPost}=p;return {...publicPost,is_following:!!(owner&&following.has(owner.customer_id)),comments_enabled:p.comments_enabled!==false&&owner?.comments_enabled!==false,like_count:p.author_role==='admin'?3500:likes.filter(x=>x.post_id===p.id).length,follower_count:p.author_role==='admin'?Number(admin.follower_count||0):undefined,following_count:p.author_role==='admin'?0:undefined,verified:p.author_role==='admin'?!!admin.is_verified:false,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),locked_video:locked,professional_video:locked,creator:{id:p.customer_id||null,name:p.author_role==='admin'?(admin.display_name||'All Ads Manager'):(owner?.display_name||'Creator'),bio:owner?.bio||'',avatar_url:(p.author_role==='admin'?admin.avatar_path:owner?.avatar_path)?await signedRead(p.author_role==='admin'?admin.avatar_path:owner.avatar_path):null,followers:p.author_role==='admin'?Number(admin.follower_count||0):null,following:p.author_role==='admin'?0:null},media_url:locked?null:await signedRead(p.media_path),thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};
    }));
    return json(200,{posts:feed});
@@ -71,7 +71,7 @@ export async function handler(event){
    const path=String(b.media_path||''),mime=String(b.mime_type||''),ext=mimeExt[mime],prefix=admin?'admin/':customerId+'/';
    const thumb=String(b.thumbnail_path||'');if(!ext||!path.startsWith(prefix)||path.includes('..')||(thumb&&(!thumb.startsWith('thumbnails/'+customerId+'/')||thumb.includes('..'))))return json(400,{error:'Invalid uploaded media.'});
    const caption=String(b.caption||'').trim().slice(0,2200),type=mime.startsWith('video/')?'video':'image';
-   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:customerId,author_role:admin?'admin':'customer',media_type:type,media_path:path,thumbnail_path:thumb||null,caption,moderation_status:'published',is_locked:type==='video'}])});
+   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:customerId,author_role:admin?'admin':'customer',media_type:type,media_path:path,thumbnail_path:thumb||null,caption,moderation_status:'published',is_locked:admin&&type==='video'}])});
    return json(200,{ok:true,post:rows[0]});
   }
   return json(400,{error:'Unsupported feed action.'});
