@@ -26,7 +26,7 @@ const checks=[
  ['one-time video unlock spends free coins before purchased coins',/if coalesce\(v_free,0\)>0 then/.test(migration)&&/purchased_coins=purchased_coins-1/.test(migration)],
  ['admin earnings are created only when a purchased coin is spent',/if v_paid_spent=1 then/.test(migration)&&/insert into public\.aam_social_video_earnings/.test(migration)],
  ['only administrator-marked videos are paid; API and customer videos are free',/p\.media_type==='video'&&p\.is_locked===true&&!unlocked\.has\(p\.id\)/.test(feed)&&/is_locked:admin&&type==='video'/.test(feed)&&/if not coalesce\(v_post\.is_locked,false\) then/.test(migration)],
- ['admin-uploaded videos are marked paid and UI explains free API/customer videos',/is_locked:mime\.startsWith\('video\/'\)/.test(admin)&&/API-sourced videos and customer-uploaded videos are free/.test(ui)],
+ ['only administrator videos explicitly marked paid are locked',/is_locked:mime\\.startsWith\\('video\\/'\\)&&b\\.is_locked===true/.test(admin)&&/API-sourced videos and customer-uploaded videos are free/.test(ui)],
  ['admin and customer profiles respect the paid-video flag',/post\.is_locked===true/.test(discover)&&/media_url:locked\?null/.test(discover)],
  ['customer API returns both balances separately',/free_coin_balance/.test(core)&&/purchased_coin_balance/.test(core)],
  ['coin purchase starts only at ₦500 and requires live Paystack',/amount<500/.test(create)&&/sk_live_/.test(create)&&/transaction\/initialize/.test(create)],
@@ -52,7 +52,7 @@ const checks=[
  ['delivery status emails the customer',/Delivery-status email failed/.test(delivery)&&/customer_contact_emails/.test(delivery)],
  ['Facebook and TikTok open provider-gated campaign workspaces instead of old fixed-price forms',/adCampaignWorkspace\('facebook'\)/.test(index)&&/adCampaignWorkspace\('tiktok'\)/.test(index)&&/Partner connection pending/.test(index)&&/CAMPAIGN CREATION NOT AVAILABLE YET/.test(index)],
  ['Snapchat has a separate clearly unconnected campaign workspace',/adCampaignWorkspace\('snapchat'\)/.test(index)&&/Provider connection not confirmed/.test(index)],
- ['admin can mark an uploaded video as paid',/id="aamAdminLockVideo" type="checkbox"/.test(ui)&&/is_locked:file\.type\.startsWith\('video/'\)&&!!document\.getElementById\('aamAdminLockVideo'\)\?\.checked/.test(ui)],
+ ['admin paid-video checkbox is connected to the upload request',ui.includes('id="aamAdminLockVideo" type="checkbox"')&&ui.includes("is_locked:file.type.startsWith('video/')&&!!document.getElementById('aamAdminLockVideo')?.checked")],
  ['API-sourced and customer-uploaded videos are clearly free',/API-sourced videos, customer-uploaded videos and all pictures are always free/.test(ui)&&/Only administrator videos specifically marked as paid cost 1 coin/.test(ui)]
  ['Zangi Ads and TikTok Dollar Funding remain available',/serviceForm\('Zangi Ads'\)/.test(index)&&/serviceForm\('TikTok Dollar Funding'\)/.test(index)]
 ];
