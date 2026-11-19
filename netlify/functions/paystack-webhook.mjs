@@ -47,6 +47,19 @@ export async function handler(event) {
     if (!verifyResponse.ok || !verified.status || tx?.status !== 'success') return reply(400, 'transaction not successful');
     const headers = { apikey: service, ...(service.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${service}` }), 'Content-Type': 'application/json' };
     // Service payments use their own table and must never be sent to the wallet-credit RPC.
+    // Social coin purchases are separate from the normal tools wallet.
+    const coinPaymentResponse=await fetch(`${supabase}/rest/v1/aam_social_coin_payments?select=customer_id,amount_kobo,coin_amount,status&reference=eq.${encodeURIComponent(reference)}&limit=1`,{headers});
+    const coinPayments=await coinPaymentResponse.json().catch(()=>[]);
+    if(!coinPaymentResponse.ok&&coinPaymentResponse.status!==404)return reply(500,'could not inspect social coin payment');
+    if(Array.isArray(coinPayments)&&coinPayments.length){
+      const coinOrder=coinPayments[0];
+      if(Number(tx.amount)!==Number(coinOrder.amount_kobo)||String(tx.currency).toUpperCase()!=='NGN')return reply(400,'coin payment amount or currency mismatch');
+      const credited=await fetch(`${supabase}/rest/v1/rpc/aam_social_credit_coin_purchase`,{method:'POST',headers,body:JSON.stringify({p_reference:reference,p_transaction_id:String(tx.id),p_channel:String(tx.channel||''),p_paid_at:tx.paid_at||tx.paidAt||new Date().toISOString(),p_amount_kobo:Number(tx.amount),p_currency:String(tx.currency||'')})});
+      if(!credited.ok)return reply(500,'social coin credit failed');
+      const result=await credited.json().catch(()=>({}));
+      if(result?.credited)await sendPush({role:'customer',customerId:coinOrder.customer_id,title:'Coins purchased successfully',body:`${coinOrder.coin_amount} viewing coins have been added to your purchased balance.`,url:'/'}).catch(()=>{});
+      return reply(200,'social coin purchase processed');
+    }
     const servicePaymentResponse=await fetch(`${supabase}/rest/v1/service_payments?select=customer_id,amount_kobo,status,service,details&reference=eq.${encodeURIComponent(reference)}&limit=1`,{headers});
     const servicePayments=await servicePaymentResponse.json().catch(()=>[]);
     if(!servicePaymentResponse.ok)return reply(500,'could not inspect service payment');
