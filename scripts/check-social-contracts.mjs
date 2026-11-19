@@ -37,6 +37,9 @@ const liveMigration=read('supabase/migrations/20261119100000_livekit_call_tables
 const activeCallMigration=read('supabase/migrations/20261119200000_livekit_one_active_call_per_customer.sql');
 const adminActiveCallMigration=read('supabase/migrations/20261119210000_livekit_one_active_call_per_admin.sql');
 const callSetupBundle=read('supabase/ALL_ADS_MANAGER_CALLS_SETUP.sql');
+const preflightDoIndex=callSetupBundle.indexOf('DO ');
+const preflightEndIndex=callSetupBundle.indexOf('END;',preflightDoIndex);
+const validPreflightQuote=preflightDoIndex>=0&&preflightEndIndex>=0&&callSetupBundle.charCodeAt(preflightDoIndex+3)===36&&callSetupBundle.slice(preflightDoIndex+4,preflightDoIndex+7)==='aam'&&callSetupBundle.charCodeAt(preflightDoIndex+7)===36&&callSetupBundle.charCodeAt(preflightEndIndex+5)===36&&callSetupBundle.slice(preflightEndIndex+6,preflightEndIndex+9)==='aam'&&callSetupBundle.charCodeAt(preflightEndIndex+9)===36;
 const checks=[
  ['coin balances are split into free and purchased',/free_coins bigint/.test(migration)&&/purchased_coins bigint/.test(migration)&&/balance_coins = free_coins \+ purchased_coins/.test(migration)],
  ['new customers receive 30 free coins',migration.includes('values(new.id,30,30,0)')&&migration.includes('30 free starter viewing coins')],
