@@ -215,7 +215,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
   let figure, currentPhotoCharacter, cameraLocalTrack, cameraVideo, poseLandmarker, handLandmarker;
   let currentBodyStyle = bodyStyle === 'walter' ? 'walter' : 'sarah';
   let fingerRigs = [], legRigs = [], audioContext, stopLipSync, micStream, videoTrack, preview;
-  let published = false, stopped = false, trackingAvailable = false;
+  let published = false, stopped = false, trackingAvailable = false, cameraUnpublished = false;
   let lastFrame = 0, elapsed = 0, lastDetection = 0, lastVideoTime = -1, latestHands = null, targetPose = null;
 
   const makePhotoCharacter = file => createCharacter(file, {
@@ -359,7 +359,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
     async publish() {
       if (stopped) throw new Error('This avatar preview has already been closed.');
       if (published) return;
-      if (cameraLocalTrack) await room.localParticipant.unpublishTrack(cameraLocalTrack, !trackBody);
+      if (cameraLocalTrack) { await room.localParticipant.unpublishTrack(cameraLocalTrack, !trackBody); cameraUnpublished = true; }
       try {
         await room.localParticipant.publishTrack(videoTrack, {
           source: LK.Track.Source.Camera,
@@ -382,8 +382,8 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
       } catch (error) {
         if (cameraLocalTrack && room.state !== 'disconnected') {
           if (cameraLocalTrack.mediaStreamTrack?.readyState !== 'ended') {
-            await room.localParticipant.publishTrack(cameraLocalTrack, { source: LK.Track.Source.Camera }).catch(async () => { await room.localParticipant.setCameraEnabled(true).catch(() => {}); });
-          } else await room.localParticipant.setCameraEnabled(true).catch(() => {});
+            await room.localParticipant.publishTrack(cameraLocalTrack, { source: LK.Track.Source.Camera }).then(() => { cameraUnpublished = false; }).catch(async () => { await room.localParticipant.setCameraEnabled(true).catch(() => {}); });
+          } else { await room.localParticipant.setCameraEnabled(true).catch(() => {}); cameraUnpublished = false; }
         }
         throw error;
       }
@@ -403,13 +403,13 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
       if (cameraVideo) { cameraVideo.pause(); cameraVideo.srcObject = null; cameraVideo.remove(); }
       figure?.dispose();
       renderer.dispose();
-      if (cameraLocalTrack) {
+      if (cameraLocalTrack && cameraUnpublished) {
         if (restoreCamera && room.state !== 'disconnected') {
           if (cameraLocalTrack.mediaStreamTrack?.readyState !== 'ended') {
             await room.localParticipant.publishTrack(cameraLocalTrack, { source: LK.Track.Source.Camera }).catch(async () => { await room.localParticipant.setCameraEnabled(true).catch(() => {}); });
           } else await room.localParticipant.setCameraEnabled(true).catch(() => {});
         } else if (cameraLocalTrack.mediaStreamTrack?.readyState !== 'ended') cameraLocalTrack.stop();
-      } else if (restoreCamera && room.state !== 'disconnected') await room.localParticipant.setCameraEnabled(true).catch(() => {});
+      } else if (!cameraLocalTrack && restoreCamera && room.state !== 'disconnected') await room.localParticipant.setCameraEnabled(true).catch(() => {});
       published = false;
     },
     async exportFace() { return exportCharacter(currentPhotoCharacter); },
