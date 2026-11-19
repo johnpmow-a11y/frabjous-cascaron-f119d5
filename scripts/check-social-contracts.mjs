@@ -106,6 +106,8 @@ const checks=[
  ['customer call polling sends the session token in a POST body, not a URL',/event\.httpMethod !== 'POST'/.test(liveCalls)&&/action === 'list'/.test(liveCalls)&&/livekit-calls','POST',\{action:'list'\}/.test(ui)],
  ['unanswered administrator calls expire after 45 seconds and close their invitation',/Date\.now\(\)-new Date\(calls\[0\]\.created_at\)\.getTime\(\)>45000/.test(adminLiveCalls)&&/status:'missed'/.test(adminLiveCalls)&&/status:'ended'/.test(adminLiveCalls)&&/status=eq\.invited/.test(adminLiveCalls)],
  ['failed administrator LiveKit connections close the server call and clear stale admin call state',/if\(authToken\)\{aamAdminCallMode=false;aamAdminCallToken=null;if\(aamAdminCallPollTimer\)/.test(ui)&&/if\(!aamCurrentCallId\|\|!aamLiveKitRoom\)return/.test(ui)],
+ ['customer call API rejects a caller who already has an active invitation or call',/existingCall = await db/.test(liveCalls)&&/End it before starting another/.test(liveCalls)],
+ ['administrator call API prevents overlapping admin calls and calls to busy customers',/existingAdminCall=await db/.test(adminLiveCalls)&&/existingCustomerCall=await db/.test(adminLiveCalls)],
  ['customer and administrator call buttons block rapid duplicate call creation',/aamCallStarting=false/.test(ui)&&/if\(aamCallStarting\|\|aamCurrentCallId\)return notice\('End the current call before starting another\.'\)/.test(ui)&&/finally\{aamCallStarting=false;\}/.test(ui)]];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
