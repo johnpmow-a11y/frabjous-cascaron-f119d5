@@ -19,9 +19,9 @@ const checks=[
  ['Paystack-verified purchases credit purchased coins only',/aam_social_credit_coin_purchase/.test(migration)&&/purchased_coins=purchased_coins\+v_payment\.coin_amount/.test(migration)],
  ['one-time video unlock spends free coins before purchased coins',/if coalesce\(v_free,0\)>0 then/.test(migration)&&/purchased_coins=purchased_coins-1/.test(migration)],
  ['admin earnings are created only when a purchased coin is spent',/if v_paid_spent=1 then/.test(migration)&&/insert into public\.aam_social_video_earnings/.test(migration)],
- ['all other creators’ videos require unlock and pictures stay free',/p\.media_type==='video'&&p\.customer_id!==s\.customer_id&&!unlocked\.has\(p\.id\)/.test(feed)&&/media_url:locked\?null/.test(feed)],
- ['administrator videos are always coin-locked and UI explains the fixed one-coin price',/is_locked:mime\.startsWith\('video\/'\)/.test(admin)&&/Every published video requires 1 viewing coin/.test(ui)],
- ['creator profile videos use the same coin gate as the home feed',/locked_video:locked/.test(discover)&&/media_url:locked\?null/.test(discover)],
+ ['only administrator-marked videos are paid; API and customer videos are free',/p\.media_type==='video'&&p\.is_locked===true&&!unlocked\.has\(p\.id\)/.test(feed)&&/is_locked:admin&&type==='video'/.test(feed)&&/if not coalesce\(v_post\.is_locked,false\) then/.test(migration)],
+ ['admin-uploaded videos are marked paid and UI explains free API/customer videos',/is_locked:mime\.startsWith\('video\/'\)/.test(admin)&&/API-sourced videos and customer-uploaded videos are free/.test(ui)],
+ ['admin and customer profiles respect the paid-video flag',/post\.is_locked===true/.test(discover)&&/media_url:locked\?null/.test(discover)],
  ['customer API returns both balances separately',/free_coin_balance/.test(core)&&/purchased_coin_balance/.test(core)],
  ['coin purchase starts only at ₦500 and requires live Paystack',/amount<500/.test(create)&&/sk_live_/.test(create)&&/transaction\/initialize/.test(create)],
  ['coin verification confirms amount and currency before credit',/transaction\/verify/.test(verify)&&/status!=='success'/.test(verify)&&/p_amount_kobo/.test(verify)],
@@ -30,7 +30,7 @@ const checks=[
  ['customer UI displays free and purchased balances',/Free coins:/.test(ui)&&/Purchased coins:/.test(ui)],
  ['admin UI displays verified coin sales and paid-video earnings',/coin_accounting/.test(admin)&&/video_earnings_naira/.test(ui)],
  ['optional referral code is applied after signup',/newCustomerReferral/.test(index)&&/action:'apply_referral'/.test(index)],
- ['customer signup requires only username and four-digit code',!index.includes('id="newCustomerEmail"')&&!/async function createCustomer\(\)[^]*?bt_customer_set_email/.test(index)],
+ ['customer signup requires and saves an email address',/id="newCustomerEmail"/.test(index)&&/bt_customer_set_email/.test(index)&&/bt_customer_email_get/.test(index)],
  ['social coins remain separate from tools wallet',/Your tools wallet is separate/.test(ui)]
 ];
 let failed=0;
