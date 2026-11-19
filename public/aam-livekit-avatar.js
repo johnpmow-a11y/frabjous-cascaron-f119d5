@@ -19,7 +19,7 @@ function addFingerRigs(THREE, figure) {
   return (figure.arms || []).map(arm => {
     const palm = arm.getObjectByName('hand');
     if (!palm) return null;
-    const material = new THREE.MeshStandardMaterial({ color: 0xd8a98f, roughness: 0.82 });
+    const material = palm.material || new THREE.MeshStandardMaterial({ color: 0xd8a98f, roughness: 0.82 });
     const xOffsets = [-0.022, -0.011, 0, 0.011, 0.022];
     return xOffsets.map((x, index) => {
       const base = new THREE.Group();
@@ -261,6 +261,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
       cameraVideo.srcObject = new MediaStream([cameraLocalTrack.mediaStreamTrack]);
       document.body.appendChild(cameraVideo);
       await cameraVideo.play().catch(() => {});
+      if (cameraVideo.readyState < 2) await new Promise(resolve => { cameraVideo.addEventListener('loadeddata', resolve, { once: true }); setTimeout(resolve, 2500); });
       try {
         const visionModule = await import(VISION_BASE + '/vision_bundle.mjs');
         const vision = await visionModule.FilesetResolver.forVisionTasks(VISION_BASE + '/wasm');
@@ -335,6 +336,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
 
   return {
     get bodyTrackingEnabled() { return trackingAvailable; },
+    get handTrackingEnabled() { return !!handLandmarker; },
     async setPhoto(file) {
       if (stopped) throw new Error('This avatar has already been closed.');
       if (!file?.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
