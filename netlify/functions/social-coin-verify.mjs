@@ -3,6 +3,7 @@ const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/
 const env=()=>({secret:process.env.PAYSTACK_SECRET_KEY,supabase:process.env.SUPABASE_URL,service:process.env.SUPABASE_SERVICE_ROLE_KEY});
 function h(key){return {apikey:key,...(key.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${key}`}), 'Content-Type':'application/json'};}
 async function db(path,options={}){const {supabase,service}=env();const r=await fetch(`${supabase}/rest/v1/${path}`,{...options,headers:{...h(service),...(options.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||d.error||'Coin payment verification failed.');return d;}
+async function adultConfirmed(customerId){const rows=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(customerId)}&limit=1`);return !!rows[0]?.adult_confirmed_at;}
 export async function handler(event){
  if(event.httpMethod!=='GET')return json(405,{error:'Method not allowed.'});
  const {secret,supabase,service}=env();if(!secret||!supabase||!service)return json(503,{error:'Payment service is not configured.'});
@@ -12,6 +13,7 @@ export async function handler(event){
  try{
   const sessions=await db(`customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);
   if(!sessions.length)return json(401,{error:'Please log in again.'});
+  if(!await adultConfirmed(sessions[0].customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
   const payments=await db(`aam_social_coin_payments?select=customer_id,amount_kobo,coin_amount,status&reference=eq.${encodeURIComponent(reference)}&limit=1`);
   if(!payments.length||payments[0].customer_id!==sessions[0].customer_id)return json(404,{error:'Coin payment not found for this account.'});
   if(payments[0].status==='paid')return json(200,{status:'success',already_credited:true,coins:payments[0].coin_amount});
