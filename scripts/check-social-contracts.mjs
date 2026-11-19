@@ -28,6 +28,7 @@ const checks=[
  ['only administrator-marked videos are paid; API and customer videos are free',/p\.media_type==='video'&&p\.is_locked===true&&!unlocked\.has\(p\.id\)/.test(feed)&&/is_locked:admin&&type==='video'/.test(feed)&&/v_post\.author_role <> 'admin' or not coalesce\(v_post\.is_locked,false\) then/.test(migration)],
  ['follow, referral and paid-video unlock require adult confirmation',/Confirm that you are 18 or older first/.test(migration)&&/Confirm that you are 18 or older to continue/.test(migration)],
  ['only administrator-authored videos can ever be paid',/v_post\.author_role <> 'admin' or not coalesce\(v_post\.is_locked,false\)/.test(migration)],
+ ['feed only marks admin-authored videos as paid',/p\.author_role==='admin'&&p\.media_type==='video'&&p\.is_locked===true/.test(feed)],
  ['only administrator videos explicitly marked paid are locked',admin.includes("is_locked:mime.startsWith('video/')&&b.is_locked===true")&&/API-sourced videos, customer-uploaded videos and all pictures are always free/.test(ui)],
  ['admin and customer profiles respect the paid-video flag',/post\.is_locked===true/.test(discover)&&/media_url:locked\?null/.test(discover)],
  ['customer API returns both balances separately',/free_coin_balance/.test(core)&&/purchased_coin_balance/.test(core)],
