@@ -76,7 +76,8 @@ const checks=[
  ['API-sourced and customer-uploaded videos are clearly free',/Pictures, API-sourced videos and friends’ uploaded videos are free to view/.test(ui)&&/Only videos marked as paid cost 1 coin/.test(ui)],
  ['Zangi Ads and TikTok Dollar Funding remain available',/serviceForm\('Zangi Ads'\)/.test(index)&&/serviceForm\('TikTok Dollar Funding'\)/.test(index)],
  ['admin feed never invents engagement counts',!/like_count:p\.author_role==='admin'\?3500/.test(feed)&&/like_count:likes\.filter\(x=>x\.post_id===p\.id\)\.length/.test(feed)],
- ['admin creator profile never invents engagement counts',!/like_count:3500/.test(discover)&&/like_count:likeCounts\.get\(p\.id\)\|\|0/.test(discover)]
+ ['admin creator profile never invents engagement counts',!/like_count:3500/.test(discover)&&/like_count:likeCounts\.get\(p\.id\)\|\|0/.test(discover)],
+ ['support replies are saved to History before best-effort email notification',support.indexOf("const rows=await db('ads_manager_support_messages'")<support.indexOf("await mail(original[0].customer_email,'ALL ADS MANAGER — Support Reply'")&&/Support reply email failed/.test(support)&&/Reply saved to customer History/.test(support)]
 ];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
