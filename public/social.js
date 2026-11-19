@@ -197,5 +197,5 @@ if(document.body)obs.observe(document.body,{childList:true,subtree:true});
 const socialRouteParams=new URLSearchParams(window.location.search);
 if((socialRouteParams.get('creator')||socialRouteParams.get('post'))&&!window.aamSharedRouteWatcher)window.aamSharedRouteWatcher=setInterval(()=>{if(!customer()||!token()||!document.querySelector('.container')||window.aamSharedRouteOpened)return;const creator=socialRouteParams.get('creator'),post=socialRouteParams.get('post');if(creator||post){window.aamSharedRouteOpened=true;clearInterval(window.aamSharedRouteWatcher);if(creator)viewProfile(creator);else viewSharedPost(post);}},1200);
 if(!window.aamSocialNotificationTimer)window.aamSocialNotificationTimer=setInterval(()=>{if(customer()&&token()&&!document.hidden)updateNotificationBadge();},20000);
-if(!window.aamGlobalCallPollTimer)window.aamGlobalCallPollTimer=setInterval(()=>{if(customer()&&token()&&!document.hidden)pollCalls();},3000);
+if(!window.aamGlobalCallPollTimer)window.aamGlobalCallPollTimer=setInterval(()=>{if(customer()&&token()&&!document.hidden&&!window.aamActiveChatId)pollCalls();},3000);
 })();
