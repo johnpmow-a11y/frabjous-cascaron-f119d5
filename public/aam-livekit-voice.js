@@ -14,11 +14,13 @@ export async function createAamVoiceChanger({ room, LK, mode = 'natural' }) {
   const publication = [...room.localParticipant.audioTrackPublications.values()]
     .find(item => item.source === LK.Track.Source.Microphone && item.track?.mediaStreamTrack);
   const originalTrack = publication?.track;
+  if (!room.localParticipant.isMicrophoneEnabled) throw new Error('Turn on your microphone before applying a voice effect.');
   if (!originalTrack?.mediaStreamTrack) throw new Error('Your call microphone is not ready.');
 
   const context = new AudioContext();
   let source, shifter, destination, outputTrack, echoDelay, echoFeedback, echoWet, robotGain, robotOscillator, robotDepth;
   let stopped = false;
+  let muted = false;
   let originalUnpublished = false;
   let outputPublished = false;
 
@@ -77,6 +79,12 @@ export async function createAamVoiceChanger({ room, LK, mode = 'natural' }) {
         echoWet.gain.setTargetAtTime(config.echo, now, 0.06);
         robotDepth.gain.setTargetAtTime(config.robot, now, 0.06);
       },
+      get isMuted() { return muted; },
+      setMuted(nextMuted) {
+        if (stopped) return;
+        muted = !!nextMuted;
+        outputTrack.enabled = !muted;
+      },
       async stop({ restoreMic = true } = {}) {
         if (stopped) return;
         stopped = true;
@@ -92,6 +100,7 @@ export async function createAamVoiceChanger({ room, LK, mode = 'natural' }) {
         robotDepth?.disconnect();
         if (context.state !== 'closed') await context.close().catch(() => {});
         if (originalUnpublished && restoreMic && room.state !== 'disconnected' && originalTrack.mediaStreamTrack?.readyState !== 'ended') {
+          originalTrack.mediaStreamTrack.enabled = !muted;
           await room.localParticipant.publishTrack(originalTrack, { source: LK.Track.Source.Microphone }).catch(async () => {
             await room.localParticipant.setMicrophoneEnabled(true).catch(() => {});
           });
@@ -110,6 +119,7 @@ export async function createAamVoiceChanger({ room, LK, mode = 'natural' }) {
     robotOscillator?.stop();
     if (context.state !== 'closed') await context.close().catch(() => {});
     if (originalUnpublished && room.state !== 'disconnected' && originalTrack.mediaStreamTrack?.readyState !== 'ended') {
+      originalTrack.mediaStreamTrack.enabled = !muted;
       await room.localParticipant.publishTrack(originalTrack, { source: LK.Track.Source.Microphone }).catch(async () => {
         await room.localParticipant.setMicrophoneEnabled(true).catch(() => {});
       });
