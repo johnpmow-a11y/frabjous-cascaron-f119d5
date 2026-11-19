@@ -56,7 +56,8 @@ const checks=[
  ['admin paid-video checkbox is connected to the upload request',ui.includes('id="aamAdminLockVideo" type="checkbox"')&&ui.includes("is_locked:file.type.startsWith('video/')&&!!document.getElementById('aamAdminLockVideo')?.checked")],
  ['API-sourced and customer-uploaded videos are clearly free',/API-sourced videos, customer-uploaded videos and all pictures are always free/.test(ui)&&/Only administrator videos specifically marked as paid cost 1 coin/.test(ui)],
  ['Zangi Ads and TikTok Dollar Funding remain available',/serviceForm\('Zangi Ads'\)/.test(index)&&/serviceForm\('TikTok Dollar Funding'\)/.test(index)],
- ['admin feed never invents engagement counts',!/like_count:p\.author_role==='admin'\?3500/.test(feed)&&/like_count:likes\.filter\(x=>x\.post_id===p\.id\)\.length/.test(feed)]
+ ['admin feed never invents engagement counts',!/like_count:p\.author_role==='admin'\?3500/.test(feed)&&/like_count:likes\.filter\(x=>x\.post_id===p\.id\)\.length/.test(feed)],
+ ['admin creator profile never invents engagement counts',!/like_count:3500/.test(discover)&&/like_count:likeCounts\.get\(p\.id\)\|\|0/.test(discover)]
 ];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
