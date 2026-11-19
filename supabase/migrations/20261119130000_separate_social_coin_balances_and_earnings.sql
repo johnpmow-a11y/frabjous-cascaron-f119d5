@@ -89,6 +89,26 @@ for each row execute function public.aam_social_initialize_customer();
 revoke all on function public.aam_social_initialize_customer() from public,anon,authenticated;
 grant execute on function public.aam_social_initialize_customer() to service_role;
 
+-- Restore the explicit 18+ confirmation RPC after the earlier age-gate removal migration.
+-- Confirmation is stored once per customer and is required by social reward/unlock RPCs.
+create or replace function public.aam_social_confirm_age(p_token uuid)
+returns jsonb language plpgsql security definer set search_path=''
+as $
+declare v_customer uuid;
+begin
+ select customer_id into v_customer from public.customer_sessions
+ where token=p_token and expires_at>now();
+ if v_customer is null then raise exception 'Session expired'; end if;
+ insert into public.aam_social_profiles(customer_id,adult_confirmed_at)
+ values(v_customer,now())
+ on conflict(customer_id) do update
+   set adult_confirmed_at=coalesce(public.aam_social_profiles.adult_confirmed_at,now());
+ return jsonb_build_object('confirmed',true);
+end;
+$;
+revoke all on function public.aam_social_confirm_age(uuid) from public,anon,authenticated;
+grant execute on function public.aam_social_confirm_age(uuid) to service_role;
+
 -- One-time follow rewards: 35 FREE to follower, 60 FREE to followed creator.
 create or replace function public.aam_social_follow(p_token uuid,p_target uuid)
 returns jsonb language plpgsql security definer set search_path=''
