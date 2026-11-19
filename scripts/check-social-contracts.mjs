@@ -100,7 +100,9 @@ const checks=[
  ['customer private chat exposes audio/video call controls and incoming-call polling',/function callPanelHtml\(\)/.test(ui)&&/AAMSocial\.startCall/.test(ui)&&/AAMSocial\.acceptCall/.test(ui)&&/livekit-calls/.test(ui)&&/livekit-token/.test(ui)],
  ['administrator calls use a separate verified admin identity, not a customer impersonation',/caller_id drop not null/.test(adminCallMigration)&&/caller_role text not null default 'customer'/.test(adminCallMigration)&&/admin_session_hash/.test(adminCallMigration)&&/caller_id is null/.test(adminCallMigration)&&/admin_sessions/.test(adminLiveCalls)&&/admin_session_hash/.test(liveToken)],
  ['administrator can start and end audio/video calls from customer management',/AAMSocial\.startAdminCall/.test(index)&&/startAdminCall\(customerId/.test(ui)&&/admin-livekit-calls/.test(ui)&&/action==='end'/.test(adminLiveCalls)]
-];
+,
+ ['incoming calls are polled globally so administrator calls reach customers outside an open chat',/async function pollCalls\(\)\{if\(!customer\(\)\|\|!token\(\)\|\|document\.hidden\)return/.test(ui)&&/aamGlobalCallPollTimer=setInterval\(\(\)=>\{if\(customer\(\)&&token\(\)&&!document\.hidden\)pollCalls\(\);\},3000\)/.test(ui)&&/All Ads Manager is calling you/.test(ui)],
+ ['administrator call status checks send the session token in a POST body, not a URL',/event\.httpMethod!=='POST'/.test(adminLiveCalls)&&/action==='status'/.test(adminLiveCalls)&&/adminCallAction\('status',aamCurrentCallId\)/.test(ui)&&!ui.includes("admin-livekit-calls?call_id=")]];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
 if(failed)process.exitCode=1;
