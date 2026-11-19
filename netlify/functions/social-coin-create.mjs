@@ -3,6 +3,7 @@ const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/
 const env=()=>({secret:process.env.PAYSTACK_SECRET_KEY,supabase:process.env.SUPABASE_URL,service:process.env.SUPABASE_SERVICE_ROLE_KEY});
 function h(key){return {apikey:key,...(key.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${key}`}),'Content-Type':'application/json'};}
 async function db(path,options={}){const {supabase,service}=env();const r=await fetch(`${supabase}/rest/v1/${path}`,{...options,headers:{...h(service),...(options.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||d.error||'Could not prepare coin payment.');return d;}
+async function adultConfirmed(customerId){const rows=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(customerId)}&limit=1`);return !!rows[0]?.adult_confirmed_at;}
 export async function handler(event){
  if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
  const {secret,supabase,service}=env();
@@ -16,6 +17,7 @@ export async function handler(event){
   if(!['card','bank_transfer'].includes(method))return json(400,{error:'Choose Bank Transfer or ATM/Card.'});
   const sessions=await db(`customer_sessions?select=customer_id&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`);
   if(!sessions.length)return json(401,{error:'Your session has expired.'});
+  if(!await adultConfirmed(sessions[0].customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
   const customerId=sessions[0].customer_id,reference=`aamcoin${Date.now()}${randomUUID().replace(/-/g,'').slice(0,14)}`;
   await db('aam_social_coin_payments',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{customer_id:customerId,reference,amount_kobo:amount*100,coin_amount:amount,payment_method:method,status:'pending'}])});
   const host=String(event.headers.host||'').toLowerCase();
