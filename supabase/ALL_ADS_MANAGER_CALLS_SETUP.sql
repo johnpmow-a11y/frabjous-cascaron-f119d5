@@ -1,13 +1,12 @@
 -- All Ads Manager: complete LiveKit calling database setup
 -- Run this single script once in Supabase SQL Editor before enabling calling.
--- It combines the four ordered call migrations and is safe to re-run.
+-- It combines the four ordered call migrations in one transaction.
 -- It repairs stale active-call rows before creating the uniqueness safeguards.
 
 begin;
 
 -- SECTION 1: supabase/migrations/20261119100000_livekit_call_tables.sql
 -- Call records used to authorize LiveKit room tokens and track invitations.
-begin;
 
 create table if not exists public.aam_calls (
   id uuid primary key default gen_random_uuid(),
@@ -44,7 +43,7 @@ grant all on public.aam_call_participants to service_role;
 
 -- SECTION 2: supabase/migrations/20261119190000_admin_livekit_call_identity.sql
 -- Permit secure administrator-originated calls without impersonating a customer.
-begin;
+
 alter table public.aam_calls alter column caller_id drop not null;
 alter table public.aam_calls
   add column if not exists caller_role text not null default 'customer',
@@ -64,7 +63,6 @@ create index if not exists aam_calls_admin_session_active_idx
 
 -- SECTION 3: supabase/migrations/20261119200000_livekit_one_active_call_per_customer.sql
 -- Enforce one active call per customer even when two devices tap Call at once.
-begin;
 
 -- Repair stale participant rows left by earlier terminal calls.
 update public.aam_call_participants p
@@ -130,7 +128,6 @@ create unique index if not exists aam_call_participants_one_active_call_per_cust
 -- SECTION 4: supabase/migrations/20261119210000_livekit_one_active_call_per_admin.sql
 -- Prevent one administrator session from starting overlapping calls
 -- from multiple devices at the same time.
-begin;
 
 with ranked as (
   select
