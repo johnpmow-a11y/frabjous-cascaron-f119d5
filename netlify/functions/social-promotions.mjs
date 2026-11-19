@@ -34,7 +34,7 @@ export async function handler(event){
   }
   if(action==='create'){
    const path=String(b.media_path||'');
-   if(!path.startsWith(`promotions/${s.customer_id}/`)||path.includes('..')||!/[.]\u005bjpg|png|webp\u005d$/i.test(path))return json(400,{error:'Upload your advert picture first.'});
+   if(!path.startsWith(`promotions/${s.customer_id}/`)||path.includes('..')||!/[.](jpg|png|webp)$/i.test(path))return json(400,{error:'Upload your advert picture first.'});
    const storage=await fetch(`${process.env.SUPABASE_URL}/storage/v1/object/aam-social-media/${path}`,{method:'HEAD',headers:h(process.env.SUPABASE_SERVICE_ROLE_KEY)});
    if(!storage.ok)return json(400,{error:'The advert picture upload could not be verified. Please upload it again.'});
    const size=Number(storage.headers.get('content-length')||0),mime=String(storage.headers.get('content-type')||'').toLowerCase();
