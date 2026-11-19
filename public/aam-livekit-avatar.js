@@ -56,17 +56,20 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
   const wasCameraEnabled = !!room.localParticipant.isCameraEnabled;
   let lastFrame = 0;
   let elapsed = 0;
+  let currentPhotoCharacter = null;
+  const makePhotoCharacter = file => createCharacter(file, {
+    kind: '3d',
+    detector: 'local',
+    mediapipe: {
+      bundle: `${WIREFACE_BASE}/assets/mediapipe/vision_bundle.mjs`,
+      wasm: `${WIREFACE_BASE}/assets/mediapipe/wasm`,
+      model: `${WIREFACE_BASE}/assets/mediapipe/face_landmarker.task`,
+    },
+  });
 
   try {
-    const photoCharacter = await createCharacter(photoFile, {
-      kind: '3d',
-      detector: 'local',
-      mediapipe: {
-        bundle: `${WIREFACE_BASE}/assets/mediapipe/vision_bundle.mjs`,
-        wasm: `${WIREFACE_BASE}/assets/mediapipe/wasm`,
-        model: `${WIREFACE_BASE}/assets/mediapipe/face_landmarker.task`,
-      },
-    });
+    const photoCharacter = await makePhotoCharacter(photoFile);
+    currentPhotoCharacter = photoCharacter;
     figure = buildCharacter(bodyStyle === 'walter' ? 'walter' : 'sarah', { shadows: true });
     await figure.face.useCharacter(photoCharacter, { transition: 0 });
     figure.gazeAt(camera);
@@ -103,6 +106,14 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
   }
 
   return {
+    async setPhoto(file) {
+      if (stopped) throw new Error('This avatar has already been closed.');
+      if (!file?.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
+      if (file.size > 12 * 1024 * 1024) throw new Error('Choose a photograph smaller than 12 MB.');
+      const next = await makePhotoCharacter(file);
+      await figure.face.useCharacter(next, { transition: 0 });
+      currentPhotoCharacter = next;
+    },
     async publish() {
       if (stopped) throw new Error('This avatar preview has already been closed.');
       if (published) return;
@@ -150,7 +161,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, bodyStyle = 
       published = false;
     },
     async exportFace() {
-      return exportCharacter(photoCharacter);
+      return exportCharacter(currentPhotoCharacter);
     },
   };
 }
