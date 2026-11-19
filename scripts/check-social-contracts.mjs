@@ -85,7 +85,10 @@ const checks=[
  ['Manager Promotion payments deduct purchased Money Coins only',/select purchased_coins into v_money/.test(promotionMigration)&&/purchased_coins=purchased_coins-v_p\.price_coins/.test(promotionMigration)&&/Free Coins cannot be used for promotion/.test(promotionMigration)],
  ['Manager Promotion submission does not debit coins before approved pricing',/No coins have been deducted/.test(promotionMigration)&&/status<>'awaiting_payment'/.test(promotionMigration)],
  ['Manager Promotion API validates customer sessions and secures image uploads',/customerSession\(token\)/.test(promotions)&&/promotions\/\$\{s\.customer_id\}/.test(promotions)&&/aam_social_promotion_create/.test(promotions)&&/aam_social_promotion_pay/.test(promotions)],
- ['Manager Promotion admin pricing requires an authenticated admin session',/adminSession\(String\(b\.token/.test(promotionAdmin)&&/action==='set_price'/.test(promotionAdmin)&&/status:'awaiting_payment'/.test(promotionAdmin)&&/action==='reject'/.test(promotionAdmin)]
+ ['Manager Promotion admin pricing requires an authenticated admin session',/adminSession\(String\(b\.token/.test(promotionAdmin)&&/action==='set_price'/.test(promotionAdmin)&&/status:'awaiting_payment'/.test(promotionAdmin)&&/action==='reject'/.test(promotionAdmin)],
+ ['customer profile exposes Manager Promotion and its Money-Coin-only balance',/AAMSocial\.openPromotion\(\)/.test(ui)&&/Promotion Balance/.test(ui)&&/Free Coins are not accepted/.test(ui)],
+ ['administrator dashboard exposes promotion review and approval is provider-gated',/AAMSocial\.openAdminPromotions\(\)/.test(ui)&&/provider_status==='ready'/.test(ui)&&/provider_status=eq\.ready/.test(promotionAdmin)],
+ ['promotion payment cannot proceed before provider readiness',/v_p\.provider_status<>'ready'/.test(promotionMigration)&&/Free Coins cannot be used for promotion/.test(promotionMigration)]
 ];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
