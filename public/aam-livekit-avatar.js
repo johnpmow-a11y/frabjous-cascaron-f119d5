@@ -392,7 +392,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
         if (!cameraLocalTrack && wasCameraEnabled && room.state !== 'disconnected') await room.localParticipant.setCameraEnabled(true).catch(() => {});
         if (cameraLocalTrack && cameraUnpublished && room.state !== 'disconnected') {
           if (cameraLocalTrack.mediaStreamTrack?.readyState !== 'ended') {
-            await room.localParticipant.publishTrack(cameraLocalTrack, { source: LK.Track.Source.Camera }).then(() => { cameraUnpublished = false; }).catch(async () => { await room.localParticipant.setCameraEnabled(true).catch(() => {}); });
+            await room.localParticipant.publishTrack(cameraLocalTrack, { source: LK.Track.Source.Camera }).then(() => { cameraUnpublished = false; }).catch(async () => { await room.localParticipant.setCameraEnabled(true).catch(() => {}); cameraUnpublished = false; });
           } else { await room.localParticipant.setCameraEnabled(true).catch(() => {}); cameraUnpublished = false; }
         }
         throw error;
