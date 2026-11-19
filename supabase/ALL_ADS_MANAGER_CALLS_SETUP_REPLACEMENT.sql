@@ -1384,6 +1384,7 @@ create table if not exists public.aam_social_coin_payments (
   paystack_channel text,
   paid_at timestamptz,
   created_at timestamptz not null default now()
+  constraint aam_social_coin_payments_amount_matches_coins check (amount_kobo = coin_amount * 100)
 );
 create unique index if not exists aam_social_coin_payments_paystack_txn_uidx
   on public.aam_social_coin_payments(paystack_transaction_id) where paystack_transaction_id is not null;
@@ -1550,8 +1551,8 @@ begin
  if v_payment.status<>'pending' then
    raise exception 'Coin payment is not pending and cannot be credited';
  end if;
- if p_amount_kobo<>v_payment.amount_kobo or upper(coalesce(p_currency,''))<>'NGN'
-   or p_transaction_id is null or p_transaction_id='' then
+  if p_amount_kobo is null or p_amount_kobo<>v_payment.amount_kobo or upper(coalesce(p_currency,''))<>'NGN'
+    or p_transaction_id is null or btrim(p_transaction_id)='' then
    raise exception 'Paystack amount or currency does not match this coin order';
  end if;
  update public.aam_coin_balances
