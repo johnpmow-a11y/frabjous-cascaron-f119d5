@@ -102,7 +102,8 @@ const checks=[
  ['administrator can start and end audio/video calls from customer management',/AAMSocial\.startAdminCall/.test(index)&&/startAdminCall\(customerId/.test(ui)&&/admin-livekit-calls/.test(ui)&&/action==='end'/.test(adminLiveCalls)]
 ,
  ['incoming calls are polled globally so administrator calls reach customers outside an open chat',/async function pollCalls\(\)\{if\(!customer\(\)\|\|!token\(\)\|\|document\.hidden\)return/.test(ui)&&/aamGlobalCallPollTimer=setInterval\(\(\)=>\{if\(customer\(\)&&token\(\)&&!document\.hidden&&!window\.aamActiveChatId\)pollCalls\(\);\},3000\)/.test(ui)&&/All Ads Manager is calling you/.test(ui)],
- ['administrator call status checks send the session token in a POST body, not a URL',/event\.httpMethod!=='POST'/.test(adminLiveCalls)&&/action==='status'/.test(adminLiveCalls)&&/adminCallAction\('status',aamCurrentCallId\)/.test(ui)&&!ui.includes("admin-livekit-calls?call_id=")]];
+ ['administrator call status checks send the session token in a POST body, not a URL',/event\.httpMethod!=='POST'/.test(adminLiveCalls)&&/action==='status'/.test(adminLiveCalls)&&/adminCallAction\('status',aamCurrentCallId\)/.test(ui)&&!ui.includes("admin-livekit-calls?call_id=")],
+ ['unanswered administrator calls expire after 45 seconds and close their invitation',/Date\.now\(\)-new Date\(calls\[0\]\.created_at\)\.getTime\(\)>45000/.test(adminLiveCalls)&&/status:'missed'/.test(adminLiveCalls)&&/status:'ended'/.test(adminLiveCalls)&&/status=eq\.invited/.test(adminLiveCalls)]];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
 if(failed)process.exitCode=1;
