@@ -29,7 +29,7 @@ const checks=[
  ['customer UI displays free and purchased balances',/Free coins:/.test(ui)&&/Purchased coins:/.test(ui)],
  ['admin UI displays verified coin sales and paid-video earnings',/coin_accounting/.test(admin)&&/video_earnings_naira/.test(ui)],
  ['optional referral code is applied after signup',/newCustomerReferral/.test(index)&&/action:'apply_referral'/.test(index)],
- ['customer email is optional at signup and login',/Email address \(optional\)/.test(index)&&/if\(email\)/.test(index)&&!index.includes('A valid email address is required to open your dashboard.')],
+ ['customer signup requires only username and four-digit code',!index.includes('id="newCustomerEmail"')&&!/async function createCustomer\(\)[^]*?bt_customer_set_email/.test(index)],
  ['social coins remain separate from tools wallet',/Your tools wallet is separate/.test(ui)]
 ];
 let failed=0;
