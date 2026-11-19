@@ -39,6 +39,8 @@ const checks=[
  ['customer support and History avoid admin/customer role labels',/send it to our support team/.test(index)&&/Your code request was sent\./.test(index)&&/Awaiting verification/.test(index)&&/sender_name/.test(index)&&!/send it to the administrator|Awaiting administrator verification|Customer History|Support team message/.test(index.slice(index.indexOf('function supportPage(){'),index.indexOf('function adminSupportInbox(){'))+index.slice(index.indexOf('async function historyPage(){'),index.indexOf('async function requestNetflixCode',index.indexOf('async function historyPage(){'))))],
  ['social customer screens identify people as friends',/Find friends/.test(ui)&&/No friends found/.test(ui)&&/View friend/.test(ui)&&!/another creator|creator profile/i.test(ui)],
  ['message APIs provide display names instead of role labels',/sender_name:m.sender_role==='admin'\?'All Ads Manager':myName/.test(support)&&/sender_name:'All Ads Manager'/.test(media)],
+ ['private text messages email the saved customer address using existing Gmail settings',/emailCustomer\(customerId,message\)/.test(read('netlify/functions/admin-customer-message.mjs'))&&/GMAIL_USER/.test(read('netlify/functions/admin-customer-message.mjs'))&&/customer_contact_emails/.test(read('netlify/functions/admin-customer-message.mjs'))],
+ ['order status updates attempt customer email without changing email configuration',/Order-status email failed/.test(support)&&/customer_contact_emails/.test(support)&&/GMAIL_USER/.test(support)],
  ['social coins remain separate from tools wallet',/Your tools wallet is separate/.test(ui)]
 ];
 let failed=0;
