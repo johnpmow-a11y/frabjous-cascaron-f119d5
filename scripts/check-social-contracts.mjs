@@ -26,7 +26,7 @@ const checks=[
  ['one-time video unlock spends free coins before purchased coins',/if coalesce\(v_free,0\)>0 then/.test(migration)&&/purchased_coins=purchased_coins-1/.test(migration)],
  ['admin earnings are created only when a purchased coin is spent',/if v_paid_spent=1 then/.test(migration)&&/insert into public\.aam_social_video_earnings/.test(migration)],
  ['only administrator-marked videos are paid; API and customer videos are free',/p\.media_type==='video'&&p\.is_locked===true&&!unlocked\.has\(p\.id\)/.test(feed)&&/is_locked:admin&&type==='video'/.test(feed)&&/v_post\.author_role <> 'admin' or not coalesce\(v_post\.is_locked,false\) then/.test(migration)],
- ['customer can explicitly confirm 18+ before social features',/action==='confirm_age'/.test(core)&&/aam_social_confirm_age/.test(core)&&/AAMSocial\.confirmAdult/.test(ui)&&/I confirm I am 18 or older/.test(ui)],
+ ['customer can explicitly confirm 18+ before social features',/action==='confirm_age'/.test(core)&&/aam_social_confirm_age/.test(core)&&/create or replace function public\.aam_social_confirm_age/.test(migration)&&/AAMSocial\.confirmAdult/.test(ui)&&/I confirm I am 18 or older/.test(ui)],
  ['follow, referral and paid-video unlock require adult confirmation',/Confirm that you are 18 or older first/.test(migration)&&/Confirm that you are 18 or older to continue/.test(migration)],
  ['only administrator-authored videos can ever be paid',/v_post\.author_role <> 'admin' or not coalesce\(v_post\.is_locked,false\)/.test(migration)],
  ['feed only marks admin-authored videos as paid',/p\.author_role==='admin'&&p\.media_type==='video'&&p\.is_locked===true/.test(feed)],
