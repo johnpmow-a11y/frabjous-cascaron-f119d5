@@ -20,6 +20,7 @@ const checks=[
  ['one-time video unlock spends free coins before purchased coins',/if coalesce\(v_free,0\)>0 then/.test(migration)&&/purchased_coins=purchased_coins-1/.test(migration)],
  ['admin earnings are created only when a purchased coin is spent',/if v_paid_spent=1 then/.test(migration)&&/insert into public\.aam_social_video_earnings/.test(migration)],
  ['all other creators’ videos require unlock and pictures stay free',/p\.media_type==='video'&&p\.customer_id!==s\.customer_id&&!unlocked\.has\(p\.id\)/.test(feed)&&/media_url:locked\?null/.test(feed)],
+ ['administrator videos are always coin-locked and UI explains the fixed one-coin price',/is_locked:mime\.startsWith\('video\/'\)/.test(admin)&&/Every published video requires 1 viewing coin/.test(ui)],
  ['creator profile videos use the same coin gate as the home feed',/locked_video:locked/.test(discover)&&/media_url:locked\?null/.test(discover)],
  ['customer API returns both balances separately',/free_coin_balance/.test(core)&&/purchased_coin_balance/.test(core)],
  ['coin purchase starts only at ₦500 and requires live Paystack',/amount<500/.test(create)&&/sk_live_/.test(create)&&/transaction\/initialize/.test(create)],
