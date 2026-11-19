@@ -6,6 +6,9 @@ on:
       - "netlify/functions/support.mjs"
       - "netlify/functions/customer-media-messages.mjs"
       - "netlify/functions/admin-customer-message.mjs"
+      - "netlify/functions/delivery-orders.mjs"
+      - "netlify/functions/media-edit-orders.mjs"
+      - "netlify/functions/consignment.mjs"
       - "netlify/functions/_push.mjs"
       - "public/social.js"
       - "public/social.css"
@@ -41,6 +44,9 @@ jobs:
           node --check netlify/functions/support.mjs
           node --check netlify/functions/customer-media-messages.mjs
           node --check netlify/functions/admin-customer-message.mjs
+          node --check netlify/functions/delivery-orders.mjs
+          node --check netlify/functions/media-edit-orders.mjs
+          node --check netlify/functions/consignment.mjs
           node --check netlify/functions/social-coin-create.mjs
           node --check netlify/functions/social-coin-verify.mjs
           node --check netlify/functions/paystack-webhook.mjs
