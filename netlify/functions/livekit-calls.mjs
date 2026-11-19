@@ -114,7 +114,7 @@ export async function handler(event) {
 
     if (action === 'accept') {
       if (participant.status !== 'invited') return json(409, { error: 'This call is no longer waiting for your answer.' });
-      const activeCall = await db(`aam_calls?select=id,status,created_at& id=eq.${encodeURIComponent(callId)}&status=eq.active&limit=1`.replace('& id=', '&id='));
+      const activeCall = await db(`aam_calls?select=id,status,created_at&id=eq.${encodeURIComponent(callId)}&status=eq.active&limit=1`);
       if (!activeCall.length) return json(409, { error: 'This call has already ended.' });
       if (Date.now() - new Date(activeCall[0].created_at).getTime() > 45_000) {
         await db(`aam_calls?id=eq.${encodeURIComponent(callId)}&status=eq.active`, {
