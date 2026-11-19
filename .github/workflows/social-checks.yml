@@ -14,6 +14,7 @@ on:
       - "netlify/functions/_push.mjs"
       - "public/social.js"
       - "public/avatar-lab.js"
+      - "public/aam-livekit-avatar.js"
       - "public/avatar-lab.html"
       - "public/social.css"
       - "public/index.html"
@@ -62,3 +63,4 @@ jobs:
           node --check netlify/functions/paystack-webhook.mjs
           node --check public/social.js
           node --check public/avatar-lab.js
+          node --check public/aam-livekit-avatar.js
