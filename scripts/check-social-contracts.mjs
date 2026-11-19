@@ -155,7 +155,3 @@ const checks=[
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
 if(failed)process.exitCode=1;
- ['avatar runtime is pinned to the no-charge commercial-use Wireface release with third-party notices',liveAvatar.includes('8bb0b00649eb65013e7785859c4b9b59169e1178')&&avatarNotices.includes('Wireface SDK Licence 1.0')&&avatarNotices.includes('Apache License')&&avatarNotices.includes('Three.js MIT License')]];
-let failed=0;
-for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
-if(failed)process.exitCode=1;
