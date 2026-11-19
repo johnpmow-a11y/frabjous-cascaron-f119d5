@@ -18,8 +18,10 @@ export async function handler(event){
   if(!sessions.length)return json(401,{error:'Your session has expired.'});
   const customerId=sessions[0].customer_id,reference=`aamcoin${Date.now()}${randomUUID().replace(/-/g,'').slice(0,14)}`;
   await db('aam_social_coin_payments',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{customer_id:customerId,reference,amount_kobo:amount*100,coin_amount:amount,payment_method:method,status:'pending'}])});
-  const origin=event.headers.origin||`https://${event.headers.host}`;
-  const ps=await fetch('https://api.paystack.co/transaction/initialize',{method:'POST',headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json'},body:JSON.stringify({email,amount:String(amount*100),currency:'NGN',reference,channels:method==='card'?['card']:['bank_transfer'],callback_url:`${origin}/coin-payment-return.html`,metadata:{customer_id:customerId,product:'All Ads Manager Social Coins',coins:amount}})});
+  const host=String(event.headers.host||'').toLowerCase();
+  if(!host||! /^[a-z0-9.-]+(?::[0-9]+)?$/.test(host))throw new Error('Payment return host is not configured.');
+  const callbackUrl=`https://${host}/coin-payment-return.html`;
+  const ps=await fetch('https://api.paystack.co/transaction/initialize',{method:'POST',headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json'},body:JSON.stringify({email,amount:String(amount*100),currency:'NGN',reference,channels:method==='card'?['card']:['bank_transfer'],callback_url:callbackUrl,metadata:{customer_id:customerId,product:'All Ads Manager Social Coins',coins:amount}})});
   const result=await ps.json().catch(()=>({}));
   if(!ps.ok||!result.status||!result.data?.authorization_url){
    await db(`aam_social_coin_payments?reference=eq.${encodeURIComponent(reference)}`,{method:'PATCH',body:JSON.stringify({status:'initialization_failed'})});
