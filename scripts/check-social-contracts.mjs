@@ -114,7 +114,8 @@ const checks=[
  ['administrator call API prevents overlapping admin calls and calls to busy customers',/existingAdminCall=await db/.test(adminLiveCalls)&&/existingCustomerCall=await db/.test(adminLiveCalls)],
  ['customer and administrator call buttons block rapid duplicate call creation',/aamCallStarting=false/.test(ui)&&/if\(aamCallStarting\|\|aamCurrentCallId\)return notice\('End the current call before starting another\.'\)/.test(ui)&&/finally\{aamCallStarting=false;\}/.test(ui)],
  ['database active-call uniqueness conflicts return HTTP 409 instead of server errors',/error\.code = data\.code \|\| ''/.test(liveCalls)&&/error\.code === '23505'\) return json\(409/.test(liveCalls)],
- ['unexpected LiveKit disconnect closes the server-side call for both customers and admins',/RoomEvent\.Disconnected,\(\)=>\{if\(aamCurrentCallId===callId\)/.test(ui)&&/if\(authToken\)adminCallAction\('end',callId\)/.test(ui)&&/else callAction\('end',callId\)/.test(ui)&&/async function endCall\(\)\{const id=aamCurrentCallId;aamCurrentCallId=null;/.test(ui)]];
+ ['unexpected LiveKit disconnect closes the server-side call for both customers and admins',/RoomEvent\.Disconnected,\(\)=>\{if\(aamCurrentCallId===callId\)/.test(ui)&&/if\(authToken\)adminCallAction\('end',callId\)/.test(ui)&&/else callAction\('end',callId\)/.test(ui)&&/async function endCall\(\)\{const id=aamCurrentCallId;aamCurrentCallId=null;/.test(ui)],
+ ['administrator calls have a database-enforced one-active-call limit and friendly conflict response',/aam_calls_one_active_call_per_admin_idx/.test(adminCallMigration)&&/error\.code=d\.code\|\|''/.test(adminLiveCalls)&&/e\.code==='23505'\)return json\(409/.test(adminLiveCalls)]];
 let failed=0;
 for(const [name,ok] of checks){console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed++;}
 if(failed)process.exitCode=1;
