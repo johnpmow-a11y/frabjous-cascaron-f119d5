@@ -21,7 +21,7 @@ export async function handler(event){
   if(!uuid.test(String(b.promotion_id||'')))return json(400,{error:'Choose a valid promotion.'});
   if(b.action==='set_price'){
    const price=Number(b.price_coins);if(!Number.isSafeInteger(price)||price<1||price>100000000)return json(400,{error:'Enter a valid Money Coin price.'});
-   const rows=await db(`aam_social_promotions?id=eq.${b.promotion_id}&status=eq.pending_review`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({price_coins:price,status:'awaiting_payment',admin_note:String(b.admin_note||'').trim().slice(0,500),updated_at:new Date().toISOString()})});
+   const rows=await db(`aam_social_promotions?id=eq.${b.promotion_id}&status=eq.pending_review&provider_status=eq.ready`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({price_coins:price,status:'awaiting_payment',admin_note:String(b.admin_note||'').trim().slice(0,500),updated_at:new Date().toISOString()})});
    if(!rows.length)return json(409,{error:'This promotion is no longer awaiting review.'});
    return json(200,{updated:true,status:'awaiting_payment',price_coins:price});
   }
