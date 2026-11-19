@@ -13,6 +13,8 @@ on:
       - "netlify/functions/consignment.mjs"
       - "netlify/functions/_push.mjs"
       - "public/social.js"
+      - "public/avatar-lab.js"
+      - "public/avatar-lab.html"
       - "public/social.css"
       - "public/index.html"
       - "public/coin-payment-return.html"
@@ -59,3 +61,4 @@ jobs:
           node --check netlify/functions/social-promotion-admin.mjs
           node --check netlify/functions/paystack-webhook.mjs
           node --check public/social.js
+          node --check public/avatar-lab.js
