@@ -93,7 +93,7 @@ grant execute on function public.aam_social_initialize_customer() to service_rol
 -- Confirmation is stored once per customer and is required by social reward/unlock RPCs.
 create or replace function public.aam_social_confirm_age(p_token uuid)
 returns jsonb language plpgsql security definer set search_path=''
-as $
+as $$
 declare v_customer uuid;
 begin
  select customer_id into v_customer from public.customer_sessions
@@ -105,7 +105,7 @@ begin
    set adult_confirmed_at=coalesce(public.aam_social_profiles.adult_confirmed_at,now());
  return jsonb_build_object('confirmed',true);
 end;
-$;
+$$;
 revoke all on function public.aam_social_confirm_age(uuid) from public,anon,authenticated;
 grant execute on function public.aam_social_confirm_age(uuid) to service_role;
 
