@@ -37,6 +37,16 @@ export async function handler(event) {
     if (!customerId) return json(401, { error: 'Please log in again.' });
     const action = String(body.action || '');
 
+    if (action === 'avatar_payment') {
+      const callId = String(body.call_id || '');
+      if (!uuid.test(callId)) return json(400, { error: 'A valid video call is required.' });
+      const payment = await db('rpc/aam_social_charge_call_avatar', {
+        method: 'POST',
+        body: JSON.stringify({ p_token: String(body.token || ''), p_call_id: callId })
+      });
+      return json(200, payment || { paid: true });
+    }
+
     if (action === 'list') {
       // Invitations expire after 45 seconds. Mark the call missed and close its
       // outstanding invitation so stale ringing calls cannot remain active forever.
