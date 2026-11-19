@@ -367,6 +367,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
   return {
     get bodyTrackingEnabled() { return trackingAvailable; },
     get handTrackingEnabled() { return !!handLandmarker; },
+    get faceTrackingEnabled() { return !!faceLandmarker; },
     async setPhoto(file) {
       if (stopped) throw new Error('This avatar has already been closed.');
       if (!file?.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
