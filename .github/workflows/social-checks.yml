@@ -15,6 +15,7 @@ on:
       - "public/social.js"
       - "public/avatar-lab.js"
       - "public/aam-livekit-avatar.js"
+      - "public/aam-livekit-voice.js"
       - "public/avatar-lab.html"
       - "public/social.css"
       - "public/index.html"
@@ -64,3 +65,4 @@ jobs:
           node --check public/social.js
           node --check public/avatar-lab.js
           node --check public/aam-livekit-avatar.js
+          node --check public/aam-livekit-voice.js
