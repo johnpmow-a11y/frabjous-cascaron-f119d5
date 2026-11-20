@@ -16,7 +16,7 @@ export async function handler(event){
    const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);
    if(!s)return json(401,{error:'Please log in again.'});
    if(!await adultConfirmed(s.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
-   const [posts,statuses,profiles,follows,unlocks,likes,comments,mineLikes,mineViews,adminProfile]=await Promise.all([
+   const [posts,statuses,profiles,follows,unlocks,likes,comments,mineLikes,mineViews,adminProfile,activePromotions]=await Promise.all([
     db('aam_social_posts?select=*&post_kind=eq.feed&moderation_status=eq.published&order=created_at.desc&limit=80'),
     db('aam_social_posts?select=*&post_kind=eq.status&moderation_status=eq.published&order=created_at.desc&limit=80'),
     db('aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled'),
@@ -26,10 +26,11 @@ export async function handler(event){
     db('aam_social_comments?select=post_id'),
     db(`aam_social_likes?select=post_id&customer_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_post_views?select=post_id,viewed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}`),
-    db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1')
+    db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1'),
+    db(`aam_social_promotions?select=post_id&status=eq.active&ends_at=gt.${encodeURIComponent(new Date().toISOString())}&post_id=not.is.null`)
    ]);
-   const profileMap=new Map(profiles.map(p=>[p.customer_id,p])),following=new Set(follows.map(f=>f.followed_id)),unlocked=new Set(unlocks.map(x=>x.post_id)),liked=new Set(mineLikes.map(x=>x.post_id)),viewed=new Map(mineViews.map(x=>[x.post_id,x.viewed_at]));
-   const visible=posts.filter(p=>(p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id))&&(p.customer_id===s.customer_id||!viewed.has(p.id)||Date.now()-new Date(viewed.get(p.id)).getTime()>=(p.author_role==='admin'&&p.media_type==='video'?48:24)*3600000));
+   const profileMap=new Map(profiles.map(p=>[p.customer_id,p])),following=new Set(follows.map(f=>f.followed_id)),unlocked=new Set(unlocks.map(x=>x.post_id)),liked=new Set(mineLikes.map(x=>x.post_id)),viewed=new Map(mineViews.map(x=>[x.post_id,x.viewed_at])),activePromotionPostIds=new Set(activePromotions.map(x=>x.post_id).filter(Boolean));
+   const visible=posts.filter(p=>(p.is_promoted?activePromotionPostIds.has(p.id):(p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id)))&&(p.customer_id===s.customer_id||!viewed.has(p.id)||Date.now()-new Date(viewed.get(p.id)).getTime()>=(p.author_role==='admin'&&p.media_type==='video'?48:24)*3600000));
    const visibleStatuses=statuses.filter(p=>(p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id))&&(p.customer_id===s.customer_id||!viewed.has(p.id))&&Date.now()-new Date(p.created_at).getTime()<24*3600000);
    const feed=await Promise.all(visible.slice(0,30).map(async p=>{
     const owner=p.customer_id?profileMap.get(p.customer_id):null,admin=adminProfile[0]||{};

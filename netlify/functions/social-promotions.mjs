@@ -16,12 +16,12 @@ export async function handler(event){
   if(!await adult(s.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
   if(event.httpMethod==='GET'){
    const [promotions,balances]=await Promise.all([
-    db(`aam_social_promotions?select=id,promotion_type,title,description,media_path,destination_url,requested_days,price_coins,status,provider_status,admin_note,paid_at,created_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&order=created_at.desc&limit=50`),
+    db(`aam_social_promotions?select=id,promotion_type,title,description,media_path,destination_url,requested_days,price_coins,status,provider_status,admin_note,paid_at,created_at,starts_at,ends_at,post_id&customer_id=eq.${encodeURIComponent(s.customer_id)}&order=created_at.desc&limit=50`),
     db(`aam_coin_balances?select=balance_coins,free_coins,purchased_coins&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`)
    ]);
    const items=await Promise.all(promotions.map(async p=>({...p,media_url:await signedRead(p.media_path)})));
    const v=balances[0]||{};
-   return json(200,{promotions:items,coin_balance:Number(v.balance_coins||0),free_coin_balance:Number(v.free_coins||0),money_coin_balance:Number(v.purchased_coins||0),promotion_balance:Number(v.purchased_coins||0),provider_ready:false});
+   return json(200,{promotions:items,coin_balance:Number(v.balance_coins||0),free_coin_balance:Number(v.free_coins||0),money_coin_balance:Number(v.purchased_coins||0),promotion_balance:Number(v.purchased_coins||0),provider_ready:true,provider_mode:'in_app_feed'});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const action=String(b.action||'');

@@ -14,7 +14,7 @@ export async function handler(event){
    const profiles=ids.length?await db('aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.('+ids.join(',')+')'):[];
    const names=new Map(profiles.map(x=>[x.customer_id,x.display_name||'Customer']));
    const items=await Promise.all(rows.map(async x=>({...x,customer_name:names.get(x.customer_id)||'Customer',media_url:await signedRead(x.media_path)})));
-   return json(200,{promotions:items,provider_connected:false});
+   return json(200,{promotions:items,provider_connected:true,provider_mode:'in_app_feed'});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}');if(!await adminSession(String(b.token||'')))return json(401,{error:'Administrator login required.'});
