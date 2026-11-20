@@ -15,7 +15,7 @@ export async function handler(event){
    if(!s)return json(401,{error:'Please log in again.'});
    const [balance,profile,prefs,followers,following,profileViews,ownPosts]=await Promise.all([
     db(`aam_coin_balances?select=balance_coins,free_coins,purchased_coins&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
-    db(`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
+    db(`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at,last_seen_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_preferences?select=notification_sound,chat_wallpaper,custom_wallpaper_path,profile_view_notifications,follow_notifications,like_notifications,comment_notifications,share_notifications,message_notifications,profile_update_notifications&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_follows?select=follower_id&followed_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
@@ -29,6 +29,7 @@ export async function handler(event){
   const currentSession=await session(token);if(!currentSession)return json(401,{error:'Your session has expired. Please log in again.'});
   if(action!=='confirm_age'&&!await adultConfirmed(currentSession.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
   if(action==='confirm_age')return json(200,await rpc('aam_social_confirm_age',{p_token:token}));
+  if(action==='touch_presence'){await db(`aam_social_profiles?customer_id=eq.${encodeURIComponent(currentSession.customer_id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({last_seen_at:new Date().toISOString()})});return json(200,{ok:true});}
   if(action==='update_avatar'){const path=String(b.avatar_path||''),followers=await db(`aam_social_follows?select=follower_id&followed_id=eq.${encodeURIComponent(currentSession.customer_id)}`);const result=await rpc('aam_social_update_avatar',{p_token:token,p_avatar_path:path});await Promise.allSettled(followers.map(x=>sendPush({role:'customer',customerId:x.follower_id,title:'Profile picture updated',body:'A creator you follow updated their profile picture.',eventType:'profile_update'})));return json(200,result);}
   if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
   if(action==='update_preferences')return json(200,await rpc('aam_social_update_preferences',{p_token:token,p_sound:Number(b.notification_sound||1),p_wallpaper:String(b.chat_wallpaper||'default'),p_custom_wallpaper_path:b.custom_wallpaper_path||null}));
