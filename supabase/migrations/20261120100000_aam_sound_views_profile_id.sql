@@ -5,6 +5,7 @@ update public.aam_social_profiles set profile_id=nextval('public.aam_social_prof
 alter table public.aam_social_profiles alter column profile_id set default nextval('public.aam_social_profile_id_seq');
 alter table public.aam_social_profiles alter column profile_id set not null;
 create unique index if not exists aam_social_profiles_profile_id_uidx on public.aam_social_profiles(profile_id);
+alter table public.aam_social_posts add column if not exists post_kind text not null default 'feed';
 alter table public.aam_social_posts add column if not exists sound_track_id text;
 alter table public.aam_social_posts add column if not exists sound_title text;
 alter table public.aam_social_posts add column if not exists sound_artist text;
