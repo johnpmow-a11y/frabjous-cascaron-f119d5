@@ -29,7 +29,7 @@ async function getPrivateToken(){
  let lastError=null;
  for(const [id,secret] of pairs){
   try{
-   const body=new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret,scope:'profile.read video.manage'});
+   const body=new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret,scope:'account.read video.read'});
    const r=await fetch('https://oauth2.dailymotion.com/v2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body,signal:AbortSignal.timeout(10000)});
    const d=await r.json().catch(()=>({}));
    if(r.ok&&d.access_token)return String(d.access_token);
