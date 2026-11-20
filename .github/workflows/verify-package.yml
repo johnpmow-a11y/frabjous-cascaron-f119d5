@@ -52,6 +52,8 @@ jobs:
           find public -type f -name '*.js' -print0 | while IFS= read -r -d '' file; do
             node --check "$file"
           done
+      - name: Verify All Ads Manager mobile and social requirements
+        run: node scripts/check-aam-mobile-contracts.mjs
       - name: Package complete deployable project
         run: |
           mkdir -p dist
