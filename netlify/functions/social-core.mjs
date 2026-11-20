@@ -13,21 +13,23 @@ export async function handler(event){
   if(event.httpMethod==='GET'){
    const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);
    if(!s)return json(401,{error:'Please log in again.'});
-   const [balance,profile,prefs,followers,following,profileViews]=await Promise.all([
+   const [balance,profile,prefs,followers,following,profileViews,ownPosts]=await Promise.all([
     db(`aam_coin_balances?select=balance_coins,free_coins,purchased_coins&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
-    db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
+    db(`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at,last_seen_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_preferences?select=notification_sound,chat_wallpaper,custom_wallpaper_path,profile_view_notifications,follow_notifications,like_notifications,comment_notifications,share_notifications,message_notifications,profile_update_notifications&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_follows?select=follower_id&followed_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
-    db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${encodeURIComponent(s.customer_id)}`)
+    db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${encodeURIComponent(s.customer_id)}`),
+    db(`aam_social_posts?select=id&customer_id=eq.${encodeURIComponent(s.customer_id)}&moderation_status=eq.published&limit=500`)
    ]);
-   const preferences=prefs[0]||{notification_sound:1,chat_wallpaper:'default'};if(preferences.custom_wallpaper_path)preferences.custom_wallpaper_url=await signedRead(preferences.custom_wallpaper_path);const currentProfile=profile[0]||null;if(currentProfile?.avatar_path)currentProfile.avatar_url=await signedRead(currentProfile.avatar_path);return json(200,{coin_balance:Number(balance[0]?.balance_coins||0),free_coin_balance:Number(balance[0]?.free_coins||0),money_coin_balance:Number(balance[0]?.purchased_coins||0),purchased_coin_balance:Number(balance[0]?.purchased_coins||0),followers:followers.length,following:following.length,profile_views:profileViews.length,profile:currentProfile,preferences});
+   const ownPostIds=ownPosts.map(p=>p.id),ownLikes=ownPostIds.length?await db(`aam_social_likes?select=id&post_id=in.(${ownPostIds.join(',')})`):[];const preferences=prefs[0]||{notification_sound:1,chat_wallpaper:'default'};if(preferences.custom_wallpaper_path)preferences.custom_wallpaper_url=await signedRead(preferences.custom_wallpaper_path);const currentProfile=profile[0]||null;if(currentProfile?.avatar_path)currentProfile.avatar_url=await signedRead(currentProfile.avatar_path);return json(200,{coin_balance:Number(balance[0]?.balance_coins||0),free_coin_balance:Number(balance[0]?.free_coins||0),money_coin_balance:Number(balance[0]?.purchased_coins||0),purchased_coin_balance:Number(balance[0]?.purchased_coins||0),followers:followers.length,following:following.length,profile_views:profileViews.length,likes:ownLikes.length,profile:currentProfile,preferences});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||'');
   const currentSession=await session(token);if(!currentSession)return json(401,{error:'Your session has expired. Please log in again.'});
   if(action!=='confirm_age'&&!await adultConfirmed(currentSession.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
   if(action==='confirm_age')return json(200,await rpc('aam_social_confirm_age',{p_token:token}));
+  if(action==='touch_presence'){await db(`aam_social_profiles?customer_id=eq.${encodeURIComponent(currentSession.customer_id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({last_seen_at:new Date().toISOString()})});return json(200,{ok:true});}
   if(action==='update_avatar'){const path=String(b.avatar_path||''),followers=await db(`aam_social_follows?select=follower_id&followed_id=eq.${encodeURIComponent(currentSession.customer_id)}`);const result=await rpc('aam_social_update_avatar',{p_token:token,p_avatar_path:path});await Promise.allSettled(followers.map(x=>sendPush({role:'customer',customerId:x.follower_id,title:'Profile picture updated',body:'A creator you follow updated their profile picture.',eventType:'profile_update'})));return json(200,result);}
   if(action==='update_profile')return json(200,await rpc('aam_social_update_profile',{p_token:token,p_display_name:String(b.display_name||''),p_bio:String(b.bio||''),p_is_private:!!b.is_private,p_comments_enabled:b.comments_enabled!==false}));
   if(action==='update_preferences')return json(200,await rpc('aam_social_update_preferences',{p_token:token,p_sound:Number(b.notification_sound||1),p_wallpaper:String(b.chat_wallpaper||'default'),p_custom_wallpaper_path:b.custom_wallpaper_path||null}));

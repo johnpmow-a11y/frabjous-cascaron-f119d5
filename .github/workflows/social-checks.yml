@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - "netlify/functions/social-*.mjs"
+      - "netlify/functions/livekit-*.mjs"
+      - "netlify/functions/admin-livekit-calls.mjs"
       - "netlify/functions/support.mjs"
       - "netlify/functions/customer-media-messages.mjs"
       - "netlify/functions/admin-customer-message.mjs"
@@ -11,11 +13,16 @@ on:
       - "netlify/functions/consignment.mjs"
       - "netlify/functions/_push.mjs"
       - "public/social.js"
+      - "public/avatar-lab.js"
+      - "public/aam-livekit-avatar.js"
+      - "public/aam-livekit-voice.js"
+      - "public/avatar-lab.html"
       - "public/social.css"
       - "public/index.html"
       - "public/coin-payment-return.html"
       - "scripts/check-social-contracts.mjs"
       - "supabase/migrations/*.sql"
+      - "supabase/ALL_ADS_MANAGER_CALLS_SETUP.sql"
       - ".github/workflows/social-checks.yml"
   push:
     branches:
@@ -34,6 +41,9 @@ jobs:
       - name: Check Netlify function syntax
         run: |
           node --check netlify/functions/_push.mjs
+          node --check netlify/functions/livekit-calls.mjs
+          node --check netlify/functions/livekit-token.mjs
+          node --check netlify/functions/admin-livekit-calls.mjs
           node --check netlify/functions/social-core.mjs
           node --check netlify/functions/social-feed.mjs
           node --check netlify/functions/social-interactions.mjs
@@ -53,3 +63,6 @@ jobs:
           node --check netlify/functions/social-promotion-admin.mjs
           node --check netlify/functions/paystack-webhook.mjs
           node --check public/social.js
+          node --check public/avatar-lab.js
+          node --check public/aam-livekit-avatar.js
+          node --check public/aam-livekit-voice.js

@@ -21,7 +21,7 @@ export async function handler(event){
    ]);
    const items=await Promise.all(promotions.map(async p=>({...p,media_url:await signedRead(p.media_path)})));
    const v=balances[0]||{};
-   return json(200,{promotions:items,coin_balance:Number(v.balance_coins||0),free_coin_balance:Number(v.free_coins||0),money_coin_balance:Number(v.purchased_coins||0),promotion_balance:Number(v.purchased_coins||0),provider_ready:false});
+   return json(200,{promotions:items,coin_balance:Number(v.balance_coins||0),free_coin_balance:Number(v.free_coins||0),money_coin_balance:Number(v.purchased_coins||0),promotion_balance:Number(v.purchased_coins||0),provider_ready:true,promotion_mode:'in_app'});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const action=String(b.action||'');

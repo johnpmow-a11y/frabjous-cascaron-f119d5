@@ -4,9 +4,9 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f1f5f9",
-  "theme_color": "#0f766e",
-  "description": "All Ads Manager customer and administrator services.",
+  "background_color": "#f5f7fb",
+  "theme_color": "#111827",
+  "description": "A unified workspace for digital services, advertising and account management.",
   "icons": [
     {
       "src": "/icon.svg",

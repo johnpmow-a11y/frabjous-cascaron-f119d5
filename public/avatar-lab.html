@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#111827">
+  <title>All Ads Manager · Avatar Lab</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f4f6fb;color:#111827;font:16px/1.5 Inter,system-ui,-apple-system,sans-serif}.top{background:#111827;color:#fff;padding:16px 20px;font-weight:800;font-size:20px}.wrap{max-width:980px;margin:24px auto;padding:0 16px 40px}.intro{margin-bottom:18px}.intro h1{font-size:clamp(26px,5vw,38px);margin:0 0 6px}.intro p{color:#5b6473;margin:0}.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:18px;align-items:start}.stage,.controls{background:#fff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px #1720330d}.stage canvas{display:block;width:100%;height:min(68vh,640px);min-height:430px}.controls{padding:20px}.controls h2{margin:0 0 14px;font-size:20px}.field{display:block;margin:0 0 14px}.field span{display:block;font-size:13px;font-weight:750;margin-bottom:6px}.field input,.field select{width:100%;min-height:46px;border:1px solid #cbd5e1;border-radius:11px;padding:10px 12px;background:#fff;color:#111827;font:inherit}.row{display:flex;gap:9px;flex-wrap:wrap}.btn{border:0;border-radius:11px;min-height:46px;padding:10px 14px;background:#111827;color:#fff;font-weight:750;cursor:pointer}.btn.secondary{background:#e8edf5;color:#111827}.btn:disabled{opacity:.55}.status{margin:16px 0 0;padding:12px;border-radius:11px;background:#eef4ff;color:#173d77;font-size:14px;overflow-wrap:anywhere}.status[data-error=true]{background:#fff0f0;color:#9b1c1c}.note{margin-top:16px;padding:12px;border:1px solid #f0d9a8;border-radius:11px;background:#fff9e9;color:#684a11;font-size:13px}.small{color:#6b7280;font-size:13px;margin:12px 0 0}.footer{margin-top:16px;color:#6b7280;font-size:12px}@media(max-width:760px){.grid{grid-template-columns:1fr}.stage canvas{height:54vh;min-height:380px}.wrap{margin:16px auto}}
+  </style>
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","@wireface/sdk":"https://cdn.jsdelivr.net/gh/compsmart/wireface-sdk@8bb0b00649eb65013e7785859c4b9b59169e1178/dist/wireface.js","@wireface/sdk/create":"https://cdn.jsdelivr.net/gh/compsmart/wireface-sdk@8bb0b00649eb65013e7785859c4b9b59169e1178/dist/create.js","@wireface/sdk/three":"https://cdn.jsdelivr.net/gh/compsmart/wireface-sdk@8bb0b00649eb65013e7785859c4b9b59169e1178/dist/three.js","@wireface/sdk/three/characters":"https://cdn.jsdelivr.net/gh/compsmart/wireface-sdk@8bb0b00649eb65013e7785859c4b9b59169e1178/dist/three-characters.js","@wireface/sdk/three/kit":"https://cdn.jsdelivr.net/gh/compsmart/wireface-sdk@8bb0b00649eb65013e7785859c4b9b59169e1178/dist/three-kit.js"}}
+  </script>
+</head>
+<body>
+  <header class="top">All Ads Manager · Avatar Lab</header>
+  <main class="wrap">
+    <section class="intro"><h1>Photo-to-avatar prototype</h1><p>Test your own photograph on a full-body 3D character using the Wireface packages you supplied.</p></section>
+    <div class="grid">
+      <section class="stage"><canvas id="avatarCanvas" aria-label="Animated 3D avatar preview"></canvas></section>
+      <section class="controls">
+        <h2>Build your avatar</h2>
+        <label class="field"><span>Avatar body</span><select id="bodyStyle"><option value="sarah">Female figure</option><option value="walter">Male figure</option></select></label>
+        <label class="field"><span>Avatar name</span><input id="avatarName" maxlength="60" placeholder="My avatar"></label>
+        <label class="field"><span>Your photograph</span><input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp"></label>
+        <div class="row"><button class="btn" id="micButton">Use microphone</button><button class="btn secondary" id="stopButton">Stop audio</button></div>
+        <label class="field" style="margin-top:16px"><span>Facial expression</span><select id="moodSelect"><option value="neutral">Neutral</option><option value="happy">Happy</option><option value="excited">Excited</option><option value="surprised">Surprised</option><option value="curious">Curious</option><option value="sad">Sad</option><option value="calm">Calm</option></select></label>
+        <label class="field"><span>Saved avatars on this device</span><select id="savedAvatars"><option value="">Saved avatars on this device</option></select></label>
+        <div class="row"><button class="btn secondary" id="saveDownload">Export face character</button></div>
+        <p id="avatarStatus" class="status" role="status">Loading avatar engine…</p>
+        <div class="note"><strong>What this prototype demonstrates:</strong> your photo becomes the character’s animated face; live microphone audio drives mouth movement; the supplied Wireface character kit adds breathing, head motion and voice-reactive arm/hand gestures. It does not yet mirror your real-world body or hand poses.</div>
+        <p class="small">Photo rigging is performed locally in your browser. The photo is not uploaded by the local Wireface creation flow.</p>
+      </section>
+    </div>
+    <p class="footer">Development prototype only. Not connected to customer coin charges or live calling yet.</p>
+  </main>
+  <script type="module" src="/avatar-lab.js"></script>
+</body>
+</html>
