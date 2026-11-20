@@ -244,3 +244,8 @@
 .aam-coin-price span{font-size:12px;font-weight:700}
 .aam-coin-price:active{transform:scale(.98)}
 .aam-coin-shop label{display:block;margin:10px 0 5px;font-size:12px;font-weight:800;color:#334155}
+
+.aam-promotion-item .aam-feed-media{object-fit:cover}
+.aam-promo-badge{position:absolute;top:14px;left:14px;z-index:5;padding:6px 10px;border-radius:20px;background:rgba(15,23,42,.72);color:#fff;font-size:10px;font-weight:800;letter-spacing:.04em}
+.aam-promo-visit{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 16px;border:0;border-radius:20px;background:#facc15;color:#111827;font-size:12px;font-weight:900}
+.aam-promotion-item .aam-feed-caption p{max-width:90%;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
