@@ -45,7 +45,7 @@ export async function handler(event){
     db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${targetId}`)
    ]);
    const unlocked=new Set(unlocks.map(x=>x.post_id));
-   const resultPosts=await Promise.all(posts.map(async post=>{const {media_path,cloudflare_uid,thumbnail_path,...publicPost}=post;const locked=post.media_type==='video'&&post.is_locked===true&&!unlocked.has(post.id);return {...publicPost,cloudflare_uid,locked_video:locked,media_url:locked?null:await signedRead(media_path),thumbnail_url:thumbnail_path?await signedRead(thumbnail_path):null};}));
+   const resultPosts=await Promise.all(posts.map(async post=>{const {media_path,cloudflare_uid,thumbnail_path,...publicPost}=post;const locked=post.media_type==='video'&&post.is_locked===true&&!unlocked.has(post.id);return {...publicPost,cloudflare_uid,locked_video:locked,media_url:locked?null:(cloudflare_uid?cloudflarePlayback(cloudflare_uid):await signedRead(media_path)),thumbnail_url:thumbnail_path?await signedRead(thumbnail_path):null};}));
    const {avatar_path,...publicProfile}=p;
    return json(200,{profile:{...publicProfile,avatar_url:avatar_path?await signedRead(avatar_path):null},is_following:isFollowing,followers:followers.length,following:followingCount.length,profile_views:profileViews.length,posts:resultPosts,private_locked:!allowed});
   }
