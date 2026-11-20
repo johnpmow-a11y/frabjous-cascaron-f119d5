@@ -259,3 +259,10 @@
 .aam-promo-history .aam-social-preview{width:100%;max-height:240px;object-fit:cover;border-radius:14px}
 .aam-promo-history p{overflow-wrap:anywhere}
 .aam-social-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+
+.aam-social-call-panel.aam-call-active .aam-social-call-actions>button:nth-child(2){display:grid!important}
+.aam-social-call-panel.aam-call-active .aam-social-call-actions .aam-social-btn{font-size:20px!important}
+.aam-call-avatar-actions{position:relative;z-index:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px;margin-top:auto;padding:8px;border-radius:18px;background:rgba(5,10,18,.42);backdrop-filter:blur(14px)}
+.aam-social-call-panel.aam-call-active .aam-call-avatar-actions .aam-social-btn{flex:0 1 auto;width:auto;height:38px;min-width:0;padding:7px 11px;border-radius:20px;font-size:11px!important;background:rgba(51,65,85,.92);color:#fff}
+.aam-call-avatar-actions select{max-width:145px}
+.aam-social-call-panel.aam-call-active .aam-call-avatar-actions .aam-social-muted{color:#fff;font-size:10px}
