@@ -11,3 +11,9 @@
 .doc-tv-screen img{border-radius:inherit;transform:scale(1.005)}
 .doc-tv-stand{height:20px;width:28%;filter:drop-shadow(0 8px 6px rgba(0,0,0,.28))}
 @media(max-width:760px){.doc-tv{border-radius:26px / 20px;padding:9px 9px 14px;transform:perspective(900px) rotateY(-1deg)}.doc-tv-screen{border-radius:18px / 14px}.doc-keyboard{bottom:calc(4px + env(safe-area-inset-bottom));}.doc-keyboard-input{min-height:90px;font-size:17px}.doc-editor-page{padding-bottom:calc(24px + env(safe-area-inset-bottom))}.doc-workspace{gap:10px}}
+
+.doc-tv{border-radius:42px / 28px;transform:perspective(1200px) rotateY(-1.2deg) rotateX(.8deg);box-shadow:0 26px 44px rgba(0,0,0,.38),inset 0 2px 4px rgba(255,255,255,.38),inset 0 -4px 10px rgba(0,0,0,.9)}
+.doc-tv-screen{border-radius:32px / 22px;transform:perspective(1200px) rotateY(.25deg);box-shadow:inset 0 0 24px rgba(0,0,0,.22),0 0 0 3px #050707,0 8px 24px rgba(0,0,0,.2)}
+.doc-tv-screen:before{content:"";position:absolute;z-index:2;inset:0;pointer-events:none;border-radius:inherit;background:radial-gradient(ellipse at 50% 48%,transparent 55%,rgba(0,0,0,.08) 100%),linear-gradient(105deg,rgba(255,255,255,.2),transparent 24%,transparent 75%,rgba(255,255,255,.1)}
+.doc-keyboard{position:relative;bottom:auto}.doc-keyboard-input{min-height:72px;max-height:24vh;overscroll-behavior:contain}
+@media(max-width:760px){.doc-editor-page{width:96%;padding-bottom:calc(14px + env(safe-area-inset-bottom))}.doc-tv{border-radius:30px / 22px}.doc-tv-screen{border-radius:23px / 17px}.doc-workspace{grid-template-columns:minmax(0,1fr)}.doc-keyboard{position:relative;bottom:auto}.doc-keyboard-input{min-height:64px;font-size:17px}}
