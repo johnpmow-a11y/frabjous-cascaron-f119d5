@@ -5,6 +5,12 @@ const POSE_MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmar
 const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
+let avatarDependenciesPromise=null;
+let visionTasksPromise=null;
+function loadAvatarDependencies(){if(!avatarDependenciesPromise)avatarDependenciesPromise=Promise.all([import(THREE_URL),import(WIREFACE_BASE+'/dist/create.js'),import(WIREFACE_BASE+'/dist/three.js'),import(WIREFACE_BASE+'/dist/three-characters.js')]);return avatarDependenciesPromise;}
+function loadVisionTasks(){if(!visionTasksPromise)visionTasksPromise=(async()=>{const module=await import(VISION_BASE+'/vision_bundle.mjs');const vision=await module.FilesetResolver.forVisionTasks(VISION_BASE+'/wasm');return {module,vision};})();return visionTasksPromise;}
+export async function preloadAamLiveKitAvatar({models=false}={}){await Promise.all([loadAvatarDependencies(),loadVisionTasks()]);if(models)await Promise.all([POSE_MODEL,HAND_MODEL,FACE_MODEL].map(url=>fetch(url,{mode:'cors',cache:'force-cache'}).catch(()=>null)));return true;}
+
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const smooth = (current, target, amount = 0.28) => current + (target - current) * amount;
 
@@ -191,12 +197,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
   if (photoFile && photoFile.size > 12 * 1024 * 1024) throw new Error('Choose a photograph smaller than 12 MB.');
   if (!HTMLCanvasElement.prototype.captureStream) throw new Error('This browser cannot publish an animated avatar video.');
 
-  const [THREE, createModule, threeModule, characterModule] = await Promise.all([
-    import(THREE_URL),
-    import(WIREFACE_BASE + '/dist/create.js'),
-    import(WIREFACE_BASE + '/dist/three.js'),
-    import(WIREFACE_BASE + '/dist/three-characters.js'),
-  ]);
+  const [THREE, createModule, threeModule, characterModule] = await loadAvatarDependencies();
   const { createCharacter } = createModule;
   const { exportCharacter, loadCharacter } = threeModule;
   const { buildCharacter } = characterModule;
@@ -284,8 +285,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
       if (cameraVideo.readyState < 2) await new Promise(resolve => { cameraVideo.addEventListener('loadeddata', resolve, { once: true }); setTimeout(resolve, 2500); });
       try {
         if (cameraVideo.readyState < 2) throw new Error('Camera video did not become ready for tracking.');
-        const visionModule = await import(VISION_BASE + '/vision_bundle.mjs');
-        const vision = await visionModule.FilesetResolver.forVisionTasks(VISION_BASE + '/wasm');
+        const {module:visionModule,vision} = await loadVisionTasks();
         poseLandmarker = await makeLandmarker(visionModule.PoseLandmarker, vision, POSE_MODEL, { numPoses: 1, minPoseDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         try { handLandmarker = await makeLandmarker(visionModule.HandLandmarker, vision, HAND_MODEL, { numHands: 2, minHandDetectionConfidence: 0.5, minTrackingConfidence: 0.5 }); } catch (_) { handLandmarker = null; }
         try { faceLandmarker = await makeLandmarker(visionModule.FaceLandmarker, vision, FACE_MODEL, { numFaces: 1, outputFaceBlendshapes: true }); } catch (_) { faceLandmarker = null; }
