@@ -103,3 +103,34 @@
 .aam-post-composer{max-width:640px;margin:12px auto;padding:14px;background:#fff;border-radius:20px}.aam-post-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}.aam-post-choice button{border:1px solid #dbe2ea;border-radius:16px;min-height:112px;display:grid;place-content:center;gap:6px;background:#f8fafc;color:#111827}.aam-post-choice button span{font-size:30px}.aam-post-preview{margin:12px 0}.aam-post-preview img,.aam-post-preview video{width:100%;max-height:55vh;object-fit:contain;border-radius:14px;background:#080d14}.aam-post-sound{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.aam-post-sound span{font-size:12px;color:#64748b}.aam-post-submit{width:100%;margin-top:12px;min-height:50px}
 .aam-social-card{margin:8px 0}
 @media(max-width:420px){#aamSocialDock button{font-size:9px}.aam-social-feed{height:calc(100dvh - 228px - env(safe-area-inset-bottom))}.aam-feed-item{height:calc(100dvh - 228px - env(safe-area-inset-bottom));min-height:calc(100dvh - 228px - env(safe-area-inset-bottom))}.aam-coin-price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.aam-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+body:has(#aamSocialDock){height:100dvh;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body:has(#aamSocialDock) #app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+body:has(#aamSocialDock) #app>.topbar{flex:0 0 auto}
+body:has(#aamSocialDock) #app>.container{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+body:has(#aamSocialDock) input,body:has(#aamSocialDock) textarea,body:has(#aamSocialDock) [contenteditable=true]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.aam-social-chat-messages{max-height:none;height:min(58dvh,620px);overscroll-behavior:contain;scrollbar-width:thin}
+.aam-feed-sound{border:0;background:rgba(0,0,0,.42);color:#fff;border-radius:20px;padding:5px 10px;font-size:12px;text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aam-feed-sound.playing{background:#087443}
+.aam-sound-overlay{position:fixed;inset:0;z-index:100020;background:rgba(5,12,20,.62);display:flex;align-items:flex-end;justify-content:center}
+.aam-sound-sheet{width:min(680px,100%);max-height:78dvh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.aam-sound-sheet header{display:flex;align-items:center;justify-content:space-between;font-size:19px;margin-bottom:14px}
+.aam-sound-sheet header button{border:0;background:#edf2f7;border-radius:50%;width:38px;height:38px;font-size:25px}
+.aam-sound-search{display:flex;gap:8px}.aam-sound-search input{min-width:0;flex:1}.aam-sound-search button{border:0;border-radius:12px;padding:0 18px;background:#087443;color:#fff;font-weight:800}
+.aam-sound-result{display:flex;align-items:center;gap:12px;width:100%;padding:10px 4px;border:0;border-bottom:1px solid #e5e7eb;background:#fff;text-align:left}
+.aam-sound-result img{width:48px;height:48px;border-radius:10px;object-fit:cover}.aam-sound-result span:nth-child(2){flex:1;min-width:0}.aam-sound-result strong,.aam-sound-result small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aam-sound-result small{color:#64748b;margin-top:4px}
+.aam-social-call-panel.aam-call-active{position:fixed;inset:0;z-index:100010;background:#05090f;color:#fff;border-radius:0;padding:calc(16px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;justify-content:space-between}
+.aam-call-active #aamCallStatus{color:#fff;text-align:center;font-weight:700}
+.aam-call-active .aam-social-call-media{position:absolute;inset:0;height:100%;max-height:none;display:block;background:#05090f}
+.aam-call-active .aam-social-call-media video{width:100%;height:100%;object-fit:cover}
+.aam-call-active .aam-social-call-media video[data-local=true]{position:absolute;z-index:2;right:14px;top:calc(60px + env(safe-area-inset-top));width:28%;height:22%;border:2px solid #fff;border-radius:16px;object-fit:cover}
+.aam-call-active .aam-social-call-actions{position:relative;z-index:3;display:flex;justify-content:center;gap:14px;margin-top:auto;padding:14px;border-radius:24px;background:rgba(0,0,0,.34)}
+.aam-call-active .aam-social-call-actions button{width:58px;height:58px;min-width:58px;border-radius:50%;font-size:0;background:#334155;color:#fff}
+.aam-call-active #aamEndCallBtn{display:inline-grid!important;background:#dc2626!important}
+#aamIncomingCallOverlay{background:rgba(2,8,18,.96)!important}
+#aamIncomingCallOverlay .aam-social-card{width:100%!important;max-width:none!important;height:100%;max-height:none!important;border:0;border-radius:0;background:transparent;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.aam-social-incoming{display:flex;flex-direction:column;align-items:center;gap:16px;width:min(340px,100%);text-align:center}
+.aam-social-incoming button{width:74px;height:74px;border-radius:50%;font-size:0}
+.aam-social-incoming button:first-of-type{background:#16a34a}.aam-social-incoming button:last-of-type{background:#dc2626}
+.aam-tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.aam-tools-grid button{min-height:54px;border-radius:14px}
+@media(max-width:520px){.aam-tools-grid{grid-template-columns:1fr}.aam-social-chat-messages{height:55dvh}}
