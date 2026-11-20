@@ -23,7 +23,7 @@ async function getPrivateToken(){
  const id=process.env.DAILYMOTION_CLIENT_ID||process.env.DAILYMOTION_API_KEY;
  const secret=process.env.DAILYMOTION_CLIENT_SECRET||process.env.DAILYMOTION_API_SECRET;
  if(!id||!secret)return '';
- const body=new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret,scope:'profile.read video.read'});
+ const body=new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret,scope:'profile.read video.manage'});
  const r=await fetch('https://oauth2.dailymotion.com/v2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body,signal:AbortSignal.timeout(10000)});
  const d=await r.json().catch(()=>({}));
  if(!r.ok||!d.access_token)throw new Error(d.error_description||d.error||'Dailymotion authentication failed.');
