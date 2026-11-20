@@ -183,6 +183,26 @@ function poseTargets(points) {
   };
 }
 
+function faceTargets(points) {
+  if (!points || points.length < 264) return null;
+  const left = points[33], right = points[263], nose = points[1], chin = points[152], forehead = points[10];
+  if (![left, right, nose, chin, forehead].every(Boolean)) return null;
+  const eyeMidX = (left.x + right.x) / 2;
+  const eyeMidY = (left.y + right.y) / 2;
+  const eyeWidth = Math.max(0.075, Math.abs(right.x - left.x));
+  const faceHeight = Math.max(0.12, chin.y - forehead.y);
+  const noseRatio = (nose.y - eyeMidY) / faceHeight;
+  const centerX = (left.x + right.x + nose.x) / 3;
+  const centerY = (eyeMidY + chin.y + forehead.y) / 3;
+  return {
+    yaw: clamp((nose.x - eyeMidX) / eyeWidth * 2.0, -0.62, 0.62),
+    pitch: clamp((noseRatio - 0.31) * 2.0, -0.48, 0.48),
+    roll: clamp(Math.atan2(right.y - left.y, right.x - left.x), -0.55, 0.55),
+    shiftX: clamp((centerX - 0.5) * 1.2, -0.4, 0.4),
+    shiftY: clamp((0.48 - centerY) * 1.2, -0.3, 0.3),
+  };
+}
+
 export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharacter = null, bodyStyle = 'sarah', mediaElement, trackBody = true }) {
   if (!room || !LK || (!photoFile && !savedCharacter)) throw new Error('A video call and a photograph or saved avatar are required.');
   if (photoFile && !photoFile.type?.startsWith('image/')) throw new Error('Choose a JPG, PNG or WebP photograph.');
@@ -228,7 +248,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
   scene.add(floor);
 
   const wasCameraEnabled = !!room.localParticipant.isCameraEnabled;
-  let figure, currentPhotoCharacter, cameraLocalTrack, cameraVideo, poseLandmarker, handLandmarker, faceLandmarker;
+  let figure, currentPhotoCharacter, cameraLocalTrack, cameraVideo, poseLandmarker, handLandmarker, faceLandmarker, neckPivot, neckBasePosition, targetFace = null;
   let currentBodyStyle = bodyStyle === 'walter' ? 'walter' : 'sarah';
   let fingerRigs = [], legRigs = [], audioContext, stopLipSync, micStream, videoTrack, preview;
   let published = false, stopped = false, trackingAvailable = false, cameraUnpublished = false;
@@ -255,6 +275,16 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
   try {
     currentPhotoCharacter = savedCharacter ? await loadCharacter(savedCharacter) : await makePhotoCharacter(photoFile);
     figure = await buildFigure(currentBodyStyle);
+    if (figure.head?.parent) {
+      const head = figure.head, parent = head.parent;
+      neckPivot = new THREE.Group();
+      neckPivot.name = 'aam-neck-pivot';
+      neckPivot.position.copy(head.position);
+      neckBasePosition = neckPivot.position.clone();
+      head.position.set(0, 0, 0);
+      parent.add(neckPivot);
+      neckPivot.add(head);
+    }
     scene.add(figure.root);
 
     const micPublication = [...room.localParticipant.audioTrackPublications.values()]
@@ -314,6 +344,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
           lastFaceVideoTime = cameraVideo.currentTime;
           try {
             const faceResult = faceLandmarker.detectForVideo(cameraVideo, now);
+            targetFace = faceTargets(faceResult.faceLandmarks?.[0]) || targetFace;
             const nextMood = faceMoodFromBlendshapes(faceResult.faceBlendshapes?.[0]?.categories);
             if (nextMood.mood !== currentFaceMood) {
               currentFaceMood = nextMood.mood;
@@ -323,6 +354,18 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
         }
       }
       figure?.update(dt, elapsed);
+      if (targetFace && figure?.head) {
+        if (neckPivot && neckBasePosition) {
+          neckPivot.rotation.x = smooth(neckPivot.rotation.x, targetFace.pitch * 0.48, 0.2);
+          neckPivot.rotation.y = smooth(neckPivot.rotation.y, targetFace.yaw * 0.52, 0.2);
+          neckPivot.rotation.z = smooth(neckPivot.rotation.z, targetFace.roll * 0.38, 0.2);
+          neckPivot.position.x = smooth(neckPivot.position.x, neckBasePosition.x + targetFace.shiftX * 0.055, 0.15);
+          neckPivot.position.y = smooth(neckPivot.position.y, neckBasePosition.y + targetFace.shiftY * 0.045, 0.15);
+        }
+        figure.head.rotation.x = smooth(figure.head.rotation.x, targetFace.pitch * 0.52, 0.2);
+        figure.head.rotation.y = smooth(figure.head.rotation.y, targetFace.yaw * 0.48, 0.2);
+        figure.head.rotation.z = smooth(figure.head.rotation.z, targetFace.roll * 0.5, 0.2);
+      }
       if (targetPose && figure) {
         const left = figure.arms?.[1], right = figure.arms?.[0];
         if (left) {
@@ -337,7 +380,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
           figure.body.rotation.z = smooth(figure.body.rotation.z, targetPose.torsoZ, 0.18);
           figure.body.rotation.x = smooth(figure.body.rotation.x, targetPose.torsoX, 0.18);
         }
-        if (figure.head) figure.head.rotation.z = smooth(figure.head.rotation.z, targetPose.headZ, 0.22);
+        if (figure.head && !targetFace) figure.head.rotation.z = smooth(figure.head.rotation.z, targetPose.headZ, 0.22);
         if (targetPose.leftLeg && legRigs[1]) {
           legRigs[1].hip.rotation.z = smooth(legRigs[1].hip.rotation.z, targetPose.leftLeg.z);
           legRigs[1].hip.rotation.x = smooth(legRigs[1].hip.rotation.x, targetPose.leftLeg.x);
