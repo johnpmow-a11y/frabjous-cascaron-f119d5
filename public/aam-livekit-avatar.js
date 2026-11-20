@@ -202,13 +202,14 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
   const { buildCharacter } = characterModule;
   if (!createCharacter || !buildCharacter || !exportCharacter) throw new Error('The avatar engine could not be loaded.');
 
+  const mobileDevice = /iPhone|iPad|Android/i.test(navigator.userAgent || '');
   const canvas = document.createElement('canvas');
   canvas.width = 480;
   canvas.height = 640;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobileDevice, alpha: false, powerPreference: 'low-power' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileDevice ? 1 : 1.5));
   renderer.setSize(480, 640, false);
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !mobileDevice;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#eaf0f8');
@@ -303,7 +304,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
       const dt = lastFrame ? Math.min((now - lastFrame) / 1000, 0.05) : 0;
       lastFrame = now;
       elapsed += dt;
-      if (trackingAvailable && cameraVideo?.readyState >= 2 && now - lastDetection > 100 && cameraVideo.currentTime !== lastVideoTime) {
+      if (trackingAvailable && cameraVideo?.readyState >= 2 && now - lastDetection > (mobileDevice ? 150 : 100) && cameraVideo.currentTime !== lastVideoTime) {
         lastDetection = now;
         lastVideoTime = cameraVideo.currentTime;
         try {
@@ -311,7 +312,7 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
           targetPose = poseTargets(poseResult.landmarks?.[0] || null);
           if (handLandmarker) latestHands = handLandmarker.detectForVideo(cameraVideo, now);
         } catch (_) {}
-        if (faceLandmarker && cameraVideo?.readyState >= 2 && now - lastFaceDetection > 220 && cameraVideo.currentTime !== lastFaceVideoTime) {
+        if (faceLandmarker && cameraVideo?.readyState >= 2 && now - lastFaceDetection > (mobileDevice ? 300 : 220) && cameraVideo.currentTime !== lastFaceVideoTime) {
           lastFaceDetection = now;
           lastFaceVideoTime = cameraVideo.currentTime;
           try {
