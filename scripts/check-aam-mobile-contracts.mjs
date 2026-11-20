@@ -61,6 +61,9 @@ check('Dailymotion reads the existing public/private key names', dailymotion.inc
 check('Dailymotion requests account and video read scopes', dailymotion.includes("scope:'account.read video.read'"));
 check('Dailymotion feed imports only public non-explicit embeddable videos', dailymotion.includes("url.searchParams.set('visibility','public')") && dailymotion.includes("url.searchParams.set('is_explicit','false')") && dailymotion.includes('embedding?.enable_embed===false'));
 check('Dailymotion import avoids duplicate posts', dailymotion.includes('aam_social_posts?select=id&id=in.(') && dailymotion.includes('if(!freshRows.length)'));
+check('seen feed posts stay hidden for 24 hours and admin videos for 48 hours', feed.includes("const hours=p.author_role==='admin'&&p.media_type==='video'?48:24") && feed.includes('>=24*3600000'));
+check('avatar engine and tracking models preload before photo replacement', avatar.includes('preloadAamLiveKitAvatar') && social.includes('preloadCallAvatarEngine(true)'));
+check('embedded tools retain toast and status feedback', social.includes('class="toast"') && social.includes('id="appNotice"'));
 check('Home feed renders Dailymotion player videos', feed.includes('function dailymotionId') && feed.includes('dailymotionPlayer(dmId)') && social.includes("p.video_provider==='dailymotion'"));
 check('Home refresh imports Dailymotion content', social.includes('syncDailymotionFeed') && social.includes('/.netlify/functions/dailymotion-feed'));
 check('Audius uses the existing sound API key and bearer token', audius.includes('process.env.AUDIUS_API_KEY') && audius.includes('process.env.AUDIUS_BEARER_TOKEN'));
