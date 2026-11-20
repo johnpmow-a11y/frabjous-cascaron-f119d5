@@ -30,13 +30,12 @@ alter table public.aam_social_posts
   add column if not exists sound_title text,
   add column if not exists sound_artist text,
   add column if not exists sound_url text,
-  add column if not exists sound_artwork_url text,
   add column if not exists sound_artwork_url text;
 
 create index if not exists aam_social_posts_kind_feed_idx
   on public.aam_social_posts(post_kind, moderation_status, created_at desc);
 
-do $
+do $$
 begin
   if not exists (
     select 1 from pg_constraint
@@ -47,7 +46,7 @@ begin
       add constraint aam_social_posts_post_kind_check
       check (post_kind in ('feed','status'));
   end if;
-end $;
+end $$;
 
 create index if not exists aam_social_posts_status_expiry_idx
   on public.aam_social_posts(expires_at)
