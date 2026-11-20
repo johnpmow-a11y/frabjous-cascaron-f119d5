@@ -42,7 +42,7 @@ function mapVideo(v){
  return {id,title,description,thumbnail,created_at:created||new Date().toISOString()};
 }
 async function fetchDailymotionVideos(){
- const accessToken=await getPrivateToken();
+ let accessToken='';\n try{accessToken=await getPrivateToken();}catch(error){if(!process.env.DAILYMOTION_PUBLIC_API_KEY&&!process.env.DAILYMOTION_API_KEY)throw error;}
  if(accessToken){
   let profileId=String(process.env.DAILYMOTION_PROFILE_ID||'').trim();
   if(!profileId){
