@@ -21,3 +21,6 @@ alter table public.aam_social_profiles
 
 create unique index if not exists aam_social_profiles_profile_id_uidx
   on public.aam_social_profiles(profile_id);
+
+-- Last-seen timestamp for WhatsApp-style online presence.
+alter table public.aam_social_profiles add column if not exists last_seen_at timestamptz;
