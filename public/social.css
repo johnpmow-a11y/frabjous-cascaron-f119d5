@@ -197,3 +197,7 @@ body:has(#aamSocialDock) input,body:has(#aamSocialDock) textarea,body:has(#aamSo
 .tiny-admin.is-holding{box-shadow:0 0 0 7px rgba(250,204,21,.24),0 0 25px rgba(250,204,21,.8)!important}
 .tiny-admin.is-holding:before{content:"";position:absolute;inset:5px;border:2px solid #fff;border-right-color:#f59e0b;border-radius:50%;animation:adminScan .7s linear infinite;pointer-events:none}
 .tiny-admin.is-unlocked{box-shadow:0 0 0 9px rgba(250,204,21,.32),0 0 30px rgba(250,204,21,.9)!important}
+
+.aam-sponsored-label{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.88);color:#334155;font-size:10px;font-weight:800;letter-spacing:.04em;margin-bottom:5px}
+.aam-promoted-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:8px;min-height:34px;padding:7px 15px;border-radius:999px;background:#facc15;color:#172033;text-decoration:none;font-weight:800;font-size:13px}
+#aamPromoImageName{display:block;overflow-wrap:anywhere;margin-top:6px}
