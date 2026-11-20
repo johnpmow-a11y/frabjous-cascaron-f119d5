@@ -42,7 +42,7 @@ async function getPrivateToken(){
 function mapVideo(v){
  const id=String(v.video_id||v.id||'').trim();
  if(!id||!id.split('').every(ch=>/[a-z0-9]/i.test(ch)))return null;
- if(v.is_explicit===true||v.explicit===true||v.is_published===false||v.published===false||v.private===true||String(v.visibility||'public')!=='public'||v.embedding?.enable_embed===false||v.allow_embed===false)return null;
+ if(v.is_explicit===true||v.explicit===true||v.is_for_kids===true||v.is_published===false||v.published===false||v.private===true||String(v.visibility||'public')!=='public'||v.embedding?.enable_embed===false||v.allow_embed===false)return null;
  const title=String(v.title||'Video').trim().slice(0,180);
  const description=String(v.description||'').trim().slice(0,1800);
  const thumbnail=String(v.thumbnail?.h720_url||v.thumbnail?.h480_url||v.thumbnail_720_url||v.thumbnail_480_url||'').trim();
@@ -59,15 +59,15 @@ async function fetchDailymotionVideos(){
  if(accessToken){
   let profileId=String(process.env.DAILYMOTION_PROFILE_ID||'').trim();
   if(!profileId){
-   const me=await fetch('https://api.dailymotion.com/v2/me?fields=profiles.profile_id,profiles.name',{headers:{Authorization:`Bearer ${accessToken}`,Accept:'application/json'},signal:AbortSignal.timeout(10000)});
+   const me=await fetch('https://api.dailymotion.com/v2/me?fields=profiles',{headers:{Authorization:`Bearer ${accessToken}`,Accept:'application/json'},signal:AbortSignal.timeout(10000)});
    const m=await me.json().catch(()=>({}));
    if(!me.ok)throw new Error(m.message||'Could not read the Dailymotion profile.');
    profileId=String(m.profiles?.[0]?.profile_id||'');
   }
   if(!profileId)throw new Error('Set DAILYMOTION_PROFILE_ID for this Dailymotion account.');
   const url=new URL(`https://api.dailymotion.com/v2/profiles/${encodeURIComponent(profileId)}/videos`);
-  url.searchParams.set('page_size','20');url.searchParams.set('sort','-created_at');url.searchParams.set('visibility','public');url.searchParams.set('is_explicit','false');
-  url.searchParams.set('fields','video_id,title,description,created_at,published_at,is_published,is_explicit,visibility,embedding.enable_embed,thumbnail.h720_url,thumbnail.h480_url');
+  url.searchParams.set('page_size','20');url.searchParams.set('sort','-created_at');url.searchParams.set('visibility','public');url.searchParams.set('is_explicit','false');url.searchParams.set('is_for_kids','false');
+  url.searchParams.set('fields','video_id,title,description,created_at,published_at,is_published,is_explicit,is_for_kids,visibility,embedding.enable_embed,thumbnail.h720_url,thumbnail.h480_url');
   const r=await fetch(url,{headers:{Authorization:`Bearer ${accessToken}`,Accept:'application/json'},signal:AbortSignal.timeout(12000)});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d.message||d.error||'Dailymotion could not load videos.');
