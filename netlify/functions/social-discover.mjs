@@ -31,7 +31,7 @@ export async function handler(event){
   }
   const target=String(q.profile_id||'');
   if(target){
-   const profileFilter=uuid.test(target)?`customer_id=eq.${encodeURIComponent(target)}`:/^\\d{11}$/.test(target)?`profile_id=eq.${encodeURIComponent(target)}`:null;if(!profileFilter)return json(400,{error:'Invalid profile ID.'});
+   const profileFilter=uuid.test(target)?`customer_id=eq.${encodeURIComponent(target)}`:/^\d{11}$/.test(target)?`profile_id=eq.${encodeURIComponent(target)}`:null;if(!profileFilter)return json(400,{error:'Invalid profile ID.'});
    const profiles=await db(`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code&${profileFilter}&limit=1`);
    if(!profiles.length)return json(404,{error:'Profile not found.'});
    const p=profiles[0],targetId=p.customer_id,following=await db(`aam_social_follows?select=follower_id&follower_id=eq.${s.customer_id}&followed_id=eq.${targetId}&limit=1`),isFollowing=following.length>0,allowed=!p.is_private||isFollowing||targetId===s.customer_id;
@@ -49,7 +49,7 @@ export async function handler(event){
    return json(200,{profile:{...publicProfile,avatar_url:avatar_path?await signedRead(avatar_path):null},is_following:isFollowing,followers:followers.length,following:followingCount.length,profile_views:profileViews.length,posts:resultPosts,private_locked:!allowed});
   }
   const term=String(q.q||'').trim().slice(0,40);if(term.length<2)return json(200,{profiles:[]});
-  const profiles=await db(/^\\d{11}$/.test(term)?`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private&profile_id=eq.${encodeURIComponent(term)}&limit=25`:`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private&display_name=ilike.*${encodeURIComponent(term)}*&limit=25`);
+  const profiles=await db(/^\d{11}$/.test(term)?`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private&profile_id=eq.${encodeURIComponent(term)}&limit=25`:`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private&display_name=ilike.*${encodeURIComponent(term)}*&limit=25`);
   const ids=profiles.map(p=>p.customer_id).filter(id=>id!==s.customer_id);
   const follows=ids.length?await db(`aam_social_follows?select=followed_id&follower_id=eq.${s.customer_id}&followed_id=in.(${ids.join(',')})`):[];
   const set=new Set(follows.map(f=>f.followed_id));
