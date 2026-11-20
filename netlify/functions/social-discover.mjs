@@ -42,7 +42,8 @@ export async function handler(event){
     db(`aam_social_follows?select=followed_id&follower_id=eq.${targetId}`),
     allowed?db(`aam_social_posts?select=id,customer_id,media_type,media_path,cloudflare_uid,thumbnail_path,caption,comments_enabled,created_at,is_locked&customer_id=eq.${targetId}&moderation_status=eq.published&order=created_at.desc&limit=30`):Promise.resolve([]),
     db(`aam_social_video_unlocks?select=post_id&customer_id=eq.${s.customer_id}`),
-    db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${targetId}`)
+    db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${targetId}`),
+    db(`aam_social_presence?select=last_seen_at,online_until&customer_id=eq.${targetId}&limit=1`)
    ]);
    const unlocked=new Set(unlocks.map(x=>x.post_id));
    const resultPosts=await Promise.all(posts.map(async post=>{const {media_path,cloudflare_uid,thumbnail_path,...publicPost}=post;const locked=post.media_type==='video'&&post.is_locked===true&&!unlocked.has(post.id);return {...publicPost,cloudflare_uid,locked_video:locked,media_url:locked?null:(cloudflare_uid?cloudflarePlayback(cloudflare_uid):await signedRead(media_path)),thumbnail_url:thumbnail_path?await signedRead(thumbnail_path):null};}));
