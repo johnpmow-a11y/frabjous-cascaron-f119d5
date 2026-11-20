@@ -31,18 +31,21 @@ async function getPrivateToken(){
 }
 function mapVideo(v){
  const id=String(v.video_id||v.id||'').trim();
- if(!/^[a-z0-9]+$/i.test(id))return null;
+ if(!id||!id.split('').every(ch=>/[a-z0-9]/i.test(ch)))return null;
  if(v.is_explicit===true||v.explicit===true||v.is_published===false||String(v.visibility||'public')!=='public'||v.embedding?.enable_embed===false)return null;
  const title=String(v.title||'Video').trim().slice(0,180);
  const description=String(v.description||'').trim().slice(0,1800);
  const thumbnail=String(v.thumbnail?.h720_url||v.thumbnail?.h480_url||v.thumbnail_720_url||v.thumbnail_480_url||'').trim();
  let created=v.created_at||v.published_at||v.created_time||null;
- if(typeof created==='number'||/^\\d+$/.test(String(created||'')))created=new Date(Number(created)*1000).toISOString();
+ const createdNumber=Number(created);
+ if(typeof created==='number'||(String(created||'').trim()!==''&&Number.isFinite(createdNumber)&&String(created).trim()===String(createdNumber)))created=new Date(createdNumber*1000).toISOString();
  else if(created){const date=new Date(created);created=Number.isFinite(date.getTime())?date.toISOString():null;}
  return {id,title,description,thumbnail,created_at:created||new Date().toISOString()};
 }
 async function fetchDailymotionVideos(){
- let accessToken='';\n try{accessToken=await getPrivateToken();}catch(error){if(!process.env.DAILYMOTION_PUBLIC_API_KEY&&!process.env.DAILYMOTION_API_KEY)throw error;}
+ let accessToken='';
+ try{accessToken=await getPrivateToken();}
+ catch(error){if(!process.env.DAILYMOTION_PUBLIC_API_KEY&&!process.env.DAILYMOTION_API_KEY)throw error;}
  if(accessToken){
   let profileId=String(process.env.DAILYMOTION_PROFILE_ID||'').trim();
   if(!profileId){
@@ -86,7 +89,7 @@ export async function handler(event){
   const rows=videos.map(v=>({
    id:stableId(v.id),customer_id:null,author_role:'admin',media_type:'video',
    media_path:'dailymotion/'+v.id,thumbnail_path:v.thumbnail||null,
-   caption:(v.title+(v.description?'\\n'+v.description:'')).slice(0,2200),
+   caption:(v.title+(v.description?' · '+v.description:'')).slice(0,2200),
    post_kind:'feed',moderation_status:'published',is_locked:false,created_at:v.created_at
   }));
   await db('aam_social_posts?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify(rows)});
