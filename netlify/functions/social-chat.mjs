@@ -26,10 +26,12 @@ export async function handler(event){
     const reads=messages.length?await db(`aam_chat_message_reads?select=message_id,customer_id,read_at&message_id=in.(${messages.map(m=>m.id).join(',')})`):[];
     const ids=[...new Set(messages.map(m=>m.sender_id))];
     const profiles=ids.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${ids.join(',')})`):[];
-    const senderNames=new Map(profiles.map(p=>[p.customer_id,p]));
+    const otherId=otherParticipants[0]?.customer_id||null,[otherProfiles,otherPresence]=otherId?await Promise.all([db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,profile_id&customer_id=eq.${otherId}&limit=1`),db(`aam_social_presence?select=last_seen_at,online_until&customer_id=eq.${otherId}&limit=1`)]):[[],[]];
+    const otherProfile=otherProfiles[0]||{},presence=otherPresence[0]||{};
+    const other={customer_id:otherId,profile_id:otherProfile.profile_id||null,display_name:otherProfile.display_name||'Friend',bio:otherProfile.bio||'',avatar_url:otherProfile.avatar_path?await signedRead(otherProfile.avatar_path):null,online:!!presence.online_until&&new Date(presence.online_until).getTime()>Date.now(),last_seen_at:presence.last_seen_at||null};
     const pm=new Map(profiles.map(p=>[p.customer_id,p]));
     await rpc('aam_chat_mark_read',{p_token:token,p_conversation:conv});
-    return json(200,{conversation:conversationRows[0]||{id:conv,conversation_type:'direct',title:'Conversation'},other_customer_id:otherParticipants[0]?.customer_id||null,group_role:groupMember[0]?.group_role||null,messages:await Promise.all(messages.map(async m=>{const {media_path,...publicMessage}=m;return {...publicMessage,media_url:media_path?await signedRead(media_path):null,creator:pm.get(m.sender_id)||{display_name:'Creator'},read_by:reads.filter(r=>r.message_id===m.id)}}))});
+    return json(200,{conversation:conversationRows[0]||{id:conv,conversation_type:'direct',title:'Conversation'},other_customer_id:otherId,other,group_role:groupMember[0]?.group_role||null,messages:await Promise.all(messages.map(async m=>{const {media_path,...publicMessage}=m;return {...publicMessage,media_url:media_path?await signedRead(media_path):null,creator:pm.get(m.sender_id)||{display_name:'Creator'},read_by:reads.filter(r=>r.message_id===m.id)}}))});
    }
    const parts=await db(`aam_chat_participants?select=conversation_id,last_seen_at&customer_id=eq.${s.customer_id}`);
    if(!parts.length)return json(200,{conversations:[]});
@@ -43,9 +45,9 @@ export async function handler(event){
    const memberships=groupIds.length?await db(`aam_chat_group_members?select=conversation_id,customer_id,group_role&conversation_id=in.(${groupIds.join(',')})`):[];
    const ownRoles=new Map(memberships.filter(m=>m.customer_id===s.customer_id).map(m=>[m.conversation_id,m.group_role]));
    const otherIds=[...new Set(allParts.filter(p=>p.customer_id!==s.customer_id).map(p=>p.customer_id))];
-   const profiles=otherIds.length?await db(`aam_social_profiles?select=customer_id,display_name,avatar_path&customer_id=in.(${otherIds.join(',')})`):[];
-   const pm=new Map(profiles.map(p=>[p.customer_id,p]));
-   return json(200,{conversations:conversations.map(c=>c.conversation_type==='group'?({...c,other:{display_name:c.title||'All Ads Manager Community',is_group:true,group_role:ownRoles.get(c.id)||'member',member_count:memberships.filter(m=>m.conversation_id===c.id).length},last_message:messages.find(m=>m.conversation_id===c.id)||null}):({...c,other:allParts.filter(p=>p.conversation_id===c.id&&p.customer_id!==s.customer_id).map(p=>({...pm.get(p.customer_id),last_seen_at:p.last_seen_at}))[0]||{},last_message:messages.find(m=>m.conversation_id===c.id)||null}))});
+   const [profiles,presenceRows]=await Promise.all([otherIds.length?db(`aam_social_profiles?select=customer_id,display_name,avatar_path,profile_id&customer_id=in.(${otherIds.join(',')})`):[],otherIds.length?db(`aam_social_presence?select=customer_id,last_seen_at,online_until&customer_id=in.(${otherIds.join(',')})`):[]]);
+   const pm=new Map(profiles.map(p=>[p.customer_id,p])),presenceMap=new Map(presenceRows.map(p=>[p.customer_id,p]));
+   return json(200,{conversations:conversations.map(c=>c.conversation_type==='group'?({...c,other:{display_name:c.title||'All Ads Manager Community',is_group:true,group_role:ownRoles.get(c.id)||'member',member_count:memberships.filter(m=>m.conversation_id===c.id).length},last_message:messages.find(m=>m.conversation_id===c.id)||null}):({...c,other:allParts.filter(p=>p.conversation_id===c.id&&p.customer_id!==s.customer_id).map(p=>{const profile=pm.get(p.customer_id)||{},presence=presenceMap.get(p.customer_id)||{};return {...profile,online:!!presence.online_until&&new Date(presence.online_until).getTime()>Date.now(),last_seen_at:presence.last_seen_at||p.last_seen_at};})[0]||{},last_message:messages.find(m=>m.conversation_id===c.id)||null}))});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   if(b.action==='sign_media_upload'){
