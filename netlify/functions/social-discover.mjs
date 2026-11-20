@@ -16,8 +16,7 @@ export async function handler(event){
   if(event.httpMethod!=='GET')return json(405,{error:'Method not allowed.'});
   const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);if(!s)return json(401,{error:'Please log in again.'});if(!await adultConfirmed(s.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
   if(q.admin_profile==='1'){
-   await db('aam_social_profile_views?on_conflict=profile_key,viewer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({profile_key:'admin',viewer_id:s.customer_id,viewed_at:new Date().toISOString()})});
-   await sendPush({role:'admin',title:'Creator profile view',body:'Someone viewed the All Ads Manager creator profile.'}).catch(()=>{});
+   if(q.no_view!=='1'){await db('aam_social_profile_views?on_conflict=profile_key,viewer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({profile_key:'admin',viewer_id:s.customer_id,viewed_at:new Date().toISOString()})});await sendPush({role:'admin',title:'Creator profile view',body:'Someone viewed the All Ads Manager creator profile.'}).catch(()=>{});}
    const adminRows=await db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1'),admin=adminRows[0]||{display_name:'All Ads Manager',follower_count:0,is_verified:true};
    const posts=await db('aam_social_posts?select=id,media_type,media_path,thumbnail_path,caption,comments_enabled,created_at,is_locked&author_role=eq.admin&moderation_status=eq.published&order=created_at.desc&limit=30');
    const ids=posts.map(p=>p.id),inList=ids.length?'in.('+ids.join(',')+')':null;
@@ -32,7 +31,7 @@ export async function handler(event){
    const profileViews=await db('aam_social_profile_views?select=viewer_id&profile_key=eq.admin');
    return json(200,{profile:{display_name:publicAdminName(admin.display_name),avatar_url:admin.avatar_path?await signedRead(admin.avatar_path):null,is_verified:!!admin.is_verified},followers:Number(admin.follower_count||0),following:0,likes:likes.length,profile_views:profileViews.length,posts:resultPosts});
   }
-  const targetInput=String(q.profile_id||'');
+  const targetInput=String(q.customer_id||q.profile_id||'');
   if(targetInput){
    let target=targetInput;
    if(/^\d{11}$/.test(targetInput)){const found=await db(`aam_social_profiles?select=customer_id&profile_id=eq.${encodeURIComponent(targetInput)}&limit=1`);target=found[0]?.customer_id||'';}
@@ -40,7 +39,7 @@ export async function handler(event){
    const profiles=await db(`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,last_seen_at,is_private,comments_enabled,referral_code&customer_id=eq.${target}&limit=1`);
    if(!profiles.length)return json(404,{error:'Profile not found.'});
    const p=profiles[0],following=await db(`aam_social_follows?select=follower_id&follower_id=eq.${s.customer_id}&followed_id=eq.${target}&limit=1`),isFollowing=following.length>0,allowed=!p.is_private||isFollowing||target===s.customer_id;
-   if(target!==s.customer_id){await db('aam_social_profile_views?on_conflict=profile_key,viewer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({profile_key:target,viewer_id:s.customer_id,viewed_at:new Date().toISOString()})});await db('aam_social_notifications',{method:'POST',body:JSON.stringify([{recipient_id:target,actor_id:s.customer_id,event_type:'profile_view',title:'Profile view',body:'Someone viewed your profile.'}])});await sendPush({role:'customer',customerId:target,title:'Profile view',body:'Someone viewed your profile.',eventType:'profile_view'}).catch(()=>{});}
+   if(target!==s.customer_id&&q.no_view!=='1'){await db('aam_social_profile_views?on_conflict=profile_key,viewer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({profile_key:target,viewer_id:s.customer_id,viewed_at:new Date().toISOString()})});await db('aam_social_notifications',{method:'POST',body:JSON.stringify([{recipient_id:target,actor_id:s.customer_id,event_type:'profile_view',title:'Profile view',body:'Someone viewed your profile.'}])});await sendPush({role:'customer',customerId:target,title:'Profile view',body:'Someone viewed your profile.',eventType:'profile_view'}).catch(()=>{});}
    const [followers,followingCount,posts,unlocks,profileViews]=await Promise.all([
     db(`aam_social_follows?select=follower_id&followed_id=eq.${target}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${target}`),
