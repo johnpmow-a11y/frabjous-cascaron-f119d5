@@ -20,14 +20,24 @@ function stableId(id){
 }
 async function getPrivateToken(){
  if(process.env.DAILYMOTION_ACCESS_TOKEN)return process.env.DAILYMOTION_ACCESS_TOKEN;
- const id=process.env.DAILYMOTION_CLIENT_ID||process.env.DAILYMOTION_API_KEY;
- const secret=process.env.DAILYMOTION_CLIENT_SECRET||process.env.DAILYMOTION_API_SECRET;
- if(!id||!secret)return '';
- const body=new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret,scope:'profile.read video.manage'});
- const r=await fetch('https://oauth2.dailymotion.com/v2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body,signal:AbortSignal.timeout(10000)});
- const d=await r.json().catch(()=>({}));
- if(!r.ok||!d.access_token)throw new Error(d.error_description||d.error||'Dailymotion authentication failed.');
- return String(d.access_token);
+ const pairs=[
+  [process.env.DAILYMOTION_PRIVATE_API_KEY,process.env.DAILYMOTION_PRIVATE_API_SECRET],
+  [process.env.DAILYMOTION_CLIENT_ID,process.env.DAILYMOTION_CLIENT_SECRET],
+  [process.env.DAILYMOTION_API_KEY,process.env.DAILYMOTION_API_SECRET],
+  [process.env.DAILYMOTION_PUBLIC_API_KEY,process.env.DAILYMOTION_PUBLIC_API_SECRET]
+ ].filter(pair=>pair[0]&&pair[1]);
+ let lastError=null;
+ for(const [id,secret] of pairs){
+  try{
+   const body=new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret,scope:'profile.read video.manage'});
+   const r=await fetch('https://oauth2.dailymotion.com/v2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body,signal:AbortSignal.timeout(10000)});
+   const d=await r.json().catch(()=>({}));
+   if(r.ok&&d.access_token)return String(d.access_token);
+   lastError=new Error(d.error_description||d.error||'Dailymotion authentication failed.');
+  }catch(error){lastError=error;}
+ }
+ if(lastError)throw lastError;
+ return '';
 }
 function mapVideo(v){
  const id=String(v.video_id||v.id||'').trim();
