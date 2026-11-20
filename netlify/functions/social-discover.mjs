@@ -31,17 +31,17 @@ export async function handler(event){
   }
   const target=String(q.profile_id||'');
   if(target){
-   if(!uuid.test(target))return json(400,{error:'Invalid profile.'});
-   const profiles=await db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code&customer_id=eq.${target}&limit=1`);
+   const profileFilter=uuid.test(target)?`customer_id=eq.${encodeURIComponent(target)}`:/^\\d{11}$/.test(target)?`profile_id=eq.${encodeURIComponent(target)}`:null;if(!profileFilter)return json(400,{error:'Invalid profile ID.'});
+   const profiles=await db(`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code&${profileFilter}&limit=1`);
    if(!profiles.length)return json(404,{error:'Profile not found.'});
-   const p=profiles[0],following=await db(`aam_social_follows?select=follower_id&follower_id=eq.${s.customer_id}&followed_id=eq.${target}&limit=1`),isFollowing=following.length>0,allowed=!p.is_private||isFollowing||target===s.customer_id;
-   if(target!==s.customer_id){await db('aam_social_profile_views?on_conflict=profile_key,viewer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({profile_key:target,viewer_id:s.customer_id,viewed_at:new Date().toISOString()})});await db('aam_social_notifications',{method:'POST',body:JSON.stringify([{recipient_id:target,actor_id:s.customer_id,event_type:'profile_view',title:'Profile view',body:'Someone viewed your profile.'}])});await sendPush({role:'customer',customerId:target,title:'Profile view',body:'Someone viewed your profile.',eventType:'profile_view'}).catch(()=>{});}
+   const p=profiles[0],targetId=p.customer_id,following=await db(`aam_social_follows?select=follower_id&follower_id=eq.${s.customer_id}&followed_id=eq.${targetId}&limit=1`),isFollowing=following.length>0,allowed=!p.is_private||isFollowing||targetId===s.customer_id;
+   if(targetId!==s.customer_id){await db('aam_social_profile_views?on_conflict=profile_key,viewer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({profile_key:targetId,viewer_id:s.customer_id,viewed_at:new Date().toISOString()})});await db('aam_social_notifications',{method:'POST',body:JSON.stringify([{recipient_id:targetId,actor_id:s.customer_id,event_type:'profile_view',title:'Profile view',body:'Someone viewed your profile.'}])});await sendPush({role:'customer',customerId:targetId,title:'Profile view',body:'Someone viewed your profile.',eventType:'profile_view'}).catch(()=>{});}
    const [followers,followingCount,posts,unlocks,profileViews]=await Promise.all([
-    db(`aam_social_follows?select=follower_id&followed_id=eq.${target}`),
-    db(`aam_social_follows?select=followed_id&follower_id=eq.${target}`),
-    allowed?db(`aam_social_posts?select=id,customer_id,media_type,media_path,thumbnail_path,caption,comments_enabled,created_at,is_locked&customer_id=eq.${target}&moderation_status=eq.published&order=created_at.desc&limit=30`):Promise.resolve([]),
+    db(`aam_social_follows?select=follower_id&followed_id=eq.${targetId}`),
+    db(`aam_social_follows?select=followed_id&follower_id=eq.${targetId}`),
+    allowed?db(`aam_social_posts?select=id,customer_id,media_type,media_path,thumbnail_path,caption,comments_enabled,created_at,is_locked&customer_id=eq.${targetId}&moderation_status=eq.published&order=created_at.desc&limit=30`):Promise.resolve([]),
     db(`aam_social_video_unlocks?select=post_id&customer_id=eq.${s.customer_id}`),
-    db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${target}`)
+    db(`aam_social_profile_views?select=viewer_id&profile_key=eq.${targetId}`)
    ]);
    const unlocked=new Set(unlocks.map(x=>x.post_id));
    const resultPosts=await Promise.all(posts.map(async post=>{const {media_path,thumbnail_path,...publicPost}=post;const locked=post.media_type==='video'&&post.is_locked===true&&!unlocked.has(post.id);return {...publicPost,locked_video:locked,media_url:locked?null:await signedRead(media_path),thumbnail_url:thumbnail_path?await signedRead(thumbnail_path):null};}));
@@ -49,7 +49,7 @@ export async function handler(event){
    return json(200,{profile:{...publicProfile,avatar_url:avatar_path?await signedRead(avatar_path):null},is_following:isFollowing,followers:followers.length,following:followingCount.length,profile_views:profileViews.length,posts:resultPosts,private_locked:!allowed});
   }
   const term=String(q.q||'').trim().slice(0,40);if(term.length<2)return json(200,{profiles:[]});
-  const profiles=await db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private&display_name=ilike.*${encodeURIComponent(term)}*&limit=25`);
+  const profiles=await db(/^\\d{11}$/.test(term)?`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private&profile_id=eq.${encodeURIComponent(term)}&limit=25`:`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private&display_name=ilike.*${encodeURIComponent(term)}*&limit=25`);
   const ids=profiles.map(p=>p.customer_id).filter(id=>id!==s.customer_id);
   const follows=ids.length?await db(`aam_social_follows?select=followed_id&follower_id=eq.${s.customer_id}&followed_id=in.(${ids.join(',')})`):[];
   const set=new Set(follows.map(f=>f.followed_id));
