@@ -1,6 +1,6 @@
 const json=(statusCode,body)=>({statusCode,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'},body:JSON.stringify(body)});
 const uuid=/^[0-9a-f-]{36}$/i;
-async function db(path){const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!u||!k)throw new Error('Social storage is not configured.');const r=await fetch(`${u}/rest/v1/${path}`,{headers:{apikey:k,...(k.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${k}`)}});const d=await r.json().catch(()=>[]);if(!r.ok)throw new Error(d.message||'Could not verify your session.');return d;}
+async function db(path){const u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!u||!k)throw new Error('Social storage is not configured.');const r=await fetch(`${u}/rest/v1/${path}`,{headers:{apikey:k,...(k.startsWith('sb_secret_')?{}:{Authorization:`Bearer ${k}`})}});const d=await r.json().catch(()=>[]);if(!r.ok)throw new Error(d.message||'Could not verify your session.');return d;}
 export async function handler(event){
  if(event.httpMethod==='OPTIONS')return json(204,{});
  if(event.httpMethod!=='GET')return json(405,{error:'Method not allowed.'});
