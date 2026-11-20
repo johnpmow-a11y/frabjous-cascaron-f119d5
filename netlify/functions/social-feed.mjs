@@ -19,7 +19,7 @@ export async function handler(event){
     if(!s)return json(401,{error:'Please log in again.'});
     if(!await adultConfirmed(s.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
     const now=new Date(),nowIso=now.toISOString(),viewWindow=new Date(now.getTime()-48*60*60*1000).toISOString();
-    const [posts,statuses,profiles,follows,unlocks,likes,comments,mineLikes,adminProfile,viewRows]=await Promise.all([
+    const [posts,statuses,profiles,follows,unlocks,likes,comments,mineLikes,adminProfile,viewRows,allViewRows]=await Promise.all([
      db('aam_social_posts?select=*&post_kind=eq.feed&moderation_status=eq.published&order=created_at.desc&limit=300'),
      db('aam_social_posts?select=*&post_kind=eq.status&moderation_status=eq.published&or=(expires_at.is.null,expires_at.gt.'+encodeURIComponent(nowIso)+')&order=created_at.desc&limit=60'),
      db('aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled'),
@@ -47,7 +47,7 @@ export async function handler(event){
     if(admin)return json(403,{error:'Only customer viewing history is supported.'});
     const postId=String(b.post_id||'');if(!uuid.test(postId))return json(400,{error:'Invalid post.'});
     const rows=await db(`aam_social_posts?select=id,post_kind,moderation_status&id=eq.${encodeURIComponent(postId)}&limit=1`);
-    if(!rows.length||rows[0].moderation_status!=='published'||rows[0].post_kind!=='feed')return json(404,{error:'This post is no longer available.'});
+    if(!rows.length||rows[0].moderation_status!=='published'||!['feed','status'].includes(rows[0].post_kind))return json(404,{error:'This post is no longer available.'});
     await db('aam_social_post_views?on_conflict=post_id,customer_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({post_id:postId,customer_id:customerId,viewed_at:new Date().toISOString()})});
     return json(200,{ok:true});
    }
