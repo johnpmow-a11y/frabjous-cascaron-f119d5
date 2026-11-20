@@ -42,7 +42,7 @@ async function getPrivateToken(){
 function mapVideo(v){
  const id=String(v.video_id||v.id||'').trim();
  if(!id||!id.split('').every(ch=>/[a-z0-9]/i.test(ch)))return null;
- if(v.is_explicit===true||v.explicit===true||v.is_published===false||String(v.visibility||'public')!=='public'||v.embedding?.enable_embed===false)return null;
+ if(v.is_explicit===true||v.explicit===true||v.is_published===false||v.published===false||v.private===true||String(v.visibility||'public')!=='public'||v.embedding?.enable_embed===false||v.allow_embed===false)return null;
  const title=String(v.title||'Video').trim().slice(0,180);
  const description=String(v.description||'').trim().slice(0,1800);
  const thumbnail=String(v.thumbnail?.h720_url||v.thumbnail?.h480_url||v.thumbnail_720_url||v.thumbnail_480_url||'').trim();
@@ -76,7 +76,7 @@ async function fetchDailymotionVideos(){
  const apiKey=process.env.DAILYMOTION_PUBLIC_API_KEY||process.env.DAILYMOTION_API_KEY;
  if(!apiKey)return null;
  const url=new URL('https://api.dailymotion.com/videos');
- url.searchParams.set('api_key',apiKey);url.searchParams.set('fields','id,title,description,thumbnail_720_url,thumbnail_480_url,created_time,explicit,url,channel');
+ url.searchParams.set('api_key',apiKey);url.searchParams.set('fields','id,title,description,thumbnail_720_url,thumbnail_480_url,created_time,explicit,private,published,allow_embed,url,channel');
  url.searchParams.set('sort','recent');url.searchParams.set('limit','20');
  const r=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(12000)});
  const d=await r.json().catch(()=>({}));
