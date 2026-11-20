@@ -43,7 +43,7 @@ export async function handler(event){
    const memberships=groupIds.length?await db(`aam_chat_group_members?select=conversation_id,customer_id,group_role&conversation_id=in.(${groupIds.join(',')})`):[];
    const ownRoles=new Map(memberships.filter(m=>m.customer_id===s.customer_id).map(m=>[m.conversation_id,m.group_role]));
    const otherIds=[...new Set(allParts.filter(p=>p.customer_id!==s.customer_id).map(p=>p.customer_id))];
-   const profiles=otherIds.length?await db(`aam_social_profiles?select=customer_id,profile_id,display_name,avatar_path&customer_id=in.(${otherIds.join(',')})`):[];
+   const profiles=otherIds.length?await db(`aam_social_profiles?select=customer_id,profile_id,display_name,avatar_path,last_seen_at&customer_id=in.(${otherIds.join(',')})`):[];
    const profileCards=await Promise.all(profiles.map(async p=>({...p,avatar_url:p.avatar_path?await signedRead(p.avatar_path):null})));const pm=new Map(profileCards.map(p=>[p.customer_id,p]));
    return json(200,{conversations:conversations.map(c=>c.conversation_type==='group'?({...c,other:{display_name:c.title||'All Ads Manager Community',is_group:true,group_role:ownRoles.get(c.id)||'member',member_count:memberships.filter(m=>m.conversation_id===c.id).length,members:memberships.filter(m=>m.conversation_id===c.id).map(m=>({...pm.get(m.customer_id),group_role:m.group_role}))},last_message:messages.find(m=>m.conversation_id===c.id)||null}):({...c,other:allParts.filter(p=>p.conversation_id===c.id&&p.customer_id!==s.customer_id).map(p=>({...pm.get(p.customer_id),last_seen_at:p.last_seen_at}))[0]||{},last_message:messages.find(m=>m.conversation_id===c.id)||null}))});
   }
