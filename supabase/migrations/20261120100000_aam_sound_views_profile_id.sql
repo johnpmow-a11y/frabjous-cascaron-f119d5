@@ -13,3 +13,7 @@ alter table public.aam_social_posts add column if not exists sound_url text;
 create table if not exists public.aam_social_post_views(customer_id uuid not null references public.customers(id) on delete cascade,post_id uuid not null references public.aam_social_posts(id) on delete cascade,viewed_at timestamptz not null default now(),primary key(customer_id,post_id));
 create index if not exists aam_social_post_views_post_idx on public.aam_social_post_views(post_id,viewed_at desc);
 alter table public.aam_social_post_views enable row level security;
+
+create table if not exists public.aam_social_presence(customer_id uuid primary key references public.customers(id) on delete cascade,last_seen_at timestamptz not null default now(),online_until timestamptz not null default now()+interval '90 seconds');
+create index if not exists aam_social_presence_online_idx on public.aam_social_presence(online_until desc);
+alter table public.aam_social_presence enable row level security;
