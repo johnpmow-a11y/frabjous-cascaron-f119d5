@@ -148,3 +148,25 @@ body:has(#aamSocialDock) input,body:has(#aamSocialDock) textarea,body:has(#aamSo
 #aamAdminCallOverlay.aam-call-active .aam-social-call-actions{position:absolute;z-index:3;bottom:calc(20px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:center;gap:14px}
 .aam-social-call-panel.aam-call-active #aamCallStatus{position:relative;z-index:3}
 .aam-social-call-panel.aam-call-active #aamEnableCallAudio{position:relative;z-index:4;align-self:center}
+
+.aam-social-call-panel:not(.aam-call-active){display:none}
+.aam-chat-header{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:10px;padding:8px 2px 12px;background:var(--aam-card,#fff);border-bottom:1px solid rgba(100,116,139,.16)}
+.aam-chat-header>img{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#e2e8f0}
+.aam-chat-avatar-fallback{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#e2e8f0;color:#64748b}
+.aam-chat-header>div{flex:1;min-width:0}.aam-chat-header strong,.aam-chat-header small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aam-chat-header small{font-size:12px;color:#64748b;margin-top:3px}
+.aam-chat-header>button{border:0;width:42px;height:42px;border-radius:50%;background:#edf7f1;color:#087443;font-size:20px}
+.aam-online-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#16a34a;margin-right:7px;box-shadow:0 0 0 3px rgba(22,163,74,.12)}
+.aam-profile-presence{display:flex;align-items:center;font-size:13px;color:#15803d;margin:5px 0 12px}
+.aam-coin-shop-overlay{position:fixed;inset:0;z-index:100030;background:rgba(4,10,18,.64);display:flex;align-items:flex-end;justify-content:center}
+.aam-coin-shop-sheet{width:min(620px,100%);max-height:82dvh;overflow:auto;background:#fff;color:#162033;border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -15px 45px rgba(0,0,0,.22)}
+.aam-coin-shop-sheet header{display:flex;align-items:center;justify-content:space-between;font-size:20px;margin-bottom:16px}
+.aam-coin-shop-sheet header button{border:0;border-radius:50%;width:38px;height:38px;font-size:24px;background:#eef2f7}
+.aam-coin-shop-sheet label{display:block;font-size:13px;font-weight:700;margin:16px 0 6px}
+.aam-coin-price-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.aam-coin-price{min-height:70px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;padding:12px;text-align:left}
+.aam-coin-price strong{display:block;color:#087443;font-size:18px}.aam-coin-price span{display:block;color:#64748b;font-size:12px;margin-top:4px}
+.aam-feed-item{scroll-snap-align:start;min-height:calc(100dvh - 150px)}
+.aam-feed-media-wrap{position:relative;min-height:min(72dvh,780px)}
+.aam-feed-media{touch-action:pan-y}
+.aam-feed-caption{pointer-events:auto}
+@media(max-width:520px){.aam-chat-header{gap:8px}.aam-chat-header>button{width:38px;height:38px}.aam-coin-price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
