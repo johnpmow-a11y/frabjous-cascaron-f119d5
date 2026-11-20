@@ -168,7 +168,9 @@ function poseTargets(points) {
   const hipX = (points[23].x + points[24].x) / 2;
   const hipY = (points[23].y + points[24].y) / 2;
   const earTilt = points[7] && points[8] ? clamp(Math.atan2(points[8].y - points[7].y, points[8].x - points[7].x), -0.45, 0.45) : 0;
-  const legsVisible = [25, 26, 27, 28].every(visible);
+  const earCenterX=points[7]&&points[8]?(points[7].x+points[8].x)/2:shoulderX,earCenterY=points[7]&&points[8]?(points[7].y+points[8].y)/2:shoulderY,nose=points[0]||{x:earCenterX,y:earCenterY};
+   const headYaw=clamp((nose.x-earCenterX)*3.6,-0.48,0.48),headPitch=clamp((nose.y-earCenterY-0.1)*2.2,-0.34,0.34),neckYaw=clamp((shoulderX-earCenterX)*1.5,-0.28,0.28),neckPitch=clamp((shoulderY-earCenterY+0.1)*0.8,-0.22,0.22);
+   const legsVisible = [25, 26, 27, 28].every(visible);
   return {
     leftArm: armAngle(points[11], points[13]),
     rightArm: armAngle(points[12], points[14]),
@@ -337,7 +339,9 @@ export async function createAamLiveKitAvatar({ room, LK, photoFile, savedCharact
           figure.body.rotation.z = smooth(figure.body.rotation.z, targetPose.torsoZ, 0.18);
           figure.body.rotation.x = smooth(figure.body.rotation.x, targetPose.torsoX, 0.18);
         }
-        if (figure.head) figure.head.rotation.z = smooth(figure.head.rotation.z, targetPose.headZ, 0.22);
+        if (figure.head) { figure.head.rotation.z = smooth(figure.head.rotation.z, targetPose.headZ, 0.22); figure.head.rotation.x = smooth(figure.head.rotation.x, targetPose.headX, 0.18); figure.head.rotation.y = smooth(figure.head.rotation.y, targetPose.headY, 0.18); }
+        const neckRig=figure.neck||figure.body?.getObjectByName?.('neck')||figure.root?.getObjectByName?.('neck');
+        if(neckRig){neckRig.rotation.x=smooth(neckRig.rotation.x,targetPose.neckX,0.16);neckRig.rotation.y=smooth(neckRig.rotation.y,targetPose.neckY,0.16);}
         if (targetPose.leftLeg && legRigs[1]) {
           legRigs[1].hip.rotation.z = smooth(legRigs[1].hip.rotation.z, targetPose.leftLeg.z);
           legRigs[1].hip.rotation.x = smooth(legRigs[1].hip.rotation.x, targetPose.leftLeg.x);
