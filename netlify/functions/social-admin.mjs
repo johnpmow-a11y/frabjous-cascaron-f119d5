@@ -40,10 +40,10 @@ export async function handler(event){
    return json(200,{path,token:d.token});
   }
   if(b.action==='publish_post'){
-   const path=String(b.media_path||''),mime=String(b.mime_type||''),ext=mimeExt[mime];
+   const path=String(b.media_path||''),mime=String(b.mime_type||''),ext=mimeExt[mime],cloudflareUid=String(b.cloudflare_uid||''),cloudflareVideo=mime.startsWith('video/')&&/^[a-f0-9]{32}$/i.test(cloudflareUid)&&path==='cloudflare/'+cloudflareUid;
    const thumb=String(b.thumbnail_path||'');
-   if(!ext||!path.startsWith('admin/')||path.includes('..')||(thumb&&(!thumb.startsWith('thumbnails/admin/')||thumb.includes('..'))))return json(400,{error:'Invalid administrator media.'});
-   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:null,author_role:'admin',media_type:mime.startsWith('video/')?'video':'image',media_path:path,thumbnail_path:thumb||null,caption:String(b.caption||'').trim().slice(0,2200),moderation_status:'published',is_locked:mime.startsWith('video/')&&b.is_locked===true}])});
+   if(!ext||(!path.startsWith('admin/')&&!cloudflareVideo)||path.includes('..')||(thumb&&(!thumb.startsWith('thumbnails/admin/')||thumb.includes('..'))))return json(400,{error:'Invalid administrator media.'});
+   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:null,author_role:'admin',media_type:mime.startsWith('video/')?'video':'image',media_path:path,cloudflare_uid:cloudflareVideo?cloudflareUid:null,thumbnail_path:thumb||null,caption:String(b.caption||'').trim().slice(0,2200),post_kind:'feed',moderation_status:'published',is_locked:mime.startsWith('video/')&&b.is_locked===true}])});
    return json(200,{ok:true,post:rows[0]});
   }
   if(b.action==='delete_post'){
