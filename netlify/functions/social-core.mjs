@@ -15,7 +15,7 @@ export async function handler(event){
    if(!s)return json(401,{error:'Please log in again.'});
    const [balance,profile,prefs,followers,following,profileViews]=await Promise.all([
     db(`aam_coin_balances?select=balance_coins,free_coins,purchased_coins&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
-    db(`aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
+    db(`aam_social_profiles?select=customer_id,profile_id,display_name,bio,avatar_path,is_private,comments_enabled,referral_code,adult_confirmed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_preferences?select=notification_sound,chat_wallpaper,custom_wallpaper_path,profile_view_notifications,follow_notifications,like_notifications,comment_notifications,share_notifications,message_notifications,profile_update_notifications&customer_id=eq.${encodeURIComponent(s.customer_id)}&limit=1`),
     db(`aam_social_follows?select=follower_id&followed_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
