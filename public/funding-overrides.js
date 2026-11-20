@@ -102,7 +102,7 @@
 
   window.historyPage = async function(){
     if(!guard())return;
-    try{await loadCustomerCloud();}catch(e){toast(e.message||'Could not refresh your History. Showing saved history.');}
+    try{await withTimeout(loadCustomerCloud(),12000,'History sync took too long. Showing saved history.');}catch(e){toast(e.message||'Could not refresh your History. Showing saved history.');}
     const c=me(),notes=store.notes[c.id]||[],records=(store.records||[]).filter(r=>r.customerId===c.id).slice().reverse();
     let support=[],jobs=[];
     try{support=(await supportApi('GET')).messages||[]}catch(e){}
