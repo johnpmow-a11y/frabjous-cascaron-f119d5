@@ -7,8 +7,8 @@ const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmar
 
 let avatarDependenciesPromise=null;
 let visionTasksPromise=null;
-function loadAvatarDependencies(){if(!avatarDependenciesPromise)avatarDependenciesPromise=Promise.all([import(THREE_URL),import(WIREFACE_BASE+'/dist/create.js'),import(WIREFACE_BASE+'/dist/three.js'),import(WIREFACE_BASE+'/dist/three-characters.js')]);return avatarDependenciesPromise;}
-function loadVisionTasks(){if(!visionTasksPromise)visionTasksPromise=(async()=>{const module=await import(VISION_BASE+'/vision_bundle.mjs');const vision=await module.FilesetResolver.forVisionTasks(VISION_BASE+'/wasm');return {module,vision};})();return visionTasksPromise;}
+function loadAvatarDependencies(){if(!avatarDependenciesPromise)avatarDependenciesPromise=Promise.all([import(THREE_URL),import(WIREFACE_BASE+'/dist/create.js'),import(WIREFACE_BASE+'/dist/three.js'),import(WIREFACE_BASE+'/dist/three-characters.js')]).catch(error=>{avatarDependenciesPromise=null;throw error;});return avatarDependenciesPromise;}
+function loadVisionTasks(){if(!visionTasksPromise)visionTasksPromise=(async()=>{const module=await import(VISION_BASE+'/vision_bundle.mjs');const vision=await module.FilesetResolver.forVisionTasks(VISION_BASE+'/wasm');return {module,vision};})().catch(error=>{visionTasksPromise=null;throw error;});return visionTasksPromise;}
 export async function preloadAamLiveKitAvatar({models=false}={}){await Promise.all([loadAvatarDependencies(),loadVisionTasks()]);if(models)await Promise.all([POSE_MODEL,HAND_MODEL,FACE_MODEL].map(url=>fetch(url,{mode:'cors',cache:'force-cache'}).catch(()=>null)));return true;}
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
