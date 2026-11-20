@@ -191,3 +191,9 @@ body:has(#aamSocialDock) input,body:has(#aamSocialDock) textarea,body:has(#aamSo
 .aam-call-active #aamEndCallBtn{background:#dc2626!important}
 #aamAdminCallOverlay.aam-call-active .aam-social-call-actions button:last-of-type{background:#dc2626!important}
 @media(max-width:390px){#aamSocialDock button{font-size:9px}#aamSocialDock .aam-dock-icon{font-size:18px}.aam-social-card:has(.aam-social-chat-messages){height:calc(100dvh - 142px - env(safe-area-inset-bottom));}}
+
+/* The private admin access remains yellow and requires the full four-second hold. */
+.aam-top-actions .tiny-admin,body:has(#aamSocialDock) .tiny-admin{width:38px;height:38px;min-width:38px;min-height:38px;border-radius:50%;background:#facc15!important;color:#1f2937!important;border:1px solid #eab308!important;font-weight:900;box-shadow:0 4px 12px rgba(234,179,8,.25);touch-action:none;user-select:none;-webkit-user-select:none}
+.tiny-admin.is-holding{box-shadow:0 0 0 7px rgba(250,204,21,.24),0 0 25px rgba(250,204,21,.8)!important}
+.tiny-admin.is-holding:before{content:"";position:absolute;inset:5px;border:2px solid #fff;border-right-color:#f59e0b;border-radius:50%;animation:adminScan .7s linear infinite;pointer-events:none}
+.tiny-admin.is-unlocked{box-shadow:0 0 0 9px rgba(250,204,21,.32),0 0 30px rgba(250,204,21,.9)!important}
