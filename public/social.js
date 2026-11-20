@@ -221,7 +221,7 @@ async function recordVideoMix(){
   }
   const musicTrack=window.aamAdminSoundTrack,musicSourceUrl=musicTrack?.stream_url||'';
   if(musicSourceUrl){
-   music=new Audio();music.preload='auto';music.src=musicSourceUrl;music.loop=true;
+   music=new Audio();music.preload='auto';music.crossOrigin='anonymous';music.src=musicSourceUrl;music.loop=true;
    await new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>reject(new Error('Background music could not be prepared.')),12000);
     music.addEventListener('canplay',()=>{clearTimeout(timer);resolve();},{once:true});
