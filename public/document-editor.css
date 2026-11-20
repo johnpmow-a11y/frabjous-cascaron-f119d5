@@ -30,3 +30,17 @@
 .doc-tools .btn,.doc-page-controls .btn{touch-action:manipulation;transition:transform .12s ease,filter .12s ease}
 .doc-tools .btn:active,.doc-page-controls .btn:active{transform:scale(.97);filter:brightness(.94)}
 @media(max-width:760px){.doc-tv{border-radius:30px/22px;padding:9px 9px 16px}.doc-tv-screen{height:clamp(190px,58vw,310px);border-radius:25px/16px}.doc-tv-stand{height:20px}.doc-keyboard{position:relative;bottom:auto}.doc-canvas-wrap{max-height:58vh}}
+
+
+/* Curved-screen Overview Television and iPhone keyboard-safe editing */
+.doc-tv{width:min(860px,100%);border-radius:44px/30px;padding:15px 15px 20px;background:linear-gradient(145deg,#050809 0%,#222a29 16%,#080c0d 42%,#030506 100%);box-shadow:0 28px 46px rgba(0,0,0,.38),inset 0 2px 3px rgba(255,255,255,.3),inset 0 -4px 9px rgba(0,0,0,.9);transform:perspective(1200px) rotateY(-1deg) rotateX(.5deg)}
+.doc-tv-screen{border-radius:34px/23px;border:3px solid #050809;background:#080b0c;box-shadow:inset 0 0 22px rgba(0,0,0,.34),0 0 0 1px rgba(255,255,255,.12);overflow:hidden;transform:perspective(1100px) rotateY(.2deg)}
+.doc-tv-screen img{width:100%;height:100%;object-fit:contain;border-radius:inherit;background:#f8f8f5;cursor:zoom-in;touch-action:manipulation}
+.doc-tv-frame{height:15px}
+.doc-tv-frame span{width:6px;height:6px;background:#8cf2b6;box-shadow:0 0 10px #53e58f}
+.doc-tv-stand{height:22px;width:30%;filter:drop-shadow(0 9px 7px rgba(0,0,0,.35))}
+.doc-keyboard{bottom:calc(var(--doc-keyboard-inset,0px) + 8px + env(safe-area-inset-bottom));}
+.doc-keyboard-input{font-size:17px;line-height:1.55;touch-action:pan-y;user-select:text;-webkit-user-select:text}
+.doc-editor-page{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.doc-page-controls button,.doc-tool-grid button,.doc-editor-head button{touch-action:manipulation}
+@media(max-width:760px){.doc-tv{border-radius:30px/22px;padding:10px 10px 15px}.doc-tv-screen{border-radius:22px/16px}.doc-keyboard{bottom:calc(var(--doc-keyboard-inset,0px) + 4px + env(safe-area-inset-bottom));}}
