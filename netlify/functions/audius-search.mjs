@@ -12,7 +12,7 @@ export async function handler(event){
   const adult=await db(`aam_social_profiles?select=adult_confirmed_at&customer_id=eq.${encodeURIComponent(sessions[0].customer_id)}&limit=1`);
   if(!adult[0]?.adult_confirmed_at)return json(403,{error:'Confirm that you are 18 or older to continue.'});
   if(query.length<2)return json(200,{tracks:[]});
-  const apiKey=process.env.AUDIUS_API_KEY,bearer=process.env.AUDIUS_BEARER_TOKEN;
+  const apiKey=process.env.AUDIUS_API_KEY||process.env.SOUND_API_KEY,bearer=process.env.AUDIUS_BEARER_TOKEN||process.env.SOUND_API_BEARER_TOKEN;
   if(!apiKey&&!bearer)return json(503,{error:'Audius sound search is not configured.'});
   const url=new URL('https://api.audius.co/v1/tracks/search');url.searchParams.set('query',query);url.searchParams.set('limit','20');url.searchParams.set('app_name','AllAdsManager');
   const headers={Accept:'application/json'};if(apiKey)headers['x-api-key']=apiKey;if(bearer)headers.Authorization=`Bearer ${bearer}`;
