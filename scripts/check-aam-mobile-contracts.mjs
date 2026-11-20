@@ -59,7 +59,7 @@ check('Overview television has a curved-screen treatment', documentCss.includes(
 
 check('Dailymotion reads the existing public/private key names', dailymotion.includes('DAILYMOTION_PRIVATE_API_KEY') && dailymotion.includes('DAILYMOTION_PRIVATE_API_SECRET') && dailymotion.includes('DAILYMOTION_PUBLIC_API_KEY') && dailymotion.includes('DAILYMOTION_PUBLIC_API_SECRET'));
 check('Dailymotion requests account and video read scopes', dailymotion.includes("scope:'account.read video.read'"));
-check('Dailymotion feed imports only public non-explicit embeddable videos', dailymotion.includes("visibility:'public'") && dailymotion.includes("is_explicit:'false'") && dailymotion.includes('embedding?.enable_embed===false'));
+check('Dailymotion feed imports only public non-explicit embeddable videos', dailymotion.includes("url.searchParams.set('visibility','public')") && dailymotion.includes("url.searchParams.set('is_explicit','false')") && dailymotion.includes('embedding?.enable_embed===false'));
 check('Dailymotion import avoids duplicate posts', dailymotion.includes('aam_social_posts?select=id&id=in.(') && dailymotion.includes('if(!freshRows.length)'));
 check('Home feed renders Dailymotion player videos', feed.includes('function dailymotionId') && feed.includes('dailymotionPlayer(dmId)') && social.includes("p.video_provider==='dailymotion'"));
 check('Home refresh imports Dailymotion content', social.includes('syncDailymotionFeed') && social.includes('/.netlify/functions/dailymotion-feed'));
