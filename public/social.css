@@ -209,3 +209,13 @@
 .aam-call-answer{background:#16a34a!important;color:#fff!important}
 .aam-call-decline{background:#dc2626!important;color:#fff!important}
 @media(max-width:520px){#aamSocialRoot{height:calc(100dvh - 52px - 74px - env(safe-area-inset-bottom))}.aam-chat-conversation{border-radius:0!important}.aam-chat-header{padding:8px 10px}.aam-social-chat-messages{padding:10px}.aam-social-feed{height:auto!important}.aam-feed-item{height:100%!important}}
+
+.aam-call-profile{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 10px 10px;color:#fff;text-align:center}
+.aam-call-profile img{width:104px;height:104px;border:3px solid rgba(255,255,255,.9);border-radius:50%;object-fit:cover;background:#1e293b;box-shadow:0 12px 34px rgba(0,0,0,.32)}
+.aam-call-profile strong{font-size:20px;text-shadow:0 2px 8px rgba(0,0,0,.55)}
+#aamIncomingCallOverlay .aam-call-hangup,#aamAdminCallOverlay .aam-call-hangup{background:#dc2626!important;color:#fff!important;width:62px;height:62px;border-radius:50%;font-size:25px}
+#aamIncomingCallOverlay .aam-social-call-actions,#aamAdminCallOverlay .aam-social-call-actions{display:flex;align-items:center;gap:16px}
+#aamIncomingCallOverlay .aam-social-call-actions>button,#aamAdminCallOverlay .aam-social-call-actions>button{width:54px;height:54px;min-width:54px;border-radius:50%;display:grid;place-items:center;font-size:19px}
+#aamIncomingCallOverlay #aamCallStatus,#aamAdminCallOverlay #aamCallStatus{color:#fff;text-align:center;font-size:14px}
+.aam-social-call-panel.aam-call-active .aam-call-hangup{background:#dc2626!important;color:#fff!important;width:62px!important;height:62px!important;font-size:25px!important}
+.aam-social-call-panel.aam-call-active .aam-social-call-actions>button:nth-child(2){display:none}
