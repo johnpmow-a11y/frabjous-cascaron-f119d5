@@ -23,7 +23,7 @@ async function getPrivateToken(){
  const id=process.env.DAILYMOTION_CLIENT_ID||process.env.DAILYMOTION_API_KEY;
  const secret=process.env.DAILYMOTION_CLIENT_SECRET||process.env.DAILYMOTION_API_SECRET;
  if(!id||!secret)return '';
- const body=new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret,scope:'video.read'});
+ const body=new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret,scope:'profile.read video.read'});
  const r=await fetch('https://oauth2.dailymotion.com/v2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body,signal:AbortSignal.timeout(10000)});
  const d=await r.json().catch(()=>({}));
  if(!r.ok||!d.access_token)throw new Error(d.error_description||d.error||'Dailymotion authentication failed.');
@@ -92,8 +92,10 @@ export async function handler(event){
    caption:(v.title+(v.description?' · '+v.description:'')).slice(0,2200),
    post_kind:'feed',moderation_status:'published',is_locked:false,created_at:v.created_at
   }));
-  await db('aam_social_posts?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify(rows)});
-  return json(200,{configured:true,inserted:rows.length});
+  const ids=rows.map(row=>row.id);const existing=await db('aam_social_posts?select=id&id=in.('+ids.join(',')+')');const known=new Set(existing.map(row=>row.id)),freshRows=rows.filter(row=>!known.has(row.id));
+  if(!freshRows.length)return json(200,{configured:true,inserted:0});
+  await db('aam_social_posts?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify(freshRows)});
+  return json(200,{configured:true,inserted:freshRows.length});
  }catch(error){
   console.error('Dailymotion feed sync failed:',error.message);
   return json(200,{configured:true,inserted:0,error:'Dailymotion feed is temporarily unavailable.'});
