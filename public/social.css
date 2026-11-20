@@ -273,3 +273,11 @@
 #aamSocialRoot,#aamSocialRoot *:not(input):not(textarea):not(select):not([contenteditable="true"]),#aamSocialDock{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #aamSocialRoot input,#aamSocialRoot textarea,#aamSocialRoot select,#aamSocialRoot [contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 @media(max-width:420px){#aamSocialDock button{font-size:9px;padding:6px 1px;min-height:46px}}
+
+
+/* Customer tools stay inside the app frame with their own scroll area */
+#aamSocialRoot.aam-tool-mode{display:block;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:18px}
+#aamSocialRoot.aam-tool-mode .aam-tool-embedded{display:block;min-height:100%;padding:8px 0 20px}
+#aamSocialRoot.aam-tool-mode .aam-tool-embedded>.back{position:sticky;top:0;z-index:8}
+#aamSocialRoot.aam-tool-mode .aam-tool-embedded .profile-card,#aamSocialRoot.aam-tool-mode .aam-tool-embedded .form{margin:10px auto;max-width:720px}
+#aamSocialRoot.aam-tool-mode .aam-tool-embedded button{touch-action:manipulation}
