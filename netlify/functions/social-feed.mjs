@@ -15,31 +15,36 @@ export async function handler(event){
    const q=event.queryStringParameters||{},token=String(q.token||''),s=await session(token);
    if(!s)return json(401,{error:'Please log in again.'});
    if(!await adultConfirmed(s.customer_id))return json(403,{error:'Confirm that you are 18 or older to continue.'});
-   const [posts,profiles,follows,unlocks,likes,comments,mineLikes,adminProfile]=await Promise.all([
-    db('aam_social_posts?select=*&moderation_status=eq.published&order=created_at.desc&limit=60'),
+   const [posts,statuses,profiles,follows,unlocks,likes,comments,mineLikes,mineViews,adminProfile]=await Promise.all([
+    db('aam_social_posts?select=*&post_kind=eq.feed&moderation_status=eq.published&order=created_at.desc&limit=80'),
+    db('aam_social_posts?select=*&post_kind=eq.status&moderation_status=eq.published&order=created_at.desc&limit=80'),
     db('aam_social_profiles?select=customer_id,display_name,bio,avatar_path,is_private,comments_enabled'),
     db(`aam_social_follows?select=followed_id&follower_id=eq.${encodeURIComponent(s.customer_id)}`),
     db(`aam_social_video_unlocks?select=post_id&customer_id=eq.${encodeURIComponent(s.customer_id)}`),
     db('aam_social_likes?select=post_id'),
     db('aam_social_comments?select=post_id'),
     db(`aam_social_likes?select=post_id&customer_id=eq.${encodeURIComponent(s.customer_id)}`),
+    db(`aam_social_post_views?select=post_id,viewed_at&customer_id=eq.${encodeURIComponent(s.customer_id)}`),
     db('aam_social_admin_profile?select=display_name,avatar_path,follower_count,is_verified&id=eq.true&limit=1')
    ]);
-   const profileMap=new Map(profiles.map(p=>[p.customer_id,p])),following=new Set(follows.map(f=>f.followed_id)),unlocked=new Set(unlocks.map(x=>x.post_id)),liked=new Set(mineLikes.map(x=>x.post_id));
-   const visible=posts.filter(p=>p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id));
+   const profileMap=new Map(profiles.map(p=>[p.customer_id,p])),following=new Set(follows.map(f=>f.followed_id)),unlocked=new Set(unlocks.map(x=>x.post_id)),liked=new Set(mineLikes.map(x=>x.post_id)),viewed=new Map(mineViews.map(x=>[x.post_id,x.viewed_at]));
+   const visible=posts.filter(p=>(p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id))&&(p.customer_id===s.customer_id||!viewed.has(p.id)||Date.now()-new Date(viewed.get(p.id)).getTime()>=(p.author_role==='admin'&&p.media_type==='video'?48:24)*3600000));
+   const visibleStatuses=statuses.filter(p=>(p.author_role==='admin'||p.customer_id===s.customer_id||!profileMap.get(p.customer_id)?.is_private||following.has(p.customer_id))&&(p.customer_id===s.customer_id||!viewed.has(p.id))&&Date.now()-new Date(p.created_at).getTime()<24*3600000);
    const feed=await Promise.all(visible.slice(0,30).map(async p=>{
     const owner=p.customer_id?profileMap.get(p.customer_id):null,admin=adminProfile[0]||{};
     const locked=p.author_role==='admin'&&p.media_type==='video'&&p.is_locked===true&&!unlocked.has(p.id);
     const {author_role,media_path,thumbnail_path,customer_id,...publicPost}=p;return {...publicPost,is_following:!!(owner&&following.has(owner.customer_id)),comments_enabled:p.comments_enabled!==false&&owner?.comments_enabled!==false,like_count:likes.filter(x=>x.post_id===p.id).length,follower_count:p.author_role==='admin'?Number(admin.follower_count||0):undefined,following_count:p.author_role==='admin'?0:undefined,verified:p.author_role==='admin'?!!admin.is_verified:false,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),locked_video:locked,professional_video:locked,creator:{id:p.customer_id||null,name:p.author_role==='admin'?publicAdminName(admin.display_name):(owner?.display_name||'Creator'),bio:owner?.bio||'',avatar_url:(p.author_role==='admin'?admin.avatar_path:owner?.avatar_path)?await signedRead(p.author_role==='admin'?admin.avatar_path:owner.avatar_path):null,followers:p.author_role==='admin'?Number(admin.follower_count||0):null,following:p.author_role==='admin'?0:null},media_url:locked?null:await signedRead(p.media_path),thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};
    }));
-   return json(200,{posts:feed});
+   const statusFeed=await Promise.all(visibleStatuses.slice(0,80).map(async p=>{const owner=p.customer_id?profileMap.get(p.customer_id):null,admin=adminProfile[0]||{};const {author_role,media_path,thumbnail_path,customer_id,...publicPost}=p;return {...publicPost,is_following:!!(owner&&following.has(owner.customer_id)),like_count:likes.filter(x=>x.post_id===p.id).length,comment_count:comments.filter(x=>x.post_id===p.id).length,liked:liked.has(p.id),locked_video:false,creator:{id:p.customer_id||null,name:p.author_role==='admin'?publicAdminName(admin.display_name):(owner?.display_name||'Creator'),bio:owner?.bio||'',avatar_url:(p.author_role==='admin'?admin.avatar_path:owner?.avatar_path)?await signedRead(p.author_role==='admin'?admin.avatar_path:owner.avatar_path):null},media_url:await signedRead(p.media_path),thumbnail_url:p.thumbnail_path?await signedRead(p.thumbnail_path):null};}));
+   return json(200,{posts:feed,statuses:statusFeed});
   }
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed.'});
   const b=JSON.parse(event.body||'{}'),token=String(b.token||''),action=String(b.action||''),admin=b.role==='admin';
   const s=await session(token,admin);if(!s)return json(401,{error:'Please log in again.'});
   const customerId=admin?null:s.customer_id;
   if(!admin&&!await adultConfirmed(customerId))return json(403,{error:'Confirm that you are 18 or older to continue.'});
-  if(action==='sign_thumbnail_upload'){
+  if(action==='mark_view'){const postId=String(b.post_id||'');if(!uuid.test(postId))return json(400,{error:'Choose a valid post.'});const found=await db(`aam_social_posts?select=id&id=eq.${encodeURIComponent(postId)}&moderation_status=eq.published&limit=1`);if(!found.length)return json(404,{error:'This post is no longer available.'});await db('aam_social_post_views?on_conflict=customer_id,post_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([{customer_id:customerId,post_id:postId,viewed_at:new Date().toISOString()}])});return json(200,{ok:true});}
+   if(action==='sign_thumbnail_upload'){
    if(admin)return json(403,{error:'Admin thumbnails are uploaded with admin media.'});
    const path=`thumbnails/${customerId}/${randomUUID()}.jpg`,u=process.env.SUPABASE_URL,k=process.env.SUPABASE_SERVICE_ROLE_KEY;
    const r=await fetch(`${u}/storage/v1/object/upload/sign/aam-social-media/${path}`,{method:'POST',headers:h(k,{'Content-Type':'application/json'}),body:'{}'});
@@ -74,8 +79,8 @@ export async function handler(event){
   if(action==='publish_post'){
    const path=String(b.media_path||''),mime=String(b.mime_type||''),ext=mimeExt[mime],prefix=admin?'admin/':customerId+'/';
    const thumb=String(b.thumbnail_path||'');if(!ext||!path.startsWith(prefix)||path.includes('..')||(thumb&&(!thumb.startsWith('thumbnails/'+customerId+'/')||thumb.includes('..'))))return json(400,{error:'Invalid uploaded media.'});
-   const caption=String(b.caption||'').trim().slice(0,2200),type=mime.startsWith('video/')?'video':'image',soundUrl=String(b.sound_url||'');
-   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:customerId,author_role:admin?'admin':'customer',media_type:type,media_path:path,thumbnail_path:thumb||null,caption,sound_track_id:String(b.sound_track_id||'').slice(0,80)||null,sound_title:String(b.sound_title||'').slice(0,180)||null,sound_artist:String(b.sound_artist||'').slice(0,180)||null,sound_url:soundUrl||null,moderation_status:'published',is_locked:admin&&type==='video'&&b.is_locked===true}])});
+   const caption=String(b.caption||'').trim().slice(0,2200),type=mime.startsWith('video/')?'video':'image',soundUrl=String(b.sound_url||''),postKind=b.post_kind==='status'?'status':'feed';
+   const rows=await db('aam_social_posts',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify([{customer_id:customerId,author_role:admin?'admin':'customer',media_type:type,media_path:path,thumbnail_path:thumb||null,caption,post_kind:postKind,sound_track_id:String(b.sound_track_id||'').slice(0,80)||null,sound_title:String(b.sound_title||'').slice(0,180)||null,sound_artist:String(b.sound_artist||'').slice(0,180)||null,sound_url:soundUrl||null,moderation_status:'published',is_locked:admin&&type==='video'&&b.is_locked===true}])});
    return json(200,{ok:true,post:rows[0]});
   }
   return json(400,{error:'Unsupported feed action.'});
