@@ -38,7 +38,7 @@ check('gift gallery is internally scrollable and lazy-loads images', index.inclu
 check('gift gender change clears the previous search', index.includes("search=document.getElementById('deliveryGiftSearch');if(search)search.value=''"));
 check('gift selection uses safe data-index handlers', index.includes('chooseDeliveryGiftFromButton(this)') && index.includes('negotiateGiftFromButton(this)'));
 check('international gift country list is present', index.includes('const giftDeliveryCountries='));
-check('11-digit numeric public profile ID migration exists', /length\(profile_id\)\s*=\s*11/.test(profileMigration) || /11-digit/.test(profileMigration));
+check('11-digit numeric public profile ID migration exists', /start with 10000000000/.test(profileMigration) && /maxvalue 99999999999/.test(profileMigration));
 
 check('six main app tabs are in the requested order', social.includes("['home','⌂','Home'],['status','◉','Status'],['upload','＋','Post'],['chat','◌','Chat'],['tools','▦','Tools'],['profile','●','Profile']"));
 check('mobile navigation uses six columns', socialCss.includes('repeat(6,minmax(0,1fr))'));
