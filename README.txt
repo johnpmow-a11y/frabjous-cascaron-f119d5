@@ -41,3 +41,13 @@ DEPLOYMENT AND VERIFICATION
 - Keep existing Netlify environment variables and secrets. Never put service-role keys, Paystack secret keys, Gmail app passwords, or supplier API keys in browser code.
 - Repository source changes do not automatically apply SQL to Supabase or deploy to Netlify. Apply only migrations identified as required in DEPLOYMENT_README.txt, and only if not already applied.
 - GitHub Actions checks JavaScript syntax and packages the project. A successful source build does not prove the live Netlify, Supabase, Paystack, Gmail, push-notification or supplier systems work; those require deployment and live checks.
+
+
+2026-11-20 mobile and social application update
+- New Supabase migrations are included in supabase/migrations. Apply the new 20261120101500, 20261120103000 and 20261120104000 migrations in timestamp order before deploying this version.
+- Cloudflare Stream video uploads require CLOUDFLARE_API_TOKEN. CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_STREAM_CUSTOMER_CODE may be set when supplied by the Cloudflare account.
+- Audius sound search accepts AUDIUS_API_KEY or AUDIUS_BEARER_TOKEN. Keep these values in Netlify environment variables; never place secret values in browser code.
+- Customer and administrator video posts use Cloudflare Stream. Customer and administrator sound search uses the Audius sound API.
+- Customer Manager Promotions are now in-app feed placements. An administrator reviews the advert and sets its Money Coin price; after payment, the promoted post appears in the All Ads Manager feed for the requested duration. This does not require an external advertising provider.
+- Facebook and TikTok campaigns outside All Ads Manager still require the advertiser's own platform authorization and approved API access.
+- The mobile app uses the standalone PWA shell. iOS web-push notifications use the iPhone's notification sound; custom sounds can be played while the app is open.
